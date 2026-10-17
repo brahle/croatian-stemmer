@@ -15,8 +15,9 @@ and its Alembic migrations live outside the package. The `web` extra installs th
 app's Python dependencies into a checkout. The offline `croatian-stemmer-labels`
 command does ship in the wheel.
 
-Use Python 3.14+, Node 22 and PostgreSQL. The base stemmer has no web dependency;
-install the optional application dependencies explicitly:
+Use Python 3.10+ (CI runs the web suite on 3.14), Node 22 and PostgreSQL. The
+base stemmer has no web dependency; install the optional application
+dependencies explicitly:
 
 ```sh
 uv sync --frozen --extra web --extra dev

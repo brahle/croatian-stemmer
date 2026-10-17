@@ -63,7 +63,7 @@ iteration	timestamp	git_sha	score	form_consistency	over_stemming	verb_consistenc
 61	2026-04-12T12:58:00	befbfd1	0.819243	0.8682	0.1026	0.2908	0.8661	0.9385	KEEP	Canonicalize 9 more verbs (postati/napraviti/pisati/naći/počeť/...) — verb +0.14pp form +0.07pp
 62	2026-04-12T12:59:00	8246260	0.819906	0.8688	0.1027	0.2941	0.8657	0.9382	KEEP	Canonicalize 10 more verbs (živjeti/koristiti/smatrati/...) — verb +0.33pp form +0.06pp
 63	2026-04-12T13:00:00	5d4337e	0.820632	0.8696	0.1025	0.2965	0.8654	0.9373	KEEP	Canonicalize 10 more verbs (stajati/čekati/nositi/učiti/voditi/pratiti/zvati/čuti/osjećati/pustiti) — verb +0.24pp form +0.08pp
-64	2026-04-12T13:01:00	df5c559	df5c559	0.821219	0.8701	0.1025	0.2993	0.8652	0.9373	KEEP	Canonicalize 10 more verbs (vjerovati/razumjeti/igrati/...) — verb +0.28pp form +0.05pp
+64	2026-04-12T13:01:00	df5c559	0.821219	0.8701	0.1025	0.2993	0.8652	0.9373	KEEP	Canonicalize 10 more verbs (vjerovati/razumjeti/igrati/...) — verb +0.28pp form +0.05pp
 65	2026-04-12T13:02:00	70870e3	0.821897	0.8705	0.1025	0.3031	0.865	0.9373	KEEP	Canonicalize 10 more verbs (donijeti/kupiti/prodati/proći/stići/...) — verb CROSSED 0.30 (0.3031)
 66	2026-04-12T13:03:00	a1b4d32	0.822628	0.8712	0.1024	0.3064	0.8644	0.9373	KEEP	Canonicalize 10 more verbs (otići/otvoriti/hodati/spavati/prestati/pasti/...) — verb +0.33pp
 67	2026-04-12T13:04:00	db0707b	0.823363	0.8719	0.1024	0.3097	0.8644	0.937	KEEP	Canonicalize 10 more verbs (slušati/voziti/shvatiti/umrijeti/sjesti/...) — verb +0.33pp

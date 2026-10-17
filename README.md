@@ -62,6 +62,8 @@ cd pg/
 
 ### Usage
 
+The extension is marked `trusted = true`, like contrib's `unaccent`, so once it is installed on the server any user with CREATE privilege on a database, such as its owner, can run `CREATE EXTENSION dict_croatian_stem` without superuser. If you do not want that, delete the `trusted` line from `dict_croatian_stem.control` before installing.
+
 ```sql
 CREATE EXTENSION dict_croatian_stem;
 -- Creates the croatian_stem dictionary, the croatian_stem_template
