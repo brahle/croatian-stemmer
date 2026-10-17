@@ -9,7 +9,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.0">
+<meta name="document-version" content="1.1">
 <title>Privacy notice — Croatian lemma labeling</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -17,7 +17,7 @@
 <main>
 <p class="crumbs"><a href="/?lang=en">Back to labeling</a> · <a href="/legal/privacy.hr" hreflang="hr" lang="hr">Hrvatski</a></p>
 <h1>Privacy notice</h1>
-<p class="meta">Version 1.0 (17 October 2026). This notice applies to the site {{app_host}}, where volunteers label Croatian words (lemmas, word pairs and stems) for an open language dataset.</p>
+<p class="meta">Version 1.1 (17 October 2026). This notice applies to the site {{app_host}}, where volunteers label Croatian words (lemmas, word pairs and stems) for an open language dataset.</p>
 
 <p>This notice explains which personal data we process when you take part, why, on which legal basis, how long we keep it and what your rights are under the General Data Protection Regulation (Regulation (EU) 2016/679, "GDPR").</p>
 
@@ -30,6 +30,7 @@
 <h2 id="data">2. What we process and where it comes from</h2>
 <h3>Signing in with a Google account</h3>
 <p>You sign in with your Google account through a sign-in server (Keycloak) at {{identity_host}}. When you sign in, Google gives us: your Google account identifier, your email address, whether that address is verified, and your first and last name. The sign-in server stores these in your user account there. Of these, the labeling application stores only the technical identifier of your sign-in account and your email address (and the address only if it is verified).</p>
+<p>The application creates this profile the first time you sign in, before you accept this notice and the terms, because it needs it to show you the acceptance step and to let you erase the account from there ("Erase account"). Until you accept, it records nothing else about you and you cannot label.</p>
 <h3>Data you enter or that arises while you take part</h3>
 <ul>
 <li>Your answers (labels): the answer to the question, a lemma you type, the irregular-form flag, the revision number of the answer and when it was saved.</li>
@@ -44,6 +45,7 @@
 
 <h2 id="purposes">3. Purposes and legal bases</h2>
 <ul>
+<li><strong>Creating your profile when you first sign in, before you accept</strong>: steps taken at your request before you take part under the terms of participation (Article 6(1)(b) GDPR).</li>
 <li><strong>Running your profile and recording your answers to build the language dataset</strong>: your consent (Article 6(1)(a) GDPR), given when you start. You can withdraw it at any time by erasing your profile (section 7).</li>
 <li><strong>Assessing how reliable answers are, detecting abuse, rate limiting and blocking accounts</strong>: legitimate interest (Article 6(1)(f)) in keeping a public research dataset accurate and protected from fake or automated entries. In weighing this interest we took into account that these assessments have no effect outside this site and that the data does not leave the controller.</li>
 <li><strong>Security logs at the network edge</strong>: legitimate interest (Article 6(1)(f)) in protecting the service from attacks.</li>
@@ -63,7 +65,7 @@
 
 <h2 id="retention">6. How long we keep data</h2>
 <ul>
-<li>Your profile in the application (sign-in account identifier, email address): until you erase your profile.</li>
+<li>Your profile in the application (sign-in account identifier, email address): until you erase your profile. This also applies if you sign in but never accept; you can erase the profile from the acceptance screen.</li>
 <li>Your user account on the sign-in server (first and last name, email address): until you erase your profile; after an erasure request we delete it within 30 days.</li>
 <li>Answers: indefinitely, as part of the dataset, under the random participant identifier. Erasing your profile permanently severs that identifier from your identity.</li>
 <li>Time taken per answer and the list of items shown: until you erase your profile.</li>

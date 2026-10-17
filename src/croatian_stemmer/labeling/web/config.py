@@ -19,7 +19,7 @@ EMAIL = re.compile(r"^[^@\s<>\"']+@[^@\s<>\"']+\.[^@\s<>\"']+$")
 IDP_HINT = re.compile(r"^[A-Za-z0-9._-]{0,64}$")
 # The legal documents shipped with this version declare these versions
 # (<meta name="document-version">); a deployment may pin them explicitly.
-DEFAULT_PRIVACY_VERSION = "1.0"
+DEFAULT_PRIVACY_VERSION = "1.1"
 DEFAULT_TERMS_VERSION = "1.0"
 
 

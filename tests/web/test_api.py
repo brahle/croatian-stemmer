@@ -372,7 +372,7 @@ async def test_me_reports_consent_and_counts(api):
     rows = await api.imported()
     me = (await api.request("GET", "/api/me", "alice")).json()
     assert me["consented"] is False and me["consent"] == {"privacy": None, "terms": None}
-    assert me["curator"] is False and me["required"] == {"privacy": "1.0", "terms": "1.0"}
+    assert me["curator"] is False and me["required"] == {"privacy": "1.1", "terms": "1.0"}
     await api.consent("alice")
     assert (await api.request("POST", answer_path(rows[0]), "alice", json=answer())).status_code == 200
     me = (await api.request("GET", "/api/me", "alice")).json()

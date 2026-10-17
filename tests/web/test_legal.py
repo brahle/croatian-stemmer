@@ -26,7 +26,7 @@ async def test_documents_are_served_with_controller_values(name):
     assert "{{" not in body and "}}" not in body
     assert "Ana &lt;Example&gt; &amp; Co" in body and "<Example>" not in body
     assert "privacy@example.org" in body
-    expected = "1.1" if name.startswith("storage") else "1.0"
+    expected = "1.1" if name.startswith(("storage", "privacy")) else "1.0"
     assert '<meta name="document-version" content="%s">' % expected in body
     assert 'lang="%s"' % name.rsplit(".", 1)[1] in body
     assert "<script" not in body and "style=" not in body
@@ -57,7 +57,7 @@ async def test_unknown_documents_are_404():
         assert (await client.get("/static/guidelines.hr.html")).status_code == 200
 
 
-@pytest.mark.parametrize("changes", [{"privacy_version": "1.1"}, {"terms_version": "2.0"}])
+@pytest.mark.parametrize("changes", [{"privacy_version": "1.0"}, {"terms_version": "2.0"}])
 def test_version_guard_refuses_mismatched_configuration(changes):
     from croatian_stemmer.labeling.web.api import create_app
     with pytest.raises(ValueError, match="does not match"):
@@ -92,7 +92,7 @@ def test_guard_refuses_unknown_placeholders(tmp_path, monkeypatch):
 async def test_public_config_names_versions_and_controller():
     async with app_client(idp_hint="google", read_only=True) as client:
         config = (await client.get("/api/config")).json()
-    assert config["legal"] == {"privacy": "1.0", "terms": "1.0"} and config["controller"] == {"name": "Example Controller"}
+    assert config["legal"] == {"privacy": "1.1", "terms": "1.0"} and config["controller"] == {"name": "Example Controller"}
     assert config["idpHint"] == "google" and config["locales"] == ["hr", "en"]
     assert config["acceptingJudgments"] is False and config["uiVersion"]
     assert {"url", "realm", "clientId"} <= set(config)
