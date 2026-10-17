@@ -1,7 +1,8 @@
 # Human labeling application
 
-A public, multi-user site where people sign in, accept the privacy notice and
-terms, and label items from shared corpora that a curator has published. Every
+A public, multi-user site where people sign in, accept the terms and the
+participation statement, and label items from shared corpora that a curator has
+published. Every
 judgment is stored with provenance in an append-only journal. Imports never
 create annotations. TSV exports include all revisions; the shared evaluator
 resolves the latest answer per annotator.
@@ -22,7 +23,8 @@ The pieces:
   (`client_version`), how it arrived (`source`) and the time taken
   (`elapsed_ms`, curator-only, removed on erasure). Database triggers keep
   `label_judgment`, `label_consent` and `label_admin_event` append-only apart
-  from the two erasure updates.
+  from what erasure does (see "Consent, legal documents and data-subject
+  rights").
 
 ## Local development
 
@@ -82,7 +84,7 @@ Optional:
 | `LABELING_OIDC_IDP_HINT` | unset | Keycloak identity-provider alias, e.g. `google`; the sign-in button then goes straight to it |
 | `LABELING_OIDC_CLIENT_ID` | `croatian-stemmer-labeling-web` | public browser client |
 | `LABELING_OIDC_AUDIENCE` | `croatian-stemmer-labeling-api` | required token audience |
-| `LABELING_PRIVACY_VERSION`, `LABELING_TERMS_VERSION` | `1.0` | document versions people must accept; must equal the versions the shipped documents declare |
+| `LABELING_PRIVACY_VERSION`, `LABELING_TERMS_VERSION`, `LABELING_PARTICIPATION_VERSION` | `1.2`, `1.1`, `1.0` | document versions people must accept; must equal the versions the shipped documents declare |
 | `LABELING_DAILY_CAP` | `3000` | judgments per annotator per 24 hours |
 | `LABELING_TARGET_VOTES` | `3` | `/next` stops serving an item once this many people gave a definite answer |
 | `LABELING_READ_ONLY` | `false` | `true` pauses intake regardless of the curator's setting |
@@ -136,31 +138,51 @@ unpublish, archive, exports, `/api/admin/*`).
 
 ## Consent, legal documents and data-subject rights
 
-`/legal/{privacy,terms,storage}.{hr,en}` serve the privacy notice, the terms of
-participation and licence, and the cookie and storage notice, with the
+`/legal/{privacy,terms,participation,storage}.{hr,en}` serve the privacy notice,
+the terms of participation and licence, the participation statement (the
+consent to recording answers) and the cookie and storage notice, with the
 controller values substituted from configuration. The templates are in
-`src/croatian_stemmer/labeling/web/documents/`; they are drafts that the
-controller and a lawyer must review before publication. Each declares
+`src/croatian_stemmer/labeling/web/documents/`; the controller reviews and
+publishes them (there is no external legal review). Each declares
 `<meta name="document-version">`. Publishing a new version means editing the
 documents and the matching `LABELING_*_VERSION` together; everyone is asked to
 accept again before their next answer, and earlier consent records are kept.
 
-The consent gate asks for three confirmations: the privacy notice, the terms
-(including the CC BY-SA 4.0 licence of contributions and a CC0 waiver for labels
-alone), and age 16 or over. Without both current consents, `/next`, `/items`
-and `/answer` return 403 `consent_required`.
+The consent gate links the privacy notice as information and has three
+separate, unticked checkboxes: the terms (including the CC BY-SA 4.0 licence of
+contributions and a CC0 waiver for labels alone), the participation statement,
+and age 18 or over. `POST /api/me/consent` records one row per document
+(privacy, terms, participation) with `age_threshold = 18`. Without all three at
+the configured versions and age 18, `/next`, `/items` and `/answer` return 403
+`consent_required`.
+
+A profile is created at the first sign-in, before the gate. A daily background
+task erases active profiles that have no consent row 30 days after they were
+created, through the same erasure path (no actor; the `erasure.requested` event
+carries `reason: unconsented_expiry`), which queues the Keycloak user for the
+curator. Signing in again before that deletion shows a notice worded for this
+case (409 `erasure_pending` with the reason).
 
 "My data" offers a JSON export of everything linked to the pseudonym and
 erasure. Erasure, in one transaction, records an erasure request, nulls the
-subject and email, deletes the assignment rows and nulls `elapsed_ms`;
-judgments and consent records stay under the pseudonym. Until the curator has
-deleted the Keycloak user, signing in again returns 409 `erasure_pending`
-rather than creating a new profile. The curator panel lists pending requests
-with the Keycloak username to delete; after deleting it in the Keycloak admin
-console, the curator confirms, which removes the stored username and email.
-The app logs a warning (with the request id only) for requests older than 14
-days, so the 30-day limit is not missed. If a database backup taken before an
-erasure is ever restored, re-apply the erasures requested after it.
+subject and email and deletes the assignment rows. The person's judgments and
+consent records move to a new erased annotator id: each row gets a fresh id,
+its time is cut to the UTC day and `elapsed_ms` is dropped, and nothing records
+which new id followed which old one. If the person was `blocked` or
+`quarantined` at that moment, their judgments and consents are deleted instead.
+The triggers allow exactly this move and the deletion of an erased annotator's
+rows. Requests authenticated just before an erasure commits cannot write to
+the erased profile (409 `erasure_pending`), and a profile refresh never writes
+an email back onto an erased row.
+
+Until the curator has deleted the Keycloak user, signing in again returns 409
+`erasure_pending` rather than creating a new profile. The curator panel lists
+pending requests with the Keycloak user id (the token's `sub`) to delete; after
+deleting the user in the Keycloak admin console, the curator confirms, which
+removes the stored id. The app logs a warning (with the request id only) for
+requests older than 14 days, so the 30-day limit is not missed. If a database
+backup taken before an erasure is ever restored, re-apply the erasures
+requested after it.
 
 The app origin sets no cookies and no persistent storage; the adapter's
 short-lived `kc-callback-*` record is removed when sign-in completes. The
@@ -240,7 +262,10 @@ The application is one stateless container plus a PostgreSQL database:
   `LABELING_DATABASE_URL` before the app serves, for example as an init container.
   Migration 002 (0.2.0) drops the 0.1 tables. It refuses to run while
   `label_judgment` has rows unless `LABELING_MIGRATION_ALLOW_DROP=true`; export
-  and back up first. Never set that variable permanently.
+  and back up first. Never set that variable permanently. Migration 002a
+  (0.2.3) is forward-only: it adds the participation consent and the confirmed
+  age, clears any email left on an erased profile and lets erasure move or
+  delete a person's rows. Take a backup before deploying it.
 - One replica. Rate limits are in process and migrations run per pod.
 - Probes: `/healthz` for liveness and `/readyz` for readiness, on port 8000.
 - The container runs as a non-root user with a read-only root filesystem. It
@@ -248,5 +273,7 @@ The application is one stateless container plus a PostgreSQL database:
   TLS-terminating proxy.
 - Back up the database. The judgment journal is the only copy of human answers.
 
-Roll back the application image first. Downgrading 002 recreates the 0.1 tables
-empty and is only for a database with nothing worth keeping.
+Roll back the application image first. From 0.2.3 a rollback is the previous
+image plus a restore of the pre-deploy backup; `alembic downgrade` refuses to
+undo 002a. Downgrading 002 recreates the 0.1 tables empty and is only for a
+database with nothing worth keeping.

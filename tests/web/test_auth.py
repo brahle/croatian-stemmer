@@ -337,6 +337,17 @@ def test_policy_and_compliance_from_environment(monkeypatch):
         monkeypatch.delenv(key)
 
 
+def test_document_versions_from_environment(monkeypatch):
+    compliance_environment(monkeypatch)
+    assert Settings.from_environment().required_documents == {"privacy": "1.2", "terms": "1.1", "participation": "1.0"}
+    monkeypatch.setenv("LABELING_PARTICIPATION_VERSION", "2.0")
+    assert Settings.from_environment().participation_version == "2.0"
+    for value in ("2 0", "x" * 33):
+        monkeypatch.setenv("LABELING_PARTICIPATION_VERSION", value)
+        with pytest.raises(ValueError):
+            Settings.from_environment()
+
+
 @pytest.mark.parametrize("key", ["controller_name", "controller_email", "hosting_summary",
                                  "edge_log_retention", "backup_retention"])
 def test_compliance_values_are_required(key):

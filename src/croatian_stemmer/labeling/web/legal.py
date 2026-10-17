@@ -1,9 +1,10 @@
 """Legal documents: loading, version guard and placeholder substitution.
 
 Each document declares <meta name="document-version" content="...">. The privacy
-notice and the terms must declare the versions the server requires consent to
-(LABELING_PRIVACY_VERSION, LABELING_TERMS_VERSION); otherwise the app refuses to
-start, so people are never asked to accept a text other than the one served.
+notice, the terms and the participation statement must declare the versions the
+server requires consent to (LABELING_PRIVACY_VERSION, LABELING_TERMS_VERSION,
+LABELING_PARTICIPATION_VERSION); otherwise the app refuses to start, so people are
+never asked to accept a text other than the one served.
 """
 
 import html
@@ -11,7 +12,7 @@ import re
 from pathlib import Path
 from urllib.parse import urlsplit
 
-DOCUMENTS = ("privacy", "terms", "storage")
+DOCUMENTS = ("privacy", "terms", "participation", "storage")
 LANGUAGES = ("hr", "en")
 PLACEHOLDERS = ("controller_name", "controller_address", "controller_email", "hosting_summary",
                 "edge_log_retention", "backup_retention", "app_host", "identity_host")
@@ -40,7 +41,7 @@ class LegalDocuments:
                 if text.count("{{") != len(_PLACEHOLDER.findall(text)):
                     raise ValueError(f"{path.name} contains a malformed placeholder")
                 self.texts[f"{doc}.{lang}"] = text
-        required = {"privacy": settings.privacy_version, "terms": settings.terms_version}
+        required = settings.required_documents
         for doc in DOCUMENTS:
             hr, en = versions[doc, "hr"], versions[doc, "en"]
             if hr != en:

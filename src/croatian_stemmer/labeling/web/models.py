@@ -1,18 +1,19 @@
 """Shared corpora, pseudonymous annotators and an append-only judgment journal.
 
-Migration 002 creates exactly these tables (alembic check compares them) plus
-the append-only triggers on label_judgment, label_consent and label_admin_event.
+Migrations 002 and 002a create exactly these tables (alembic check compares them)
+plus the append-only triggers on label_judgment, label_consent and label_admin_event.
 """
 
 from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint,
-                        Index, Integer, String, UniqueConstraint, Uuid, func, text)
+                        Index, Integer, SmallInteger, String, UniqueConstraint, Uuid, func, text)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 ANSWERS = ("same", "different", "unsure", "confirmed", "accept", "reject")
+CONSENT_DOCUMENTS = ("privacy", "terms", "participation")
 
 
 class Base(DeclarativeBase):
@@ -24,7 +25,10 @@ def _in(column, values):
 
 
 class Annotator(Base):
-    """`id` is the pseudonym printed in every export; erasure nulls subject and email."""
+    """`id` is the pseudonym printed in every export; erasure nulls subject and email.
+
+    An erased row is either an emptied profile (its answers moved away) or the
+    subject-less row that received them under a new random id."""
     __tablename__ = "label_annotator"
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, server_default=text("gen_random_uuid()"))
     subject: Mapped[str | None] = mapped_column(String(256), unique=True)
@@ -37,11 +41,13 @@ class Annotator(Base):
     __table_args__ = (
         CheckConstraint(_in("status", ("active", "quarantined", "blocked", "erased")), name="label_annotator_status"),
         CheckConstraint("(status = 'erased') = (subject IS NULL)", name="label_annotator_erased_subject"),
+        CheckConstraint("status <> 'erased' OR (email IS NULL AND NOT email_verified)",
+                        name="label_annotator_erased_email"),
     )
 
 
 class Consent(Base):
-    """Append-only (trigger)."""
+    """Append-only (trigger), apart from the erasure move and the deletion of an erased person's rows."""
     __tablename__ = "label_consent"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     annotator_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("label_annotator.id"))
@@ -50,10 +56,12 @@ class Consent(Base):
     locale: Mapped[str] = mapped_column(String(5))
     age_confirmed: Mapped[bool] = mapped_column(Boolean)
     ui_version: Mapped[str] = mapped_column(String(32))
+    # The minimum age the person confirmed (NULL on rows from before 0.2.3, which asked for 16).
+    age_threshold: Mapped[int | None] = mapped_column(SmallInteger)
     accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     __table_args__ = (
         UniqueConstraint("annotator_id", "document", "version"),
-        CheckConstraint(_in("document", ("privacy", "terms")), name="label_consent_document"),
+        CheckConstraint(_in("document", CONSENT_DOCUMENTS), name="label_consent_document"),
         CheckConstraint(_in("locale", ("hr", "en")), name="label_consent_locale"),
         CheckConstraint("age_confirmed", name="label_consent_age"),
     )
@@ -97,7 +105,8 @@ class Item(Base):
 
 
 class Judgment(Base):
-    """Append-only journal (trigger); the only permitted UPDATE nulls elapsed_ms on erasure."""
+    """Append-only journal (trigger). Erasure may null elapsed_ms, move the rows to a
+    new erased annotator (fresh id, day-level time) or delete an erased person's rows."""
     __tablename__ = "label_judgment"
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
     corpus_id: Mapped[UUID] = mapped_column(Uuid)

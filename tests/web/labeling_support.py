@@ -10,6 +10,8 @@ ISSUER = "https://identity.example/realms/test"
 COMPLIANCE = {"controller_name": "Example Controller", "controller_email": "privacy@example.org",
               "hosting_summary": "Example Hosting Ltd, Germany", "edge_log_retention": "7 days",
               "backup_retention": "14 days"}
+# The document versions this release ships and requires (config defaults).
+REQUIRED = {"privacy": "1.2", "terms": "1.1", "participation": "1.0"}
 
 
 def make_settings(database_url="postgresql+asyncpg://test@localhost/labeling_test", issuer=ISSUER, **changes):
@@ -92,7 +94,8 @@ class Api:
         s = self.settings
         r = await self.request("POST", "/api/me/consent", name, curator,
                                json={"privacy_version": s.privacy_version, "terms_version": s.terms_version,
-                                     "age_confirmed": True, "locale": "hr", "ui_version": "0.2.0-test"})
+                                     "participation_version": s.participation_version, "age_confirmed": True,
+                                     "age_threshold": 18, "locale": "hr", "ui_version": "0.2.0-test"})
         assert r.status_code == 200, r.text
         return r
 

@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.2.3
+
+Labeling web app follow-ups to 0.2.2. Deploy with a pre-deploy database backup:
+migration 002a is forward-only (rollback is the previous image plus a restore).
+
+- Separate participation consent and age 18. New document, the participation
+  statement 1.0 (hr/en): what is recorded, that the public receives only
+  aggregated labels, how to withdraw, and what erasure keeps. The gate now links
+  the privacy notice as information and has three unticked checkboxes: terms,
+  participation statement, "I am at least 18". Consent rows record
+  `age_threshold = 18`; a request for 16 is refused. Documents: privacy notice
+  1.2, terms 1.1 (18+), participation statement 1.0. New setting
+  `LABELING_PARTICIPATION_VERSION` (default `1.0`, checked against the shipped
+  document at startup like the others). Deployments must set
+  `LABELING_PRIVACY_VERSION=1.2`, `LABELING_TERMS_VERSION=1.1` and
+  `LABELING_PARTICIPATION_VERSION=1.0`; everyone is asked to accept again.
+- Profiles that never accept the gate are erased 30 days after the first
+  sign-in by a daily background task, through the erasure path, which queues
+  the Keycloak user for the curator. Signing in again before that deletion shows
+  a notice worded for this case.
+- The erasure request keeps only the Keycloak user id (`keycloak_user_id`, the
+  token's `sub`) instead of username and email; the curator's list shows that
+  id and completion still clears it.
+- Erasure keeps the answers under a new random identifier: the person's
+  judgments and consents move to a fresh erased annotator with new row ids,
+  day-level timestamps and no timing, and nothing records the old-to-new link.
+  A blocked or set-aside person's answers and consents are deleted instead.
+  The append-only triggers allow exactly this move and the deletion of an
+  erased annotator's rows.
+- Erasure-safe profile refresh: the periodic email refresh no longer writes the
+  email back onto a profile erased meanwhile (the request gets 409
+  `erasure_pending`), and consent, `/next` and `/answer` refuse to write for a
+  profile erased after the request was authenticated. Migration 002a clears any
+  email such a race left and forbids emails on erased rows.
+
 ## 0.2.2
 
 - Privacy notice 1.1 (hr/en): states that the profile (sign-in account

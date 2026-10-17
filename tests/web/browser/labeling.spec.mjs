@@ -17,17 +17,26 @@ function candidates(){
   return [base, second, lemma, {...lemma, item_id:randomUUID(), kind:'stem', proposed_stem:'kuć'}];
 }
 function watch(page){ const faults = []; page.on('pageerror', e => faults.push(e.message)); page.on('dialog', d => { faults.push('dialog ' + d.message()); d.dismiss(); }); return faults; }
+// Returns the persona's subject: the Keycloak user id the curator's erasure list shows.
 async function signIn(page, name, curator = false){
-  await page.request.get(`${FIXTURE}/fixture/persona?name=${name}&curator=${curator ? 1 : 0}`);
+  const persona = await (await page.request.get(`${FIXTURE}/fixture/persona?name=${name}&curator=${curator ? 1 : 0}`)).json();
   await page.goto('/');
   await page.getByRole('button', {name:'Prijava Google računom', exact:true}).click();
+  return persona.subject;
 }
 async function acceptGate(page){
   await expect(page.locator('#gate')).toBeVisible();
+  // The privacy notice is information, not a checkbox; terms, participation and age 18 each have their own.
+  await expect(page.locator('#gate-privacy a')).toHaveAttribute('href', '/legal/privacy.hr');
+  await expect(page.locator('#gate-privacy')).toContainText('verzija 1.2');
+  await expect(page.locator('#gate input[type=checkbox]')).toHaveCount(3);
+  await expect(page.locator('#gate input[type=checkbox]:checked')).toHaveCount(0);
+  await expect(page.locator('#gate')).toContainText('Imam najmanje 18 godina.');
+  await expect(page.locator('#gate a[data-doc="participation"]')).toContainText('izjavi o sudjelovanju (verzija 1.0)');
   const accept = page.getByRole('button', {name:'Prihvaćam', exact:true});
-  await page.locator('#accept-privacy').check(); await page.locator('#accept-terms').check();
+  await page.locator('#accept-terms').check(); await page.locator('#accept-age').check();
   await expect(accept).toBeDisabled();
-  await page.locator('#accept-age').check();
+  await page.locator('#accept-participation').check();
   await expect(accept).toBeEnabled();
   await accept.click();
   await expect(page.locator('#workspace')).toBeVisible();
@@ -54,6 +63,12 @@ test('landing, legal notices and language switch work without signing in', async
   await expect(page.locator('body')).toContainText('kc-callback-');
   await page.goto('/legal/terms.hr');
   await expect(page.locator('body')).toContainText('CC BY-SA 4.0');
+  await expect(page.locator('body')).toContainText('najmanje 18 godina');
+  await page.goto('/legal/participation.hr');
+  await expect(page.locator('h1')).toHaveText('Izjava o sudjelovanju');
+  await expect(page.locator('body')).toContainText('novom nasumičnom oznakom');
+  await page.goto('/legal/participation.en');
+  await expect(page.locator('h1')).toHaveText('Participation statement');
   await page.goto('/');
   await page.getByRole('button', {name:'English', exact:true}).click();
   await expect(page.getByRole('button', {name:'Sign in with Google', exact:true})).toBeVisible();
@@ -108,7 +123,7 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
   await expect(corpusRow).toContainText('CC BY-SA 4.0 / CC BY-SA 4.0');
 
   // Annotator: gate first, no curator panel.
-  await signIn(ana, ANA);
+  const anaSubject = await signIn(ana, ANA);
   await expect(ana.locator('#gate')).toBeVisible();
   await expect(ana.locator('#nav-curator')).toBeHidden();
   await expect(ana.locator('#curator')).toBeHidden();
@@ -201,7 +216,8 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
 
   // My data: consents, counts and the JSON export.
   await ana.locator('#nav-me').click();
-  await expect(ana.locator('#me-consents li')).toHaveCount(2);
+  await expect(ana.locator('#me-consents li')).toHaveCount(3);
+  await expect(ana.locator('#me-consents')).toContainText('Izjava o sudjelovanju, verzija 1.0');
   await expect(ana.locator('#me-counts')).toContainText('Odgovora ukupno: 5');
   const pending = ana.waitForEvent('download');
   await ana.getByRole('button', {name:'Preuzmi moje podatke', exact:true}).click();
@@ -223,6 +239,8 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
   await ana.screenshot({path: 'test-results/labeling-mobile.png', fullPage: true});
 
   // Erasure with the typed confirmation; signing in again shows the pending notice.
+  await expect(ana.locator('#me')).toContainText('najdulje 30 dana');
+  await expect(ana.locator('#me')).toContainText('pod novom nasumičnom oznakom');
   await ana.locator('#erase-confirm').fill('obriši');
   await ana.getByRole('button', {name:'Izbriši moj račun', exact:true}).click();
   await expect(ana.locator('#message')).toContainText('upišite točno IZBRIŠI');
@@ -235,12 +253,13 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
   await signIn(ana, ANA);
   await expect(ana.locator('#erased-text')).toContainText('u postupku brisanja');
 
-  // Curator completes the Keycloak side.
+  // Curator completes the Keycloak side: the request names only the Keycloak user id, never the email.
   await cur.locator('#nav-curator').click();
-  const erasure = cur.locator('#erasures li', {hasText:`${ANA}@example.org`});
+  await expect(cur.locator('#erasures')).not.toContainText(`${ANA}@example.org`);
+  const erasure = cur.locator('#erasures li', {hasText:`Keycloak ID ${anaSubject}`});
   await expect(erasure).toBeVisible();
   await erasure.getByRole('button', {name:'Potvrdi brisanje u Keycloaku', exact:true}).click();
-  await expect(cur.locator('#erasures li', {hasText:`${ANA}@example.org`})).toHaveCount(0);
+  await expect(cur.locator('#erasures li', {hasText:anaSubject})).toHaveCount(0);
 
   // After logout nothing is left behind on the app origin.
   for (const page of [ana, cur]) {

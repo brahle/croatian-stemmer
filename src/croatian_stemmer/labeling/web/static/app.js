@@ -10,17 +10,19 @@ const strings = {
     paused:'Primanje odgovora je privremeno zaustavljeno. Možete pregledavati, ali odgovori se trenutačno ne spremaju.',
     landingTitle:'Pomozite izgraditi otvoreni skup podataka za hrvatski jezik',
     landingIntro:'Na ovoj stranici dobrovoljci procjenjuju pripadaju li dvije riječi istoj lemi, potvrđuju rječničke leme i procjenjuju korijene riječi. Odgovori se koriste za vrednovanje otvorenog hrvatskog stemera i objavljuju se kao otvoreni skup podataka, bez Vašeg imena.',
-    landingRunBy:'Projekt vodi', landingAge:'Sudjelovati mogu osobe koje imaju najmanje 16 godina. Prije prvog odgovora tražit ćemo Vaš pristanak.',
+    landingRunBy:'Projekt vodi', landingAge:'Sudjelovati mogu osobe koje imaju najmanje 18 godina. Prije prvog odgovora tražit ćemo Vaš pristanak.',
     signInPrompt:'Prijavite se za sudjelovanje.',
     gateTitle:'Prije nego što počnete',
-    gateWhat:'Spremamo Vaše odgovore, vrijeme potrebno za odgovor i Vašu adresu e-pošte iz Google računa. Odgovori se vežu uz nasumičnu oznaku, a ne uz Vaše ime, i objavljuju se kao otvoreni skup podataka pod licencijom CC BY-SA 4.0.',
+    gateWhat:'Spremamo Vaše odgovore, vrijeme potrebno za odgovor i Vašu adresu e-pošte iz Google računa. Odgovori se vežu uz nasumičnu oznaku, a ne uz Vaše ime. Javno objavljujemo samo zbirne oznake za svaki primjer, nikada Vaše pojedinačne odgovore.',
     gateRights:'Svoje podatke možete u svakom trenutku preuzeti ili izbrisati profil na stranici „Moji podaci”.',
-    gatePrivacy:'Pročitao/la sam', privacyNotice:'obavijest o privatnosti', gateTerms:'Prihvaćam', termsLink:'uvjete sudjelovanja',
-    gateTermsLicence:', uključujući licenciju mojih odgovora.', gateAge:'Imam najmanje 16 godina.', accept:'Prihvaćam', gateErase:'Izbriši račun',
-    gateMessage:'Za sudjelovanje prihvatite obavijest o privatnosti i uvjete te potvrdite dob.', version:'(verzija {v})',
+    gatePrivacy:'Kako obrađujemo Vaše podatke, objašnjava', privacyNotice:'obavijest o privatnosti', gateTerms:'Prihvaćam', termsLink:'uvjete sudjelovanja',
+    gateTermsLicence:', uključujući licenciju mojih odgovora.', gateParticipation:'Pristajem na bilježenje i korištenje mojih odgovora kako je opisano u',
+    participationLink:'izjavi o sudjelovanju', gateAge:'Imam najmanje 18 godina.', accept:'Prihvaćam', gateErase:'Izbriši račun',
+    gateMessage:'Za sudjelovanje prihvatite uvjete i izjavu o sudjelovanju te potvrdite dob.', version:'(verzija {v})',
     erasedTitle:'Profil je izbrisan',
-    erasedDone:'Vaš profil je izbrisan. Račun za prijavu izbrisat ćemo u roku od 30 dana; ako se do tada ponovno prijavite, vidjet ćete ovu obavijest umjesto novog profila. Vaši odgovori ostaju u skupu podataka pod nasumičnom oznakom koja se više ne može povezati s Vama.',
+    erasedDone:'Vaš profil je izbrisan. Račun za prijavu izbrisat ćemo u roku od 30 dana; ako se do tada ponovno prijavite, vidjet ćete ovu obavijest umjesto novog profila. Vaši odgovori ostaju u skupu podataka pod novom nasumičnom oznakom koja se ne može povezati ni s Vama ni s Vašom dosadašnjom oznakom.',
     erasurePending:'Ovaj račun je u postupku brisanja. Račun za prijavu bit će izbrisan u roku od 30 dana od zahtjeva; nakon toga se možete ponovno prijaviti kao novi sudionik.',
+    erasureExpired:'Ovaj profil je izbrisan jer u roku od 30 dana od prve prijave niste prihvatili uvjete i izjavu o sudjelovanju. Račun za prijavu bit će izbrisan u roku od 30 dana; nakon toga se možete ponovno prijaviti kao novi sudionik.',
     corpus:'Korpus', chooseCorpusOption:'Odaberite korpus', kind:'Vrsta', kindPair:'Par riječi', kindLemma:'Lema', kindStem:'Korijen',
     queue:'Red', queueNext:'Novi primjeri', queueLabelled:'Moji označeni', queueUnsure:'Moji nesigurni',
     hintsTitle:'Prijedlozi iz korpusa i način uzorkovanja', lemmaLabel:'Potvrđena ili ispravljena lema', stemLabel:'Predloženi korijen:',
@@ -37,11 +39,11 @@ const strings = {
     typeLemma:'Upišite lemu prije potvrde.', retryFirst:'Najprije ponovite prethodno spremanje ili ponovno učitajte stranicu.',
     conflict:'Odgovor je u međuvremenu izmijenjen u drugoj sesiji. Učitan je posljednji odgovor; pregledajte ga prije novog spremanja.',
     meTitle:'Moji podaci', meId:'Vaša nasumična oznaka:', meConsents:'Prihvaćeni dokumenti', meCounts:'Odgovora ukupno: {judgments}; označenih primjera: {items}.',
-    consentLine:'{doc}, verzija {version}, prihvaćeno {date}', docPrivacy:'Obavijest o privatnosti', docTerms:'Uvjeti sudjelovanja',
+    consentLine:'{doc}, verzija {version}, prihvaćeno {date}', docPrivacy:'Obavijest o privatnosti', docTerms:'Uvjeti sudjelovanja', docParticipation:'Izjava o sudjelovanju',
     noConsents:'Još niste prihvatili dokumente.', download:'Preuzmi moje podatke', downloaded:'Vaši podaci su preuzeti (JSON).',
     eraseTitle:'Izbriši moj račun',
-    eraseWhat:'Brisanjem se odmah uklanjaju veza s Vašim računom za prijavu, adresa e-pošte, vremena odgovora i popis prikazanih primjera. Račun za prijavu (s imenom i prezimenom) brišemo u roku od 30 dana.',
-    eraseKeeps:'Vaši odgovori ostaju u skupu podataka pod nasumičnom oznakom koja se više ne može povezati s Vama.',
+    eraseWhat:'Brisanjem se odmah uklanjaju veza s Vašim računom za prijavu, adresa e-pošte, vremena odgovora i popis prikazanih primjera. Oznaku računa za prijavu čuvamo samo dok taj račun (s imenom i prezimenom) ne izbrišemo, najdulje 30 dana.',
+    eraseKeeps:'Vaši odgovori ostaju u skupu podataka pod novom nasumičnom oznakom koja se ne može povezati ni s Vama ni s Vašom dosadašnjom oznakom; od vremena odgovora čuva se samo dan. Ako je profil blokiran ili izdvojen, odgovori se brišu.',
     erasePrompt:'Za potvrdu upišite {word}', eraseWord:'IZBRIŠI', eraseButton:'Izbriši moj račun', eraseMismatch:'Za brisanje upišite točno {word}.',
     curatorTitle:'Kurator', intakeTitle:'Primanje odgovora', intakeOn:'Odgovori se primaju.', intakeOff:'Primanje odgovora je zaustavljeno.',
     intakeReadOnly:' Poslužitelj je u načinu samo za čitanje (LABELING_READ_ONLY).', pause:'Zaustavi primanje odgovora', resume:'Nastavi primanje odgovora',
@@ -56,10 +58,10 @@ const strings = {
     annotatorsTitle:'Označivači', colAnnotator:'Oznaka / e-pošta', colJudgments:'Odgovori', colSeen:'Zadnji put', more:'Učitaj još',
     statusActive:'aktivan', statusQuarantined:'izdvojen', statusBlocked:'blokiran', statusErased:'izbrisan', reason:'Razlog', apply:'Primijeni',
     reasonRequired:'Upišite razlog promjene statusa.', statusChanged:'Status je promijenjen.',
-    erasuresTitle:'Zahtjevi za brisanje', erasuresHelp:'Izbrišite korisnika u konzoli za administraciju Keycloaka, zatim potvrdite ovdje. Rok je 30 dana od zahtjeva.',
-    noErasures:'Nema zahtjeva koji čekaju.', erasureLine:'{user} · zatraženo {date} ({days} d)', confirmErasure:'Potvrdi brisanje u Keycloaku',
+    erasuresTitle:'Zahtjevi za brisanje', erasuresHelp:'U konzoli za administraciju Keycloaka potražite korisnika po ID-u i izbrišite ga, zatim potvrdite ovdje. Rok je 30 dana od zahtjeva.',
+    noErasures:'Nema zahtjeva koji čekaju.', erasureLine:'Keycloak ID {user} · zatraženo {date} ({days} d)', erasureExpiredReason:' · nije prihvatio/la u 30 dana', confirmErasure:'Potvrdi brisanje u Keycloaku',
     erasureCompleted:'Brisanje je potvrđeno.',
-    footerPrivacy:'Privatnost', footerTerms:'Uvjeti i licencija', footerStorage:'Kolačići i pohrana', legalMenu:'Pravne informacije',
+    footerPrivacy:'Privatnost', footerTerms:'Uvjeti i licencija', footerParticipation:'Sudjelovanje', footerStorage:'Kolačići i pohrana', legalMenu:'Pravne informacije',
     footerVersion:'Verzija aplikacije {v}', unavailable:'Prijava trenutačno nije dostupna. Osvježite stranicu i pokušajte ponovno.',
     genericError:'Zahtjev nije uspio. Pokušajte ponovno.', actionFailed:'Radnja nije uspjela. Pokušajte ponovno.',
   },
@@ -69,17 +71,19 @@ const strings = {
     paused:'Collection of answers is paused for now. You can browse, but answers are not being saved.',
     landingTitle:'Help build an open dataset for the Croatian language',
     landingIntro:'On this site volunteers judge whether two words share a lemma, confirm dictionary lemmas and judge word stems. The answers are used to evaluate an open Croatian stemmer and are published as an open dataset, without your name.',
-    landingRunBy:'The project is run by', landingAge:'You must be at least 16 to take part. We will ask for your consent before your first answer.',
+    landingRunBy:'The project is run by', landingAge:'You must be at least 18 to take part. We will ask for your consent before your first answer.',
     signInPrompt:'Sign in to take part.',
     gateTitle:'Before you start',
-    gateWhat:'We store your answers, the time you take to answer and the email address of your Google account. Answers are linked to a random identifier, not to your name, and are published as an open dataset under the CC BY-SA 4.0 licence.',
+    gateWhat:'We store your answers, the time you take to answer and the email address of your Google account. Answers are linked to a random identifier, not to your name. We publish only aggregated labels for each item, never your individual answers.',
     gateRights:'You can download your data or erase your profile at any time on the "My data" page.',
-    gatePrivacy:'I have read the', privacyNotice:'privacy notice', gateTerms:'I accept the', termsLink:'terms of participation',
-    gateTermsLicence:', including the licence of my answers.', gateAge:'I am at least 16 years old.', accept:'I accept', gateErase:'Erase account',
-    gateMessage:'To take part, accept the privacy notice and the terms and confirm your age.', version:'(version {v})',
+    gatePrivacy:'How we process your data is explained in the', privacyNotice:'privacy notice', gateTerms:'I accept the', termsLink:'terms of participation',
+    gateTermsLicence:', including the licence of my answers.', gateParticipation:'I agree that my answers are recorded and used as described in the',
+    participationLink:'participation statement', gateAge:'I am at least 18 years old.', accept:'I accept', gateErase:'Erase account',
+    gateMessage:'To take part, accept the terms and the participation statement and confirm your age.', version:'(version {v})',
     erasedTitle:'Profile erased',
-    erasedDone:'Your profile has been erased. We will delete your sign-in account within 30 days; if you sign in again before then, you will see this notice instead of a new profile. Your answers remain in the dataset under a random identifier that can no longer be linked to you.',
+    erasedDone:'Your profile has been erased. We will delete your sign-in account within 30 days; if you sign in again before then, you will see this notice instead of a new profile. Your answers remain in the dataset under a new random identifier that can be linked neither to you nor to your previous identifier.',
     erasurePending:'This account is being erased. The sign-in account will be deleted within 30 days of the request; after that you can sign in again as a new participant.',
+    erasureExpired:'This profile was erased because the terms and the participation statement were not accepted within 30 days of the first sign-in. The sign-in account will be deleted within 30 days; after that you can sign in again as a new participant.',
     corpus:'Corpus', chooseCorpusOption:'Choose a corpus', kind:'Kind', kindPair:'Word pair', kindLemma:'Lemma', kindStem:'Stem',
     queue:'Queue', queueNext:'New items', queueLabelled:'My labelled', queueUnsure:'My unsure',
     hintsTitle:'Corpus suggestions and sampling', lemmaLabel:'Confirmed or corrected lemma', stemLabel:'Proposed stem:',
@@ -96,11 +100,11 @@ const strings = {
     typeLemma:'Type the lemma before confirming.', retryFirst:'Retry the previous save first, or reload the page.',
     conflict:'This answer was changed in another session meanwhile. The latest answer has been loaded; review it before saving again.',
     meTitle:'My data', meId:'Your random identifier:', meConsents:'Accepted documents', meCounts:'Answers in total: {judgments}; items labelled: {items}.',
-    consentLine:'{doc}, version {version}, accepted {date}', docPrivacy:'Privacy notice', docTerms:'Terms of participation',
+    consentLine:'{doc}, version {version}, accepted {date}', docPrivacy:'Privacy notice', docTerms:'Terms of participation', docParticipation:'Participation statement',
     noConsents:'You have not accepted the documents yet.', download:'Download my data', downloaded:'Your data has been downloaded (JSON).',
     eraseTitle:'Erase my account',
-    eraseWhat:'Erasing immediately removes the link to your sign-in account, your email address, answer times and the list of items shown to you. We delete the sign-in account (with your first and last name) within 30 days.',
-    eraseKeeps:'Your answers remain in the dataset under a random identifier that can no longer be linked to you.',
+    eraseWhat:'Erasing immediately removes the link to your sign-in account, your email address, answer times and the list of items shown to you. We keep the identifier of the sign-in account only until we delete that account (with your first and last name), at most 30 days.',
+    eraseKeeps:'Your answers remain in the dataset under a new random identifier that can be linked neither to you nor to your previous identifier; of each answer\'s time only the day is kept. If the profile is blocked or set aside, the answers are deleted.',
     erasePrompt:'To confirm, type {word}', eraseWord:'DELETE', eraseButton:'Erase my account', eraseMismatch:'To erase, type exactly {word}.',
     curatorTitle:'Curator', intakeTitle:'Collecting answers', intakeOn:'Answers are being collected.', intakeOff:'Collection of answers is paused.',
     intakeReadOnly:' The server is in read-only mode (LABELING_READ_ONLY).', pause:'Pause collecting answers', resume:'Resume collecting answers',
@@ -115,10 +119,10 @@ const strings = {
     annotatorsTitle:'Annotators', colAnnotator:'Identifier / email', colJudgments:'Answers', colSeen:'Last seen', more:'Load more',
     statusActive:'active', statusQuarantined:'set aside', statusBlocked:'blocked', statusErased:'erased', reason:'Reason', apply:'Apply',
     reasonRequired:'Type a reason for the status change.', statusChanged:'Status changed.',
-    erasuresTitle:'Erasure requests', erasuresHelp:'Delete the user in the Keycloak admin console, then confirm here. The limit is 30 days from the request.',
-    noErasures:'No requests are waiting.', erasureLine:'{user} · requested {date} ({days} d)', confirmErasure:'Confirm deletion in Keycloak',
+    erasuresTitle:'Erasure requests', erasuresHelp:'Find the user by ID in the Keycloak admin console and delete it, then confirm here. The limit is 30 days from the request.',
+    noErasures:'No requests are waiting.', erasureLine:'Keycloak ID {user} · requested {date} ({days} d)', erasureExpiredReason:' · not accepted within 30 days', confirmErasure:'Confirm deletion in Keycloak',
     erasureCompleted:'Deletion confirmed.',
-    footerPrivacy:'Privacy', footerTerms:'Terms and licence', footerStorage:'Cookies and storage', legalMenu:'Legal information',
+    footerPrivacy:'Privacy', footerTerms:'Terms and licence', footerParticipation:'Participation', footerStorage:'Cookies and storage', legalMenu:'Legal information',
     footerVersion:'Application version {v}', unavailable:'Sign-in is unavailable right now. Reload the page and try again.',
     genericError:'The request failed. Please try again.', actionFailed:'The action failed. Please try again.',
   },
@@ -127,7 +131,7 @@ const errors = {
   hr: {invalid_token:'Prijava je istekla. Ponovno se prijavite.', annotator_role_required:'Nemate ovlast za označavanje.', identity_unavailable:'Provjera prijave trenutačno nije dostupna.',
     invalid_candidates:'Datoteka ne odgovara formatu prijedloga za uvoz.', body_too_large:'Datoteka ili zahtjev prelazi dopuštenu veličinu.', corpus_provenance_conflict:'Podrijetlo korpusa razlikuje se od već uvezenog korpusa.',
     immutable_item_conflict:'Postojeći primjer ima drukčiji sadržaj. Uvoz je odbijen.', invalid_judgment:'Odgovor ne odgovara ovom primjeru. Provjerite lemu: jedna riječ, samo slova.', request_id_conflict:'Ovaj pokušaj spremanja već je upotrijebljen za drugi odgovor.',
-    not_found:'Primjer ili korpus nije dostupan.', database_unavailable:'Baza podataka trenutačno nije dostupna.', consent_required:'Prije sudjelovanja prihvatite trenutačne verzije obavijesti o privatnosti i uvjeta.',
+    not_found:'Primjer ili korpus nije dostupan.', database_unavailable:'Baza podataka trenutačno nije dostupna.', consent_required:'Prije sudjelovanja prihvatite trenutačne verzije uvjeta i izjave o sudjelovanju.',
     consent_version_mismatch:'Dokumenti su u međuvremenu ažurirani. Osvježite stranicu i pročitajte nove verzije.', account_blocked:'Vaš profil je blokiran. Svoje podatke i dalje možete preuzeti ili izbrisati na stranici „Moji podaci”.',
     erasure_pending:'Ovaj račun je u postupku brisanja.', judgments_paused:'Primanje odgovora je privremeno zaustavljeno. Pokušajte kasnije.', rate_limited:'Previše zahtjeva u kratkom vremenu. Pričekajte trenutak pa pokušajte ponovno.',
     daily_cap_reached:'Dosegnut je dnevni broj odgovora. Hvala! Nastavite sutra.', curator_required:'Za ovu radnju potrebna je uloga kuratora.', item_retired:'Ovaj primjer je povučen i više se ne označava.',
@@ -137,7 +141,7 @@ const errors = {
   en: {invalid_token:'Your sign-in has expired. Please sign in again.', annotator_role_required:'You are not allowed to label.', identity_unavailable:'Sign-in verification is unavailable right now.',
     invalid_candidates:'The file does not match the candidate import format.', body_too_large:'The file or request is too large.', corpus_provenance_conflict:'The corpus provenance differs from the corpus already imported.',
     immutable_item_conflict:'An existing item has different content. The import was refused.', invalid_judgment:'The answer does not fit this item. Check the lemma: one word, letters only.', request_id_conflict:'This save attempt was already used for a different answer.',
-    not_found:'The item or corpus is not available.', database_unavailable:'The database is unavailable right now.', consent_required:'Before taking part, accept the current privacy notice and terms.',
+    not_found:'The item or corpus is not available.', database_unavailable:'The database is unavailable right now.', consent_required:'Before taking part, accept the current terms and participation statement.',
     consent_version_mismatch:'The documents have been updated meanwhile. Reload the page and read the new versions.', account_blocked:'Your profile is blocked. You can still download or erase your data on the "My data" page.',
     erasure_pending:'This account is being erased.', judgments_paused:'Collection of answers is paused. Please try later.', rate_limited:'Too many requests in a short time. Wait a moment and try again.',
     daily_cap_reached:'You have reached the daily number of answers. Thank you! Continue tomorrow.', curator_required:'This action needs the curator role.', item_retired:'This item has been retired and is no longer labelled.',
@@ -212,6 +216,8 @@ function applyLanguage(){
 }
 
 const SECTIONS = ['landing', 'gate', 'erased', 'workspace', 'me', 'curator'];
+// The privacy notice is information (linked above these); each consent has its own unticked box.
+const GATE = ['accept-terms', 'accept-participation', 'accept-age'];
 function show(section){ for (const id of SECTIONS) $(id).hidden = id !== section; }
 function lock(value){
   busy = value;
@@ -248,14 +254,17 @@ async function download(path, filename){
 
 async function loadMe(){
   try { me = await json('me'); }
-  catch (error) { if (error.code === 'erasure_pending') { showErased(t('erasurePending')); return; } throw error; }
+  catch (error) {
+    if (error.code === 'erasure_pending') { showErased(t(error.detail?.reason === 'unconsented_expiry' ? 'erasureExpired' : 'erasurePending')); return; }
+    throw error;
+  }
   for (const id of ['nav-label', 'nav-me', 'logout']) $(id).hidden = false;
   $('nav-curator').hidden = !me.curator;
   if (!me.consented) { show('gate'); message(t('gateMessage')); return; }
   await openWorkspace();
 }
 function gateReady(){
-  const ready = ['accept-privacy', 'accept-terms', 'accept-age'].every(id => $(id).checked);
+  const ready = GATE.every(id => $(id).checked);
   $('accept').disabled = busy || !ready;
 }
 function showErased(text){
@@ -275,7 +284,7 @@ async function openMe(){
 function paintMe(){
   $('me-id').textContent = me.annotator_id;
   $('me-counts').textContent = t('meCounts', {judgments: me.counts.judgments, items: me.counts.items_labelled});
-  const docs = {privacy: t('docPrivacy'), terms: t('docTerms')};
+  const docs = {privacy: t('docPrivacy'), terms: t('docTerms'), participation: t('docParticipation')};
   $('me-consents').replaceChildren(...(me.consents.length ? me.consents.map(c => element('li', t('consentLine', {doc: docs[c.document], version: c.version, date: date(c.accepted_at)})))
                                                          : [element('li', t('noConsents'))]));
 }
@@ -480,8 +489,9 @@ async function curatorAnnotators(reset){
 async function curatorErasures(){
   const items = (await json('admin/erasures')).items;
   $('erasures').replaceChildren(...(items.length ? items.map(item => {
-    const li = element('li', t('erasureLine', {user: [item.preferred_username, item.email].filter(Boolean).join(' · ') || item.annotator_id,
-                                               date: date(item.requested_at), days: item.age_days}) + ' ', {'data-erasure': String(item.id)});
+    const reason = item.reason === 'unconsented_expiry' ? t('erasureExpiredReason') : '';
+    const li = element('li', t('erasureLine', {user: item.keycloak_user_id || item.annotator_id, date: date(item.requested_at),
+                                               days: item.age_days}) + reason + ' ', {'data-erasure': String(item.id)});
     li.append(button(t('confirmErasure'), () => run(async () => { await post(`admin/erasures/${item.id}/complete`, {}); await curatorErasures(); message(t('erasureCompleted')); })));
     return li;
   }) : [element('li', t('noErasures'))]));
@@ -495,10 +505,11 @@ for (const id of ['logout', 'gate-logout', 'erased-logout']) $(id).onclick = () 
 $('nav-label').onclick = () => run(async () => { me = await json('me'); if (me.consented) await openWorkspace(); else { show('gate'); message(t('gateMessage')); } });
 $('nav-me').onclick = $('gate-erase').onclick = () => run(openMe);
 $('nav-curator').onclick = () => run(openCurator);
-for (const id of ['accept-privacy', 'accept-terms', 'accept-age']) $(id).onchange = gateReady;
+for (const id of GATE) $(id).onchange = gateReady;
 $('consent').onsubmit = event => { event.preventDefault(); run(async () => {
   await post('me/consent', {privacy_version: config.legal.privacy, terms_version: config.legal.terms,
-                            age_confirmed: $('accept-age').checked, locale: lang, ui_version: clientVersion});
+                            participation_version: config.legal.participation, age_confirmed: $('accept-age').checked,
+                            age_threshold: config.minimumAge, locale: lang, ui_version: clientVersion});
   await loadMe();
 }); };
 $('download').onclick = () => run(async () => { await download('me/export.json', 'moji-podaci.json'); message(t('downloaded')); });

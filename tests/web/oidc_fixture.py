@@ -5,8 +5,9 @@ only urn:test candidates. This is not a substitute for production Keycloak SSO
 acceptance or evidence of actual human annotations.
 
 The browser suite chooses who signs in next with GET /fixture/persona?name=...
-(&curator=1 adds the curator group). Each name keeps one subject for the life
-of the process; access tokens carry email, email_verified and groups like the
+(&curator=1 adds the curator group), which returns the persona's subject (the
+Keycloak user id the curator's erasure list shows). Each name keeps one subject
+for the life of the process; access tokens carry email, email_verified and groups like the
 realm's tokens do. GET /fixture/last-authorize returns the last authorization
 request's query (to check kc_idp_hint and ui_locales).
 """
@@ -44,7 +45,7 @@ async def choose(name: str, curator: int = 0):
     if curator:
         CURATORS.add(name)
     persona['name'] = name
-    return {'name': name, 'curator': name in CURATORS}
+    return {'name': name, 'curator': name in CURATORS, 'subject': SUBJECTS[name]}
 
 @app.get('/fixture/last-authorize')
 async def last():
