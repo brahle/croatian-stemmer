@@ -1,4 +1,6 @@
 """Legal documents: both languages, configured controller values, the version guard."""
+import re
+
 import pytest
 pytest.importorskip("fastapi")
 from labeling_support import make_settings
@@ -32,7 +34,8 @@ async def test_documents_are_served_with_controller_values(name):
         assert "7 days" in body and "14 days" in body and "identity.example" in body
         assert "AZOP" in body
     if name.startswith("storage"):
-        assert "labels.example.org" in body and "kc-callback-" in body
+        # The app host is printed in the storage notice (the origin whose storage is described).
+        assert re.search(r"\blabels\.example\.org\b", body) and "kc-callback-" in body
 
 
 @pytest.mark.parametrize("lang", ["hr", "en"])
