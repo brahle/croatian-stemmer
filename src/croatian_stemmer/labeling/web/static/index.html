@@ -22,17 +22,18 @@
 <p data-i18n="landingIntro">Na ovoj stranici dobrovoljci procjenjuju pripadaju li dvije riječi istoj lemi, potvrđuju rječničke leme i procjenjuju korijene riječi. Odgovori se koriste za vrednovanje otvorenog hrvatskog stemera i objavljuju se kao otvoreni skup podataka, bez Vašeg imena.</p>
 <p><span data-i18n="landingRunBy">Projekt vodi</span> <strong id="controller"></strong>.</p>
 <p><button id="login" type="button" disabled>Prijava</button></p>
-<p class="muted" data-i18n="landingAge">Sudjelovati mogu osobe koje imaju najmanje 16 godina. Prije prvog odgovora tražit ćemo Vaš pristanak.</p>
+<p class="muted" data-i18n="landingAge">Sudjelovati mogu osobe koje imaju najmanje 18 godina. Prije prvog odgovora tražit ćemo Vaš pristanak.</p>
 </section>
 
 <section id="gate" hidden>
 <h2 data-i18n="gateTitle">Prije nego što počnete</h2>
-<p data-i18n="gateWhat">Spremamo Vaše odgovore, vrijeme potrebno za odgovor i Vašu adresu e-pošte iz Google računa. Odgovori se vežu uz nasumičnu oznaku, a ne uz Vaše ime, i objavljuju se kao otvoreni skup podataka pod licencijom CC BY-SA 4.0.</p>
+<p data-i18n="gateWhat">Spremamo Vaše odgovore, vrijeme potrebno za odgovor i Vašu adresu e-pošte iz Google računa. Odgovori se vežu uz nasumičnu oznaku, a ne uz Vaše ime. Javno objavljujemo samo zbirne oznake za svaki primjer, nikada Vaše pojedinačne odgovore.</p>
 <p data-i18n="gateRights">Svoje podatke možete u svakom trenutku preuzeti ili izbrisati profil na stranici „Moji podaci”.</p>
 <form id="consent">
-<label class="check"><input type="checkbox" id="accept-privacy"> <span data-i18n="gatePrivacy">Pročitao/la sam</span> <a data-doc="privacy" href="/legal/privacy.hr" target="_blank" rel="noopener"><span data-i18n="privacyNotice">obavijest o privatnosti</span> <span class="version" data-version="privacy"></span></a>.</label>
+<p id="gate-privacy"><span data-i18n="gatePrivacy">Kako obrađujemo Vaše podatke, objašnjava</span> <a data-doc="privacy" href="/legal/privacy.hr" target="_blank" rel="noopener"><span data-i18n="privacyNotice">obavijest o privatnosti</span> <span class="version" data-version="privacy"></span></a>.</p>
 <label class="check"><input type="checkbox" id="accept-terms"> <span data-i18n="gateTerms">Prihvaćam</span> <a data-doc="terms" href="/legal/terms.hr" target="_blank" rel="noopener"><span data-i18n="termsLink">uvjete sudjelovanja</span> <span class="version" data-version="terms"></span></a><span data-i18n="gateTermsLicence">, uključujući licenciju mojih odgovora.</span></label>
-<label class="check"><input type="checkbox" id="accept-age"> <span data-i18n="gateAge">Imam najmanje 16 godina.</span></label>
+<label class="check"><input type="checkbox" id="accept-participation"> <span data-i18n="gateParticipation">Pristajem na bilježenje i korištenje mojih odgovora kako je opisano u</span> <a data-doc="participation" href="/legal/participation.hr" target="_blank" rel="noopener"><span data-i18n="participationLink">izjavi o sudjelovanju</span> <span class="version" data-version="participation"></span></a>.</label>
+<label class="check"><input type="checkbox" id="accept-age"> <span data-i18n="gateAge">Imam najmanje 18 godina.</span></label>
 <div class="toolbar"><button id="accept" type="submit" disabled data-i18n="accept">Prihvaćam</button><button id="gate-logout" type="button" data-i18n="logout">Odjava</button><button id="gate-erase" type="button" data-i18n="gateErase">Izbriši račun</button></div>
 </form>
 </section>
@@ -63,8 +64,8 @@
 <ul id="me-consents"></ul>
 <p><button id="download" type="button" data-i18n="download">Preuzmi moje podatke</button></p>
 <h3 data-i18n="eraseTitle">Izbriši moj račun</h3>
-<p data-i18n="eraseWhat">Brisanjem se odmah uklanjaju veza s Vašim računom za prijavu, adresa e-pošte, vremena odgovora i popis prikazanih primjera. Račun za prijavu (s imenom i prezimenom) brišemo u roku od 30 dana.</p>
-<p data-i18n="eraseKeeps">Vaši odgovori ostaju u skupu podataka pod nasumičnom oznakom koja se više ne može povezati s Vama.</p>
+<p data-i18n="eraseWhat">Brisanjem se odmah uklanjaju veza s Vašim računom za prijavu, adresa e-pošte, vremena odgovora i popis prikazanih primjera. Oznaku računa za prijavu čuvamo samo dok taj račun (s imenom i prezimenom) ne izbrišemo, najdulje 30 dana.</p>
+<p data-i18n="eraseKeeps">Vaši odgovori ostaju u skupu podataka pod novom nasumičnom oznakom koja se ne može povezati ni s Vama ni s Vašom dosadašnjom oznakom; od vremena odgovora čuva se samo dan. Ako je profil blokiran ili izdvojen, odgovori se brišu.</p>
 <form id="erase"><label><span id="erase-prompt"></span> <input id="erase-confirm" autocomplete="off"></label><button id="erase-button" type="submit" class="danger" data-i18n="eraseButton">Izbriši moj račun</button></form>
 </section>
 
@@ -79,9 +80,9 @@
 <div class="table"><table><thead><tr><th data-i18n="colAnnotator">Oznaka / e-pošta</th><th data-i18n="colStatus">Status</th><th data-i18n="colJudgments">Odgovori</th><th data-i18n="colSeen">Zadnji put</th><th data-i18n="colActions">Radnje</th></tr></thead><tbody id="annotators"></tbody></table></div>
 <button id="annotators-more" type="button" hidden data-i18n="more">Učitaj još</button>
 <h3 data-i18n="erasuresTitle">Zahtjevi za brisanje</h3>
-<p class="muted" data-i18n="erasuresHelp">Izbrišite korisnika u konzoli za administraciju Keycloaka, zatim potvrdite ovdje. Rok je 30 dana od zahtjeva.</p>
+<p class="muted" data-i18n="erasuresHelp">U konzoli za administraciju Keycloaka potražite korisnika po ID-u i izbrišite ga, zatim potvrdite ovdje. Rok je 30 dana od zahtjeva.</p>
 <ul id="erasures"></ul>
 </section>
 </main>
-<footer><nav aria-label="Pravne informacije" data-i18n-aria="legalMenu"><a data-doc="privacy" href="/legal/privacy.hr" data-i18n="footerPrivacy">Privatnost</a> · <a data-doc="terms" href="/legal/terms.hr" data-i18n="footerTerms">Uvjeti i licencija</a> · <a data-doc="storage" href="/legal/storage.hr" data-i18n="footerStorage">Kolačići i pohrana</a> · <a href="/static/guidelines.hr.html" data-guidelines data-i18n="guidelines">Smjernice za označavanje</a></nav><p id="footer-version" class="muted"></p></footer>
+<footer><nav aria-label="Pravne informacije" data-i18n-aria="legalMenu"><a data-doc="privacy" href="/legal/privacy.hr" data-i18n="footerPrivacy">Privatnost</a> · <a data-doc="terms" href="/legal/terms.hr" data-i18n="footerTerms">Uvjeti i licencija</a> · <a data-doc="participation" href="/legal/participation.hr" data-i18n="footerParticipation">Sudjelovanje</a> · <a data-doc="storage" href="/legal/storage.hr" data-i18n="footerStorage">Kolačići i pohrana</a> · <a href="/static/guidelines.hr.html" data-guidelines data-i18n="guidelines">Smjernice za označavanje</a></nav><p id="footer-version" class="muted"></p></footer>
 </body></html>

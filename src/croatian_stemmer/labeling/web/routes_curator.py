@@ -269,9 +269,9 @@ def register(app, ctx):
         return {"items": [{"id": e.id, "annotator_id": str(e.annotator_id), "requested_at": e.requested_at.isoformat(),
                            "age_days": age.days,
                            "keycloak_deleted_at": e.keycloak_deleted_at.isoformat() if e.keycloak_deleted_at else None,
-                           # The Keycloak user the curator must delete; gone once completed.
-                           "preferred_username": (details or {}).get("preferred_username"),
-                           "email": (details or {}).get("email")} for e, details, age in rows]}
+                           # The Keycloak user (id) the curator must delete; gone once completed.
+                           "keycloak_user_id": (details or {}).get("keycloak_user_id"),
+                           "reason": (details or {}).get("reason")} for e, details, age in rows]}
 
     @app.post("/api/admin/erasures/{erasure_id}/complete")
     async def complete_erasure(erasure_id: int, caller: Caller = Depends(curator), db=Depends(session)):

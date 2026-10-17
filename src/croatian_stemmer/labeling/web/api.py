@@ -4,28 +4,30 @@ Every route declares one dependency that states who may call it:
   public            no token
   ctx.annotator_any a signed-in annotator, including a blocked one (data-subject rights only)
   ctx.annotator     a signed-in annotator that is not blocked
-  ctx.consented     an annotator who accepted the current privacy notice and terms
+  ctx.consented     an annotator who accepted the current privacy notice, terms and
+                    participation statement, confirming the minimum age
   ctx.curator       an annotator whose token carries the curator group/role
 Routes live in routes_public.py, routes_annotator.py and routes_curator.py.
 """
 
 import asyncio
-import hashlib
 import logging
 import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, select, update
+from sqlalchemy import exists, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from . import routes_annotator, routes_curator, routes_public
 from .auth import Authenticator
 from .common import Caller, failure
-from .config import Settings
+from .config import MINIMUM_AGE, Settings
+from .erasure import erase_profile, pending_erasure
 from .legal import LegalDocuments
 from .limits import Limiter
 from .models import Annotator, Consent, ErasureRequest, Setting
@@ -102,8 +104,13 @@ class Context:
         self._accepting = None
 
     def consent_missing(self):
-        return failure(403, "consent_required", required={"privacy": self.settings.privacy_version,
-                                                           "terms": self.settings.terms_version})
+        return failure(403, "consent_required", required=self.settings.required_documents)
+
+    def consent_complete(self, rows) -> bool:
+        """rows: (document, version, age_threshold). Every required document at its
+        configured version, each accepted with the current minimum age."""
+        accepted = {(document, version) for document, version, age in rows if age == MINIMUM_AGE}
+        return set(self.settings.required_documents.items()) <= accepted
 
     def _build_dependencies(self):
         sessions, auth, settings = self.sessions, self.auth, self.settings
@@ -121,21 +128,18 @@ class Context:
                 if row is None:
                     # An erased account keeps its Keycloak user for up to 30 days;
                     # signing in again meanwhile must not create a new profile.
-                    digest = hashlib.sha256(principal.subject.encode()).hexdigest()
-                    pending = (await db.execute(select(func.count()).select_from(ErasureRequest).where(
-                        ErasureRequest.subject_sha256 == digest,
-                        ErasureRequest.keycloak_deleted_at.is_(None)))).scalar_one()
+                    pending = await pending_erasure(db, principal.subject)
                     if pending:
-                        raise failure(409, "erasure_pending")
+                        raise pending
                     await db.execute(insert(Annotator).values(
                         subject=principal.subject, email=principal.email,
                         email_verified=principal.email_verified).on_conflict_do_nothing(index_elements=[Annotator.subject]))
                     row = (await db.execute(select(Annotator.id, Annotator.status, Annotator.last_seen_at,
                                                    func.now() - Annotator.last_seen_at)
                                             .where(Annotator.subject == principal.subject))).one()
-                elif row[3].total_seconds() > 600:
-                    await db.execute(update(Annotator).where(Annotator.id == row[0]).values(
-                        last_seen_at=func.now(), email=principal.email, email_verified=principal.email_verified))
+                elif row[3].total_seconds() > 600 and not await refresh_profile(db, row[0], principal):
+                    # Erased since the SELECT above: never write the email back or go on as a stale caller.
+                    raise await pending_erasure(db, principal.subject) or failure(409, "erasure_pending")
             return Caller(id=row[0], status=row[1], principal=principal)
 
         async def annotator(caller: Caller = Depends(annotator_any)) -> Caller:
@@ -145,9 +149,9 @@ class Context:
 
         async def consented(caller: Caller = Depends(annotator), db=Depends(session)) -> Caller:
             async with db.begin():
-                accepted = set((await db.execute(select(Consent.document, Consent.version).where(
-                    Consent.annotator_id == caller.id))).all())
-            if not {("privacy", settings.privacy_version), ("terms", settings.terms_version)} <= accepted:
+                rows = (await db.execute(select(Consent.document, Consent.version, Consent.age_threshold).where(
+                    Consent.annotator_id == caller.id))).all()
+            if not self.consent_complete(rows):
                 raise self.consent_missing()
             return caller
 
@@ -158,6 +162,47 @@ class Context:
 
         self.session, self.annotator_any, self.annotator = session, annotator_any, annotator
         self.consented, self.curator = consented, curator
+
+
+async def refresh_profile(db, annotator_id, principal) -> bool:
+    """Refresh last_seen_at and the email from the token, only while the row still
+    belongs to this subject and is not erased (an erasure committed after the
+    caller's SELECT wins). False when no row was updated."""
+    result = await db.execute(
+        update(Annotator).where(Annotator.id == annotator_id, Annotator.subject == principal.subject,
+                                Annotator.status != "erased")
+        .values(last_seen_at=func.now(), email=principal.email, email_verified=principal.email_verified)
+        .execution_options(synchronize_session=False))
+    return result.rowcount == 1
+
+
+async def expire_unconsented_profiles(ctx, now: datetime | None = None, days=30):
+    """Erase active profiles that never accepted the gate within `days` of their creation
+    (storage limitation; the privacy notice states the 30 days). Each goes through the
+    erasure path with no actor, which queues the Keycloak user for the curator.
+    `now` is the clock (the database's when None); returns the erased ids."""
+    cutoff = func.now() - func.make_interval(0, 0, 0, days) if now is None else now - timedelta(days=days)
+    due = (Annotator.status == "active", Annotator.created_at < cutoff)
+    async with ctx.sessions() as db:
+        async with db.begin():
+            candidates = (await db.execute(select(Annotator.id).where(
+                *due, ~exists().where(Consent.annotator_id == Annotator.id)))).scalars().all()
+        erased = []
+        for annotator_id in candidates:
+            async with db.begin():
+                person = (await db.execute(select(Annotator).where(Annotator.id == annotator_id, *due)
+                                           .with_for_update())).scalar_one_or_none()
+                # Recheck with the row locked: a consent committed meanwhile keeps the profile
+                # (the consent route share-locks this row while it writes).
+                if person is None or (await db.execute(select(exists().where(
+                        Consent.annotator_id == annotator_id)))).scalar_one():
+                    continue
+                await erase_profile(db, person, actor_id=None,
+                                    details={"keycloak_user_id": person.subject, "reason": "unconsented_expiry"})
+                erased.append(annotator_id)
+    if erased:
+        log.info("erased %d profiles that never accepted the gate within %d days", len(erased), days)
+    return erased
 
 
 async def warn_overdue_erasures(ctx, days=14):
@@ -177,18 +222,20 @@ def create_app(settings: Settings) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app):
-        async def watch():
+        async def every(seconds, job, name):
             while True:
                 try:
-                    await warn_overdue_erasures(ctx)
-                except Exception:  # never let the reminder take the app down
-                    log.exception("erasure reminder failed")
-                await asyncio.sleep(6 * 3600)
-        task = asyncio.create_task(watch())
+                    await job(ctx)
+                except Exception:  # never let a background job take the app down
+                    log.exception("%s failed", name)
+                await asyncio.sleep(seconds)
+        tasks = [asyncio.create_task(every(6 * 3600, warn_overdue_erasures, "erasure reminder")),
+                 asyncio.create_task(every(24 * 3600, expire_unconsented_profiles, "unconsented profile expiry"))]
         try:
             yield
         finally:
-            task.cancel()
+            for task in tasks:
+                task.cancel()
             await ctx.engine.dispose()
 
     # No interactive docs or schema on a public site: they list every route and model.

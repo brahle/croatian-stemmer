@@ -4,19 +4,20 @@ Nothing here returns another annotator's answers or identity; vote counts appear
 only as corpus-level totals.
 """
 
-import hashlib
 from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID
 
 from fastapi import Depends, Query
 from fastapi.responses import JSONResponse
-from sqlalchemy import and_, case, delete, func, or_, select, text, update
+from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 
 from .common import Caller, corpus_json, definite_votes, failure, judgment_json, visible_corpus
-from .models import AdminEvent, Annotator, Assignment, Consent, Corpus, ErasureRequest, Item, Judgment
+from .config import MINIMUM_AGE
+from .erasure import erase_profile, still_present
+from .models import Annotator, Assignment, Consent, Corpus, ErasureRequest, Item, Judgment
 from .requests import AnswerRequest, Candidate, ConsentRequest, EraseRequest
 
 KINDS = ("pair", "lemma", "stem")
@@ -58,14 +59,13 @@ def register(app, ctx):
                                           .where(Judgment.annotator_id == caller.id))).scalar_one()
             items = (await db.execute(select(func.count()).select_from(Assignment).where(
                 Assignment.annotator_id == caller.id, Assignment.current_revision > 0))).scalar_one()
-        required = {"privacy": settings.privacy_version, "terms": settings.terms_version}
-        latest = {"privacy": None, "terms": None}
+        required = settings.required_documents
+        latest = {document: None for document in required}
         for row in consents:
             latest[row.document] = row.version
-        accepted = {(row.document, row.version) for row in consents}
         return {"annotator_id": str(caller.id), "status": caller.status, "curator": caller.curator,
                 "consent": latest, "required": required,
-                "consented": all((doc, version) in accepted for doc, version in required.items()),
+                "consented": ctx.consent_complete((row.document, row.version, row.age_threshold) for row in consents),
                 "consents": [{"document": row.document, "version": row.version, "locale": row.locale,
                               "accepted_at": row.accepted_at.isoformat()} for row in consents],
                 "counts": {"judgments": judgments, "items_labelled": items}}
@@ -73,13 +73,15 @@ def register(app, ctx):
     @app.post("/api/me/consent")
     async def consent(data: ConsentRequest, caller: Caller = Depends(annotator), db=Depends(session)):
         limiter.take("account", caller.id)
-        required = {"privacy": settings.privacy_version, "terms": settings.terms_version}
-        if (data.privacy_version, data.terms_version) != (required["privacy"], required["terms"]):
+        required = settings.required_documents
+        if (data.privacy_version, data.terms_version, data.participation_version) != tuple(required.values()):
             raise failure(409, "consent_version_mismatch", required=required)
         async with db.begin():
+            # Holds off a concurrent erasure (e.g. the 30-day expiry) until the consent is in.
+            await still_present(db, caller)
             await db.execute(insert(Consent).values([
                 {"annotator_id": caller.id, "document": document, "version": version, "locale": data.locale,
-                 "age_confirmed": data.age_confirmed, "ui_version": data.ui_version}
+                 "age_confirmed": data.age_confirmed, "age_threshold": MINIMUM_AGE, "ui_version": data.ui_version}
                 for document, version in required.items()]).on_conflict_do_nothing(
                 index_elements=[Consent.annotator_id, Consent.document, Consent.version]))
         return {"consented": True, "required": required}
@@ -106,7 +108,8 @@ def register(app, ctx):
                           "created_at": iso(person.created_at), "last_seen_at": iso(person.last_seen_at),
                           "erased_at": iso(person.erased_at)},
             "consents": [{"document": c.document, "version": c.version, "locale": c.locale,
-                          "age_confirmed": c.age_confirmed, "ui_version": c.ui_version,
+                          "age_confirmed": c.age_confirmed, "age_threshold": c.age_threshold,
+                          "ui_version": c.ui_version,
                           "accepted_at": iso(c.accepted_at)} for c in consents],
             "judgments": [{"id": str(j.id), "corpus_id": str(j.corpus_id), "item_id": str(j.item_id),
                            "revision": j.revision, "answer": j.answer, "lemma": j.lemma,
@@ -127,23 +130,12 @@ def register(app, ctx):
     @app.post("/api/me/erase")
     async def erase(data: EraseRequest, caller: Caller = Depends(annotator_any), db=Depends(session)):
         limiter.take("account", caller.id)
-        principal = caller.principal
         async with db.begin():
             person = (await db.execute(select(Annotator).where(Annotator.id == caller.id).with_for_update())).scalar_one()
             if person.status == "erased":
                 raise failure(409, "erasure_pending")
-            await db.execute(insert(ErasureRequest).values(
-                annotator_id=caller.id, subject_sha256=hashlib.sha256(principal.subject.encode()).hexdigest(),
-                requested_at=func.now(), app_erased_at=func.now()))
-            # What the curator needs to find the Keycloak user; deleted on completion.
-            db.add(AdminEvent(actor_id=caller.id, kind="erasure.requested", target=str(caller.id),
-                              details={"preferred_username": principal.username,
-                                       "email": principal.email or person.email}))
-            await db.execute(update(Annotator).where(Annotator.id == caller.id).values(
-                subject=None, email=None, email_verified=False, status="erased", erased_at=func.now()))
-            await db.execute(delete(Assignment).where(Assignment.annotator_id == caller.id))
-            await db.execute(update(Judgment).where(Judgment.annotator_id == caller.id,
-                                                    Judgment.elapsed_ms.is_not(None)).values(elapsed_ms=None))
+            # The curator finds the Keycloak user by its id (the token's sub); cleared on completion.
+            await erase_profile(db, person, actor_id=caller.id, details={"keycloak_user_id": person.subject})
         return {"erased": True, "keycloak_deletion": "pending"}
 
     # ---- corpora and labeling ----------------------------------------------
@@ -195,6 +187,7 @@ def register(app, ctx):
                         db=Depends(session)):
         limiter.take("read", caller.id)
         async with db.begin():
+            await still_present(db, caller)
             await visible_corpus(db, caller, corpus_id, labeling=True)
             votes = definite_votes(corpus_id)
             count = func.coalesce(votes.c.n, 0)
@@ -260,6 +253,7 @@ def register(app, ctx):
             raise failure(429, "daily_cap_reached")
         try:
             async with db.begin():
+                await still_present(db, caller)
                 item = (await db.execute(select(Item).where(Item.corpus_id == corpus_id, Item.id == item_id))).scalar_one_or_none()
                 if item is None:
                     raise failure(404, "not_found")

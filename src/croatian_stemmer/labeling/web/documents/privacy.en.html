@@ -1,15 +1,13 @@
 <!doctype html>
-<!-- DRAFT. This text must be reviewed by the owner (controller) and a lawyer before publication. It is not legal advice.
-     The Croatian version (privacy.hr.html) and this one must say the same thing and carry the same version.
-     Points for review: the legal bases in section 3; the transfer mechanism in section 5 (verify that
-     Google LLC is listed as certified on the EU-U.S. Data Privacy Framework list before launch); whether
-     judgments kept under an erased pseudonym are anonymous (sections 6 and 7); the missing postal
-     address of the controller (section 1). -->
+<!-- The controller (owner) reviews and publishes this text; there is no external legal review
+     (owner decision 5ee0e7ef). The Croatian version (privacy.hr.html) and this one must say the same
+     thing and carry the same version. The owner checks that Google LLC is listed as certified on the
+     EU-U.S. Data Privacy Framework list (section 5). -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.1">
+<meta name="document-version" content="1.2">
 <title>Privacy notice — Croatian lemma labeling</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -17,7 +15,7 @@
 <main>
 <p class="crumbs"><a href="/?lang=en">Back to labeling</a> · <a href="/legal/privacy.hr" hreflang="hr" lang="hr">Hrvatski</a></p>
 <h1>Privacy notice</h1>
-<p class="meta">Version 1.1 (17 October 2026). This notice applies to the site {{app_host}}, where volunteers label Croatian words (lemmas, word pairs and stems) for an open language dataset.</p>
+<p class="meta">Version 1.2 (18 October 2026). This notice applies to the site {{app_host}}, where volunteers label Croatian words (lemmas, word pairs and stems) for an open language dataset.</p>
 
 <p>This notice explains which personal data we process when you take part, why, on which legal basis, how long we keep it and what your rights are under the General Data Protection Regulation (Regulation (EU) 2016/679, "GDPR").</p>
 
@@ -30,12 +28,12 @@
 <h2 id="data">2. What we process and where it comes from</h2>
 <h3>Signing in with a Google account</h3>
 <p>You sign in with your Google account through a sign-in server (Keycloak) at {{identity_host}}. When you sign in, Google gives us: your Google account identifier, your email address, whether that address is verified, and your first and last name. The sign-in server stores these in your user account there. Of these, the labeling application stores only the technical identifier of your sign-in account and your email address (and the address only if it is verified).</p>
-<p>The application creates this profile the first time you sign in, before you accept this notice and the terms, because it needs it to show you the acceptance step and to let you erase the account from there ("Erase account"). Until you accept, it records nothing else about you and you cannot label.</p>
+<p>The application creates this profile the first time you sign in, before you accept the terms and the participation statement, because it needs it to show you the acceptance step and to let you erase the account from there ("Erase account"). Until you accept, it records nothing else about you and you cannot label. If you never accept, the application erases the profile 30 days after your first sign-in (section 6).</p>
 <h3>Data you enter or that arises while you take part</h3>
 <ul>
 <li>Your answers (labels): the answer to the question, a lemma you type, the irregular-form flag, the revision number of the answer and when it was saved.</li>
 <li>The time you took to answer each item (in milliseconds), and which items were shown to you, when and how many times.</li>
-<li>Your acceptance of this notice and of the terms of participation: document version, time of acceptance, interface language, application version and your confirmation that you are at least 16 years old.</li>
+<li>Your acceptance of the terms of participation and the participation statement, and the version of this notice you were shown: document version, time of acceptance, interface language, application version and your confirmation that you are at least 18 years old.</li>
 <li>A random participant identifier (pseudonym) assigned to your profile. All your answers are linked to that identifier, not to your name or email address.</li>
 <li>The status of your profile (active, set aside, blocked or erased) and, if we change it, the reason.</li>
 </ul>
@@ -46,7 +44,7 @@
 <h2 id="purposes">3. Purposes and legal bases</h2>
 <ul>
 <li><strong>Creating your profile when you first sign in, before you accept</strong>: steps taken at your request before you take part under the terms of participation (Article 6(1)(b) GDPR).</li>
-<li><strong>Running your profile and recording your answers to build the language dataset</strong>: your consent (Article 6(1)(a) GDPR), given when you start. You can withdraw it at any time by erasing your profile (section 7).</li>
+<li><strong>Running your profile and recording your answers to build the language dataset</strong>: your consent (Article 6(1)(a) GDPR), which you give separately when you start, by accepting the <a href="/legal/participation.en">participation statement</a>. You can withdraw it at any time by erasing your profile (section 7).</li>
 <li><strong>Assessing how reliable answers are, detecting abuse, rate limiting and blocking accounts</strong>: legitimate interest (Article 6(1)(f)) in keeping a public research dataset accurate and protected from fake or automated entries. In weighing this interest we took into account that these assessments have no effect outside this site and that the data does not leave the controller.</li>
 <li><strong>Security logs at the network edge</strong>: legitimate interest (Article 6(1)(f)) in protecting the service from attacks.</li>
 <li><strong>Keeping records of consent</strong>: the legal obligation to be able to demonstrate consent (Article 7(1) together with Article 6(1)(c)).</li>
@@ -56,7 +54,7 @@
 <ul>
 <li><strong>Google</strong> (Google Ireland Limited and Google LLC) as the sign-in provider. Google is an independent controller for your Google account; its privacy policy is at <a href="https://policies.google.com/privacy?hl=en" rel="noopener noreferrer">policies.google.com/privacy</a>.</li>
 <li><strong>The hosting provider</strong> that runs the application, its database, the sign-in server and the reverse proxy: {{hosting_summary}}.</li>
-<li><strong>The public</strong>, when we publish the dataset: published files contain the item texts and the answers, linked at most to a random participant identifier, never to a name or email address.</li>
+<li><strong>The public</strong>, when we publish the dataset: published files contain the item texts and only aggregated labels (for each item, the result combined from all answers to it), never a participant identifier, name or email address.</li>
 </ul>
 <p>We use no analytics or advertising services and have no other processors.</p>
 
@@ -65,11 +63,11 @@
 
 <h2 id="retention">6. How long we keep data</h2>
 <ul>
-<li>Your profile in the application (sign-in account identifier, email address): until you erase your profile. This also applies if you sign in but never accept; you can erase the profile from the acceptance screen.</li>
-<li>Your user account on the sign-in server (first and last name, email address): until you erase your profile; after an erasure request we delete it within 30 days.</li>
-<li>Answers: indefinitely, as part of the dataset, under the random participant identifier. Erasing your profile permanently severs that identifier from your identity.</li>
+<li>Your profile in the application (sign-in account identifier, email address): until you erase your profile. If you sign in but never accept the terms and the participation statement, the application erases the profile automatically 30 days after your first sign-in; you can erase it earlier from the acceptance screen.</li>
+<li>Your user account on the sign-in server (first and last name, email address): until you erase your profile; after an erasure request, including the automatic erasure above, we delete it within 30 days. Until then the application keeps the identifier of that account with the erasure request, only so that we can find and delete it.</li>
+<li>Answers: indefinitely, as part of the dataset. When you erase your profile, they are moved to a new random identifier that is linked neither to you nor to your previous identifier, and only the day of each answer is kept, not the time. If your profile is blocked or set aside when you erase it, your answers are deleted instead.</li>
 <li>Time taken per answer and the list of items shown: until you erase your profile.</li>
-<li>Consent records: under the random identifier, for as long as we keep the answers given under that consent.</li>
+<li>Consent records: for as long as we keep the answers given under that consent; on erasure they move with the answers to the new identifier, with only the day kept (or are deleted with them).</li>
 <li>Database backups: {{backup_retention}}. Data erased from the application disappears from backups after that period.</li>
 <li>Reverse proxy records at the network edge: {{edge_log_retention}}.</li>
 </ul>
@@ -78,9 +76,9 @@
 <ul>
 <li><strong>Access and portability</strong>: on the "My data" page you can download everything linked to your profile yourself, in a machine-readable format (JSON).</li>
 <li><strong>Rectification</strong>: you can change your answers in the application; for anything else, write to us.</li>
-<li><strong>Erasure</strong>: on the "My data" page you can erase your profile yourself. The application immediately deletes your sign-in account identifier, email address, answer times and the list of items shown to you. We delete your user account on the sign-in server (with your first and last name) within 30 days of the request; until then, signing in again shows a notice instead of creating a new profile. Your answers and consent records stay in the dataset under a random identifier that can no longer be linked to you.</li>
+<li><strong>Erasure</strong>: on the "My data" page you can erase your profile yourself. The application immediately deletes your email address, answer times and the list of items shown to you, and removes the link between your profile and your sign-in account. We delete your user account on the sign-in server (with your first and last name) within 30 days of the request; until then the application keeps that account's identifier with the erasure request, and signing in again shows a notice instead of creating a new profile. Your answers and consent records stay in the dataset under a new random identifier, with only the day of each answer, that can be linked neither to you nor to your previous identifier; if your profile is blocked or set aside at that moment, they are deleted instead.</li>
 <li><strong>Restriction and objection</strong>: write to the address in section 1.</li>
-<li><strong>Withdrawing consent</strong>: at any time, by erasing your profile. Withdrawal does not affect the lawfulness of processing before it.</li>
+<li><strong>Withdrawing consent</strong>: at any time, by erasing your profile (see the participation statement). Withdrawal does not affect the lawfulness of processing before it.</li>
 <li><strong>Complaint to a supervisory authority</strong>: the Croatian Personal Data Protection Agency (Agencija za zaštitu osobnih podataka, AZOP), Selska cesta 136, 10000 Zagreb, Croatia, <a href="mailto:azop@azop.hr">azop@azop.hr</a>, <a href="https://azop.hr" rel="noopener noreferrer">azop.hr</a>. You may also complain to the supervisory authority of the member state where you live or work.</li>
 </ul>
 <p>We answer requests without undue delay and at the latest within one month.</p>
@@ -88,13 +86,13 @@
 <h2 id="automated">8. Automated decision-making</h2>
 <p>We make no decisions based solely on automated processing that have legal or similarly significant effects on you (Article 22 GDPR). The application may assess how reliable answers are (for example by comparing them with items whose answer is known), give them more or less weight in the dataset accordingly, and temporarily disregard a profile's answers or limit its participation. These assessments have no effect outside this site. If you disagree with a decision about your profile, write to the address in section 1 and a person will review it.</p>
 
-<h2 id="children">9. Children</h2>
-<p>The service is for people aged 16 and over and is not directed at children. When you start we ask you to confirm that you are at least 16; we do not collect your date of birth. Profiles of younger people are erased as soon as we learn of them.</p>
+<h2 id="children">9. Minimum age</h2>
+<p>The service is for people aged 18 and over and is not directed at children or minors. When you start we ask you to confirm that you are at least 18; we do not collect your date of birth. Profiles of younger people are erased as soon as we learn of them.</p>
 
 <h2 id="changes">10. Changes to this notice</h2>
-<p>The notice carries a version number and a date at the top. When we publish a new version, we will ask you to accept it again before your next answer. Records of earlier accepted versions are kept.</p>
+<p>The notice carries a version number and a date at the top. When we publish a new version, we will show it to you and ask you to confirm the acceptance step again before your next answer. Records of earlier versions are kept.</p>
 
-<p class="meta">Related: <a href="/legal/terms.en">Terms of participation and licence</a> · <a href="/legal/storage.en">Cookies and browser storage</a></p>
+<p class="meta">Related: <a href="/legal/terms.en">Terms of participation and licence</a> · <a href="/legal/participation.en">Participation statement</a> · <a href="/legal/storage.en">Cookies and browser storage</a></p>
 </main>
 </body>
 </html>

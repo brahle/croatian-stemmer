@@ -19,8 +19,11 @@ EMAIL = re.compile(r"^[^@\s<>\"']+@[^@\s<>\"']+\.[^@\s<>\"']+$")
 IDP_HINT = re.compile(r"^[A-Za-z0-9._-]{0,64}$")
 # The legal documents shipped with this version declare these versions
 # (<meta name="document-version">); a deployment may pin them explicitly.
-DEFAULT_PRIVACY_VERSION = "1.1"
-DEFAULT_TERMS_VERSION = "1.0"
+DEFAULT_PRIVACY_VERSION = "1.2"
+DEFAULT_TERMS_VERSION = "1.1"
+DEFAULT_PARTICIPATION_VERSION = "1.0"
+# The minimum age people confirm at the gate; stored on every consent row.
+MINIMUM_AGE = 18
 
 
 def package_version() -> str:
@@ -70,6 +73,7 @@ class Settings:
     idp_hint: str = ""
     privacy_version: str = DEFAULT_PRIVACY_VERSION
     terms_version: str = DEFAULT_TERMS_VERSION
+    participation_version: str = DEFAULT_PARTICIPATION_VERSION
     controller_name: str = ""
     controller_address: str = ""
     controller_email: str = ""
@@ -101,7 +105,7 @@ class Settings:
             raise ValueError("LABELING_ANNOTATOR_POLICY must be open or group")
         if not IDP_HINT.match(self.idp_hint):
             raise ValueError("LABELING_OIDC_IDP_HINT must be an identity provider alias")
-        for name in ("privacy_version", "terms_version", "ui_version"):
+        for name in ("privacy_version", "terms_version", "participation_version", "ui_version"):
             if not VERSION.match(getattr(self, name)):
                 raise ValueError(f"{name} must match {VERSION.pattern}")
         # The privacy notice must name the controller and a contact; the postal
@@ -137,6 +141,7 @@ class Settings:
                    idp_hint=get("LABELING_OIDC_IDP_HINT", ""),
                    privacy_version=get("LABELING_PRIVACY_VERSION", DEFAULT_PRIVACY_VERSION),
                    terms_version=get("LABELING_TERMS_VERSION", DEFAULT_TERMS_VERSION),
+                   participation_version=get("LABELING_PARTICIPATION_VERSION", DEFAULT_PARTICIPATION_VERSION),
                    controller_name=get("LABELING_CONTROLLER_NAME", ""),
                    controller_address=get("LABELING_CONTROLLER_ADDRESS", ""),
                    controller_email=get("LABELING_CONTROLLER_EMAIL", ""),
@@ -153,10 +158,16 @@ class Settings:
         return f"{url.scheme}://{url.netloc}"
 
     @property
+    def required_documents(self):
+        """The document versions everyone must have accepted before contributing."""
+        return {"privacy": self.privacy_version, "terms": self.terms_version,
+                "participation": self.participation_version}
+
+    @property
     def browser(self):
         """Public, static part of GET /api/config (no secrets)."""
         base, realm = self.issuer.rsplit("/realms/", 1)
         return {"url": base, "realm": realm, "clientId": self.client_id, "idpHint": self.idp_hint,
                 "uiVersion": self.ui_version,
-                "legal": {"privacy": self.privacy_version, "terms": self.terms_version},
+                "legal": self.required_documents, "minimumAge": MINIMUM_AGE,
                 "controller": {"name": self.controller_name}, "locales": ["hr", "en"]}

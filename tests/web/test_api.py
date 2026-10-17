@@ -9,7 +9,7 @@ pytest.importorskip("sqlalchemy")
 pytest.importorskip("asyncpg")
 from croatian_stemmer.labeling.evaluation import resolve
 from croatian_stemmer.labeling.schema import read_tsv
-from labeling_support import answer, answer_path, candidates
+from labeling_support import REQUIRED, answer, answer_path, candidates
 
 pytestmark = pytest.mark.asyncio
 
@@ -371,8 +371,8 @@ async def test_unverified_email_is_not_stored(api):
 async def test_me_reports_consent_and_counts(api):
     rows = await api.imported()
     me = (await api.request("GET", "/api/me", "alice")).json()
-    assert me["consented"] is False and me["consent"] == {"privacy": None, "terms": None}
-    assert me["curator"] is False and me["required"] == {"privacy": "1.1", "terms": "1.0"}
+    assert me["consented"] is False and me["consent"] == {"privacy": None, "terms": None, "participation": None}
+    assert me["curator"] is False and me["required"] == REQUIRED
     await api.consent("alice")
     assert (await api.request("POST", answer_path(rows[0]), "alice", json=answer())).status_code == 200
     me = (await api.request("GET", "/api/me", "alice")).json()

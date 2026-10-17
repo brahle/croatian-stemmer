@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator, model_validator
 
 from ..schema import Annotation, UPOS, word
+from .config import MINIMUM_AGE
 
 
 class Candidate(BaseModel):
@@ -111,15 +112,25 @@ class ConsentRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     privacy_version: StrictStr = Field(pattern=VERSION)
     terms_version: StrictStr = Field(pattern=VERSION)
+    participation_version: StrictStr = Field(pattern=VERSION)
     age_confirmed: StrictBool
+    # The age the person confirmed; a client still asking for 16 is refused.
+    age_threshold: StrictInt
     locale: Literal["hr", "en"]
     ui_version: StrictStr = Field(pattern=VERSION)
 
     @field_validator("age_confirmed")
     @classmethod
-    def adult(cls, value):
+    def confirmed(cls, value):
         if value is not True:
-            raise ValueError("participants must confirm they are at least 16")
+            raise ValueError(f"participants must confirm they are at least {MINIMUM_AGE}")
+        return value
+
+    @field_validator("age_threshold")
+    @classmethod
+    def adult(cls, value):
+        if value != MINIMUM_AGE:
+            raise ValueError(f"the minimum age is {MINIMUM_AGE}")
         return value
 
 

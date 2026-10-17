@@ -5,7 +5,8 @@ import pytest
 pytest.importorskip("fastapi")
 from labeling_support import make_settings
 
-DOCS = [f"{doc}.{lang}" for doc in ("privacy", "terms", "storage") for lang in ("hr", "en")]
+DOCS = [f"{doc}.{lang}" for doc in ("privacy", "terms", "participation", "storage") for lang in ("hr", "en")]
+VERSIONS = {"privacy": "1.2", "terms": "1.1", "participation": "1.0", "storage": "1.1"}
 
 
 def app_client(**changes):
@@ -26,7 +27,7 @@ async def test_documents_are_served_with_controller_values(name):
     assert "{{" not in body and "}}" not in body
     assert "Ana &lt;Example&gt; &amp; Co" in body and "<Example>" not in body
     assert "privacy@example.org" in body
-    expected = "1.1" if name.startswith(("storage", "privacy")) else "1.0"
+    expected = VERSIONS[name.split(".")[0]]
     assert '<meta name="document-version" content="%s">' % expected in body
     assert 'lang="%s"' % name.rsplit(".", 1)[1] in body
     assert "<script" not in body and "style=" not in body
@@ -37,6 +38,19 @@ async def test_documents_are_served_with_controller_values(name):
     if name.startswith("storage"):
         # The app host is printed in the storage notice (the origin whose storage is described).
         assert re.search(r"\blabels\.example\.org\b", body) and "kc-callback-" in body
+
+
+@pytest.mark.parametrize("name", [n for n in DOCS if not n.startswith("storage")])
+@pytest.mark.asyncio
+async def test_documents_state_age_18_and_the_new_identifier_on_erasure(name):
+    async with app_client() as client:
+        body = (await client.get("/legal/" + name)).text
+    assert re.search(r"\b18\b", body) and not re.search(r"\b16\b", body)
+    if not name.startswith("terms"):
+        # Erasure keeps the answers under a new random identifier (privacy 1.2, participation 1.0).
+        assert ("novom nasumičnom oznakom" if name.endswith(".hr") else "new random identifier") in body
+    if name.startswith("privacy"):
+        assert ("30 dana nakon Vaše prve prijave" if name.endswith(".hr") else "30 days after your first sign-in") in body
 
 
 @pytest.mark.parametrize("lang", ["hr", "en"])
@@ -57,7 +71,8 @@ async def test_unknown_documents_are_404():
         assert (await client.get("/static/guidelines.hr.html")).status_code == 200
 
 
-@pytest.mark.parametrize("changes", [{"privacy_version": "1.0"}, {"terms_version": "2.0"}])
+@pytest.mark.parametrize("changes", [{"privacy_version": "1.1"}, {"terms_version": "1.0"},
+                                     {"participation_version": "2.0"}])
 def test_version_guard_refuses_mismatched_configuration(changes):
     from croatian_stemmer.labeling.web.api import create_app
     with pytest.raises(ValueError, match="does not match"):
@@ -92,7 +107,8 @@ def test_guard_refuses_unknown_placeholders(tmp_path, monkeypatch):
 async def test_public_config_names_versions_and_controller():
     async with app_client(idp_hint="google", read_only=True) as client:
         config = (await client.get("/api/config")).json()
-    assert config["legal"] == {"privacy": "1.1", "terms": "1.0"} and config["controller"] == {"name": "Example Controller"}
+    assert config["legal"] == {"privacy": "1.2", "terms": "1.1", "participation": "1.0"}
+    assert config["minimumAge"] == 18 and config["controller"] == {"name": "Example Controller"}
     assert config["idpHint"] == "google" and config["locales"] == ["hr", "en"]
     assert config["acceptingJudgments"] is False and config["uiVersion"]
     assert {"url", "realm", "clientId"} <= set(config)
