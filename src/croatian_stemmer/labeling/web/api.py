@@ -1,38 +1,38 @@
-"""Subject-scoped human labeling API and static Croatian interface."""
+"""App factory, middleware and the authorization dependencies.
+
+Every route declares one dependency that states who may call it:
+  public            no token
+  ctx.annotator_any a signed-in annotator, including a blocked one (data-subject rights only)
+  ctx.annotator     a signed-in annotator that is not blocked
+  ctx.consented     an annotator who accepted the current privacy notice and terms
+  ctx.curator       an annotator whose token carries the curator group/role
+Routes live in routes_public.py, routes_annotator.py and routes_curator.py.
+"""
 
 import asyncio
-import io
+import hashlib
+import logging
+import time
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal
-from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import ValidationError
-from sqlalchemy import and_, case, func, select, text
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from . import routes_annotator, routes_curator, routes_public
 from .auth import Authenticator
+from .common import Caller, failure
 from .config import Settings
-from .models import Corpus, Item, Judgment
-from .requests import AnswerRequest, Candidate, ImportRequest
+from .legal import LegalDocuments
+from .limits import Limiter
+from .models import Annotator, Consent, ErasureRequest, Setting
 
 STATIC = Path(__file__).parent / "static"
-
-
-def failure(status, code, **values):
-    return HTTPException(status, detail={"code": code, **values})
-
-
-def corpus_json(corpus):
-    return {"id": str(corpus.id), "name": corpus.name, "sha256": corpus.sha256,
-            "source_uri": corpus.source_uri, "license": corpus.license,
-            "created_at": corpus.created_at.isoformat()}
+DOCUMENTS = Path(__file__).parent / "documents"  # legal templates; not under /static
+log = logging.getLogger("croatian_stemmer.labeling.web")
 
 
 class RequestBounds:
@@ -72,237 +72,145 @@ class RequestBounds:
             await call()
 
 
+class Context:
+    """Per-app state shared by the route modules."""
+
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        self.engine = create_async_engine(settings.database_url, pool_size=5, max_overflow=3)
+        self.sessions = async_sessionmaker(self.engine, expire_on_commit=False)
+        self.auth = Authenticator(settings)
+        self.limiter = Limiter()
+        self.legal = LegalDocuments(settings, DOCUMENTS)
+        self._accepting = None  # (value, monotonic time)
+        self._build_dependencies()
+
+    async def accepting_judgments(self, db) -> bool:
+        """Kill switch: the environment override, else the setting (5 s cache)."""
+        if self.settings.read_only:
+            return False
+        now = time.monotonic()
+        if self._accepting is not None and now - self._accepting[1] < 5:
+            return self._accepting[0]
+        async with db.begin():
+            value = (await db.execute(select(Setting.value).where(Setting.key == "accepting_judgments"))).scalar_one_or_none()
+        accepting = value is None or value is True
+        self._accepting = (accepting, now)
+        return accepting
+
+    def forget_settings(self):
+        self._accepting = None
+
+    def consent_missing(self):
+        return failure(403, "consent_required", required={"privacy": self.settings.privacy_version,
+                                                           "terms": self.settings.terms_version})
+
+    def _build_dependencies(self):
+        sessions, auth, settings = self.sessions, self.auth, self.settings
+
+        async def session():
+            async with sessions() as db:
+                yield db
+
+        async def annotator_any(request: Request, db=Depends(session)) -> Caller:
+            principal = await auth.authenticate(request.headers.get("authorization"))
+            async with db.begin():
+                row = (await db.execute(select(Annotator.id, Annotator.status, Annotator.last_seen_at,
+                                               func.now() - Annotator.last_seen_at)
+                                        .where(Annotator.subject == principal.subject))).one_or_none()
+                if row is None:
+                    # An erased account keeps its Keycloak user for up to 30 days;
+                    # signing in again meanwhile must not create a new profile.
+                    digest = hashlib.sha256(principal.subject.encode()).hexdigest()
+                    pending = (await db.execute(select(func.count()).select_from(ErasureRequest).where(
+                        ErasureRequest.subject_sha256 == digest,
+                        ErasureRequest.keycloak_deleted_at.is_(None)))).scalar_one()
+                    if pending:
+                        raise failure(409, "erasure_pending")
+                    await db.execute(insert(Annotator).values(
+                        subject=principal.subject, email=principal.email,
+                        email_verified=principal.email_verified).on_conflict_do_nothing(index_elements=[Annotator.subject]))
+                    row = (await db.execute(select(Annotator.id, Annotator.status, Annotator.last_seen_at,
+                                                   func.now() - Annotator.last_seen_at)
+                                            .where(Annotator.subject == principal.subject))).one()
+                elif row[3].total_seconds() > 600:
+                    await db.execute(update(Annotator).where(Annotator.id == row[0]).values(
+                        last_seen_at=func.now(), email=principal.email, email_verified=principal.email_verified))
+            return Caller(id=row[0], status=row[1], principal=principal)
+
+        async def annotator(caller: Caller = Depends(annotator_any)) -> Caller:
+            if caller.status == "blocked":
+                raise failure(403, "account_blocked")
+            return caller
+
+        async def consented(caller: Caller = Depends(annotator), db=Depends(session)) -> Caller:
+            async with db.begin():
+                accepted = set((await db.execute(select(Consent.document, Consent.version).where(
+                    Consent.annotator_id == caller.id))).all())
+            if not {("privacy", settings.privacy_version), ("terms", settings.terms_version)} <= accepted:
+                raise self.consent_missing()
+            return caller
+
+        async def curator(caller: Caller = Depends(annotator)) -> Caller:
+            if not caller.curator:
+                raise failure(403, "curator_required")
+            return caller
+
+        self.session, self.annotator_any, self.annotator = session, annotator_any, annotator
+        self.consented, self.curator = consented, curator
+
+
+async def warn_overdue_erasures(ctx, days=14):
+    """Log (without identity) erasures whose Keycloak deletion is older than `days`."""
+    async with ctx.sessions() as db:
+        rows = (await db.execute(select(ErasureRequest.id, func.now() - ErasureRequest.requested_at).where(
+            ErasureRequest.keycloak_deleted_at.is_(None),
+            ErasureRequest.requested_at < func.now() - func.make_interval(0, 0, 0, days)))).all()
+    for request_id, age in rows:
+        log.warning("erasure request %s has waited %d days for Keycloak account deletion "
+                    "(complete it within 30 days of the request)", request_id, age.days)
+    return [request_id for request_id, _ in rows]
+
+
 def create_app(settings: Settings) -> FastAPI:
-    engine = create_async_engine(settings.database_url, pool_size=5, max_overflow=3)
-    sessions = async_sessionmaker(engine, expire_on_commit=False)
-    auth = Authenticator(settings)
+    ctx = Context(settings)
 
     @asynccontextmanager
     async def lifespan(app):
-        yield
-        await engine.dispose()
+        async def watch():
+            while True:
+                try:
+                    await warn_overdue_erasures(ctx)
+                except Exception:  # never let the reminder take the app down
+                    log.exception("erasure reminder failed")
+                await asyncio.sleep(6 * 3600)
+        task = asyncio.create_task(watch())
+        try:
+            yield
+        finally:
+            task.cancel()
+            await ctx.engine.dispose()
 
-    app = FastAPI(title="Croatian stemmer labeling", lifespan=lifespan)
-    app.state.engine, app.state.auth = engine, auth
+    # No interactive docs or schema on a public site: they list every route and model.
+    app = FastAPI(title="Croatian stemmer labeling", lifespan=lifespan,
+                  docs_url=None, redoc_url=None, openapi_url=None)
+    app.state.engine, app.state.auth, app.state.ctx = ctx.engine, ctx.auth, ctx
     app.add_middleware(RequestBounds)
 
     @app.middleware("http")
     async def response_headers(request, call_next):
         response = await call_next(request)
+        # Same-origin only. The identity server is reached by top-level
+        # navigation (sign-in) and fetch (token endpoint); no frames.
         response.headers.update({"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+                                 "X-Robots-Tag": "noindex, nofollow",
                                  "Referrer-Policy": "no-referrer",
                                  "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; "
-                                 "img-src 'self'; connect-src 'self' " + settings.identity_origin + "; frame-src "
-                                 + settings.identity_origin + "; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"})
+                                 "img-src 'self'; connect-src 'self' " + settings.identity_origin
+                                 + "; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"})
         return response
 
-    async def owner(request: Request):
-        return await auth.authenticate(request.headers.get("authorization"))
-
-    async def session():
-        async with sessions() as db:
-            yield db
-
-    async def owned_corpus(db, subject, corpus_id):
-        row = (await db.execute(select(Corpus).where(Corpus.owner_id == subject, Corpus.id == corpus_id))).scalar_one_or_none()
-        if row is None:
-            raise failure(404, "not_found")
-        return row
-
-    @app.get("/healthz")
-    async def health():
-        return {"ok": True}
-
-    @app.get("/readyz")
-    async def ready(db=Depends(session)):
-        try:
-            await db.execute(text("SELECT 1"))
-        except SQLAlchemyError as exc:
-            raise failure(503, "database_unavailable") from exc
-        return {"ok": True}
-
-    @app.get("/api/config")
-    async def public_config():
-        return settings.browser
-
-    @app.get("/")
-    async def index():
-        return FileResponse(STATIC / "index.html")
-
-    app.mount("/static", StaticFiles(directory=STATIC), name="static")
-
-    @app.get("/api/corpora")
-    async def corpora(offset: int = Query(0, ge=0, le=2**31 - 1), subject=Depends(owner), db=Depends(session)):
-        rows = (await db.execute(select(Corpus).where(Corpus.owner_id == subject).order_by(Corpus.created_at, Corpus.id).offset(offset).limit(101))).scalars().all()
-        return {"items": [corpus_json(row) for row in rows[:100]],
-                "next_offset": offset + 100 if len(rows) > 100 else None}
-
-    @app.post("/api/import")
-    async def import_candidates(request: Request, subject=Depends(owner), db=Depends(session)):
-        try:
-            data = ImportRequest.model_validate_json(await request.body())
-        except ValidationError as exc:
-            raise failure(422, "invalid_candidates") from exc
-        first = data.candidates[0]
-        unique = {row.item_id: row for row in data.candidates}
-        async with db.begin():
-            await db.execute(insert(Corpus).values(owner_id=subject, id=first.corpus_id, name=data.name,
-                             sha256=first.corpus_sha256, source_uri=first.source_uri, license=first.license)
-                             .on_conflict_do_nothing(index_elements=[Corpus.owner_id, Corpus.id]))
-            corpus = (await db.execute(select(Corpus).where(Corpus.owner_id == subject, Corpus.id == first.corpus_id).with_for_update())).scalar_one()
-            if (corpus.sha256, corpus.source_uri, corpus.license) != (first.corpus_sha256, first.source_uri, first.license):
-                raise failure(409, "corpus_provenance_conflict")
-            existing = set()
-            ids = list(unique)
-            for start in range(0, len(ids), 1000):
-                found = (await db.execute(select(Item.id, Item.payload).where(Item.owner_id == subject,
-                          Item.corpus_id == corpus.id, Item.id.in_(ids[start:start + 1000])))).all()
-                for item_id, payload in found:
-                    if Candidate.model_validate(payload).question != unique[item_id].question:
-                        raise failure(409, "immutable_item_conflict")
-                    existing.add(item_id)
-            ordinal = (await db.execute(select(func.max(Item.ordinal)).where(Item.owner_id == subject,
-                                       Item.corpus_id == corpus.id))).scalar_one()
-            ordinal = 0 if ordinal is None else ordinal + 1
-            batch, added = [], 0
-            for item_id, candidate in unique.items():
-                if item_id in existing:
-                    continue
-                batch.append({"owner_id": subject, "corpus_id": corpus.id, "id": item_id,
-                              "ordinal": ordinal + added, "kind": candidate.kind,
-                              "payload": candidate.model_dump(mode="json"), "current_revision": 0})
-                added += 1
-                if len(batch) == 1000:
-                    await db.execute(insert(Item), batch)
-                    batch.clear()
-            if batch:
-                await db.execute(insert(Item), batch)
-        return {"corpus": corpus_json(corpus), "added": added, "already_present": len(existing)}
-
-    latest_join = and_(Judgment.owner_id == Item.owner_id, Judgment.corpus_id == Item.corpus_id,
-                       Judgment.item_id == Item.id, Judgment.revision == Item.current_revision)
-
-    @app.get("/api/corpora/{corpus_id}/progress")
-    async def progress(corpus_id: UUID, subject=Depends(owner), db=Depends(session)):
-        await owned_corpus(db, subject, corpus_id)
-        rows = (await db.execute(select(Item.kind, func.count(Item.id),
-                func.sum(case((Item.current_revision > 0, 1), else_=0)),
-                func.sum(case((Judgment.answer == "unsure", 1), else_=0)))
-                .outerjoin(Judgment, latest_join).where(Item.owner_id == subject,
-                 Item.corpus_id == corpus_id).group_by(Item.kind))).all()
-        counts = {kind: {"total": 0, "reviewed": 0, "unsure": 0, "definite": 0} for kind in ("pair", "lemma", "stem")}
-        for kind, total, reviewed, unsure in rows:
-            counts[kind] = {"total": total, "reviewed": reviewed, "unsure": unsure,
-                            "definite": reviewed - unsure}
-        revisions = (await db.execute(select(func.count()).select_from(Judgment).where(
-                     Judgment.owner_id == subject, Judgment.corpus_id == corpus_id))).scalar_one()
-        return {"kinds": counts, "revision_events": revisions}
-
-    @app.get("/api/corpora/{corpus_id}/items")
-    async def items(corpus_id: UUID, kind: Literal["pair", "lemma", "stem"] = "pair",
-                    state: Literal["unlabelled", "labelled", "unsure"] = "unlabelled",
-                    after: int = Query(-1, ge=-1, le=2**31 - 1), limit: int = Query(1, ge=1, le=50),
-                    subject=Depends(owner), db=Depends(session)):
-        await owned_corpus(db, subject, corpus_id)
-        query = select(Item, Judgment).outerjoin(Judgment, latest_join).where(
-                Item.owner_id == subject, Item.corpus_id == corpus_id, Item.kind == kind,
-                Item.ordinal > after)
-        if state == "unlabelled":
-            query = query.where(Item.current_revision == 0)
-        elif state == "labelled":
-            query = query.where(Item.current_revision > 0)
-        else:
-            query = query.where(Judgment.answer == "unsure")
-        rows = (await db.execute(query.order_by(Item.ordinal).limit(limit + 1))).all()
-        result = []
-        for item, judgment in rows[:limit]:
-            result.append({"candidate": item.payload, "ordinal": item.ordinal,
-                           "current_revision": item.current_revision,
-                           "judgment": None if judgment is None else {
-                               "answer": judgment.answer, "lemma": judgment.lemma,
-                               "irregular": judgment.irregular, "revision": judgment.revision,
-                               "annotated_at": judgment.created_at.isoformat()}})
-        return {"items": result, "next_after": rows[limit - 1][0].ordinal if len(rows) > limit else None}
-
-    @app.get("/api/corpora/{corpus_id}/items/{item_id}")
-    async def item_detail(corpus_id: UUID, item_id: UUID, subject=Depends(owner), db=Depends(session)):
-        row = (await db.execute(select(Item, Judgment).outerjoin(Judgment, latest_join).where(
-                Item.owner_id == subject, Item.corpus_id == corpus_id, Item.id == item_id))).one_or_none()
-        if row is None:
-            raise failure(404, "not_found")
-        item, judgment = row
-        return {"candidate": item.payload, "ordinal": item.ordinal, "current_revision": item.current_revision,
-                "judgment": None if judgment is None else {"answer": judgment.answer, "lemma": judgment.lemma,
-                 "irregular": judgment.irregular, "revision": judgment.revision,
-                 "annotated_at": judgment.created_at.isoformat()}}
-
-    @app.post("/api/corpora/{corpus_id}/items/{item_id}/answer")
-    async def answer(corpus_id: UUID, item_id: UUID, data: AnswerRequest,
-                     subject=Depends(owner), db=Depends(session)):
-        try:
-            async with db.begin():
-                item = (await db.execute(select(Item).where(Item.owner_id == subject,
-                        Item.corpus_id == corpus_id, Item.id == item_id).with_for_update())).scalar_one_or_none()
-                if item is None:
-                    raise failure(404, "not_found")
-                old = (await db.execute(select(Judgment).where(Judgment.owner_id == subject,
-                       Judgment.annotation_id == data.request_id))).scalar_one_or_none()
-                if old is not None:
-                    if (old.corpus_id, old.item_id, old.revision - 1, old.answer, old.lemma, old.irregular) != (
-                            corpus_id, item_id, data.base_revision, data.answer, data.lemma, data.irregular):
-                        raise failure(409, "request_id_conflict")
-                    return {"annotation_id": str(old.annotation_id), "revision": old.revision,
-                            "current_revision": item.current_revision}
-                if item.current_revision != data.base_revision:
-                    raise failure(409, "revision_conflict", current_revision=item.current_revision)
-                candidate = Candidate.model_validate(item.payload)
-                created_at = datetime.now(timezone.utc)
-                try:
-                    annotation = candidate.annotation(owner=subject, revision=item.current_revision + 1,
-                                 answer=data.answer, lemma=data.lemma, irregular=data.irregular,
-                                 annotation_id=data.request_id, annotated_at=created_at)
-                    annotation.validate()
-                except ValueError as exc:
-                    raise failure(422, "invalid_judgment") from exc
-                db.add(Judgment(owner_id=subject, corpus_id=corpus_id, item_id=item.id,
-                       revision=annotation.revision, annotation_id=data.request_id, answer=data.answer,
-                       lemma=data.lemma, irregular=data.irregular, created_at=created_at))
-                item.current_revision = annotation.revision
-            return {"annotation_id": str(data.request_id), "revision": annotation.revision,
-                    "current_revision": annotation.revision}
-        except IntegrityError as exc:
-            raise failure(409, "request_id_conflict") from exc
-
-    @app.get("/api/corpora/{corpus_id}/export.tsv")
-    async def export(corpus_id: UUID, subject=Depends(owner), db=Depends(session)):
-        await owned_corpus(db, subject, corpus_id)
-        async def rows():
-            import csv
-            from ..schema import FIELDS
-            buffer = io.StringIO()
-            writer = csv.DictWriter(buffer, fieldnames=FIELDS, delimiter="\t", lineterminator="\n")
-            writer.writeheader()
-            yield buffer.getvalue().encode("utf-8")
-            buffer.seek(0)
-            buffer.truncate(0)
-            query = select(Item, Judgment).join(Judgment, and_(Judgment.owner_id == Item.owner_id,
-                    Judgment.corpus_id == Item.corpus_id, Judgment.item_id == Item.id)).where(
-                    Item.owner_id == subject, Item.corpus_id == corpus_id).order_by(Item.ordinal, Judgment.revision)
-            result = await db.stream(query.execution_options(yield_per=250))
-            try:
-                async for item, judgment in result:
-                    candidate = Candidate.model_validate(item.payload)
-                    annotation = candidate.annotation(owner=subject, revision=judgment.revision,
-                                 answer=judgment.answer, lemma=judgment.lemma, irregular=judgment.irregular,
-                                 annotation_id=judgment.annotation_id, annotated_at=judgment.created_at)
-                    writer.writerow(annotation.row())
-                    yield buffer.getvalue().encode("utf-8")
-                    buffer.seek(0)
-                    buffer.truncate(0)
-            finally:
-                await result.close()
-        from fastapi.responses import StreamingResponse
-        return StreamingResponse(rows(), media_type="text/tab-separated-values; charset=utf-8",
-                                 headers={"Content-Disposition": f'attachment; filename="labels-{corpus_id}.tsv"'})
-
+    routes_public.register(app, ctx)
+    routes_annotator.register(app, ctx)
+    routes_curator.register(app, ctx)
     return app

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Labeling guidelines</title>
+<link rel="stylesheet" href="/static/legal.css">
+</head>
+<body>
+<main>
+<!-- Same text as docs/guidelines.en.md; change both together. -->
+<p class="crumbs"><a href="/?lang=en">Back to labeling</a> · <a href="/static/guidelines.hr.html" hreflang="hr" lang="hr">Hrvatski (mjerodavno)</a></p>
+<h1>Labeling guidelines (English summary)</h1>
+<h2>The task</h2>
+<p>Each item shows a word in a sentence from a language corpus and asks one question:</p>
+<ul><li><strong>Word pair</strong>: do the two words, each in its own sentence, share a lemma? Answers: "Same lemma", "Different lemmas", "Not sure".</li><li><strong>Lemma</strong>: what is the dictionary lemma of this word? The corpus suggestion is filled in; confirm or correct it, then choose "Confirm lemma".</li><li><strong>Stem</strong>: is the proposed stem acceptable for this word? Answers: "Accept stem", "Reject stem", "Not sure".</li></ul>
+<p>Always read the whole sentence; the meaning in context decides.</p>
+<h2>What a lemma is</h2>
+<ul><li>Nouns: nominative singular (kuće → kuća, ljudi → čovjek); plural-only nouns stay plural (škare, vrata).</li><li>Adjectives: masculine nominative singular, positive degree (lijepa → lijep; brži → brz, najbolji → dobar).</li><li>Verbs: infinitive (pisao → pisati). Aspect pairs are different lemmas: <em>pisati</em> and <em>napisati</em>. Do not type the reflexive <em>se</em> (bojim se → bojati); the lemma field takes one word.</li><li>Diminutives and augmentatives are separate lemmas (kućica is not <em>kuća</em>).</li><li>Pronouns, numerals and invariable words: the usual dictionary form (njega → on).</li></ul>
+<p>Type lemmas in lower case with diacritics (č, ć, đ, š, ž), no spaces or punctuation.</p>
+<h2>Pairs</h2>
+<p>"Same lemma" means both words are forms of the same dictionary word, with the same meaning and part of speech. Different aspect, diminutives, and homographs with a different meaning or part of speech are different lemmas.</p>
+<h2>Stems</h2>
+<p>Accept a stem if all usual forms of the lemma could be reduced to it and words of a different meaning would not be. Reject it if it is too long (keeps an ending, so forms of one lemma would get different stems) or too short (would merge unrelated words).</p>
+<h2>Irregular form</h2>
+<p>Tick "Irregular form / exception" when the word is an irregular form of its lemma (<em>ljudi</em> from <em>čovjek</em>, <em>išao</em> from <em>ići</em>). It does not change the answer.</p>
+<h2>When to choose "Not sure"</h2>
+<p>Whenever you cannot answer reliably: an ambiguous form the sentence does not resolve, a typo or broken word in the source, an unknown word, or a proper name you are unsure how to inflect. "Not sure" is not a mistake; a wrong confident answer harms the dataset more.</p>
+<h2>Corpus suggestions</h2>
+<p>Suggested lemmas were produced automatically and can be wrong. Use them as hints.</p>
+<h2>Reliability checks</h2>
+<p>Some items may have a known answer and are used to estimate how reliable answers are. Treat every item with the same care.</p>
+<h2>Shortcuts</h2>
+<p>Keys 1, 2 and 3 choose the answers in the order shown (when the cursor is not in the lemma field).</p>
+</main>
+</body>
+</html>

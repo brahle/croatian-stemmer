@@ -59,6 +59,11 @@ revision and timezone-aware timestamp are required. Contexts can contain quoted
 tabs and newlines. Identifiers and content must remain consistent across rows.
 Candidate-prefill provenance is refused by the annotation reader.
 
+In exports from the labeling web app, `annotator_id` is a random pseudonymous
+UUID per participant, not a login name or email; it stays the same across that
+person's revisions and is kept when they erase their account. Judgments of
+blocked participants are left out unless the curator asks for them.
+
 Pair answers are `same`, `different`, or `unsure`. Lemma answers are `confirmed`
 with the actual lemma, or `unsure` with no confirmed lemma. Stem answers are
 `accept`, `reject`, or `unsure` for a concrete `proposed_stem`. `irregular` is a

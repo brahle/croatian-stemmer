@@ -3,6 +3,12 @@
 Checks authorization-code PKCE and nonce using real RS256 tokens. Tests label
 only urn:test candidates. This is not a substitute for production Keycloak SSO
 acceptance or evidence of actual human annotations.
+
+The browser suite chooses who signs in next with GET /fixture/persona?name=...
+(&curator=1 adds the curator group). Each name keeps one subject for the life
+of the process; access tokens carry email, email_verified and groups like the
+realm's tokens do. GET /fixture/last-authorize returns the last authorization
+request's query (to check kc_idp_hint and ui_locales).
 """
 import base64
 import hashlib
@@ -23,9 +29,25 @@ AUDIENCE = 'croatian-stemmer-labeling-api'
 REDIRECT = 'http://127.0.0.1:55484/'
 PRIVATE = rsa.generate_private_key(public_exponent=65537,key_size=2048)
 SUBJECT = str(uuid4())
+SUBJECTS = {'annotator': SUBJECT, 'curator': str(uuid4())}
+CURATORS = {'curator'}
+persona = {'name': 'annotator'}
+last_authorize = {}
 app = FastAPI()
 app.add_middleware(CORSMiddleware,allow_origins=['http://127.0.0.1:55484'],allow_credentials=True,allow_methods=['GET','POST'],allow_headers=['Content-Type'])
 codes = {}
+
+@app.get('/fixture/persona')
+async def choose(name: str, curator: int = 0):
+    SUBJECTS.setdefault(name, str(uuid4()))
+    if curator:
+        CURATORS.add(name)
+    persona['name'] = name
+    return {'name': name, 'curator': name in CURATORS}
+
+@app.get('/fixture/last-authorize')
+async def last():
+    return last_authorize
 
 @app.get('/realms/test/protocol/openid-connect/certs')
 async def certs():
@@ -38,9 +60,10 @@ async def authorize(request: Request):
     if (p.get('client_id')!=CLIENT or p.get('redirect_uri')!=REDIRECT or p.get('response_type')!='code'
         or p.get('code_challenge_method')!='S256' or not p.get('code_challenge') or not p.get('nonce')):
         raise HTTPException(400,'invalid fixture authorization')
+    last_authorize.clear();last_authorize.update(dict(p))
     if p.get('prompt')=='none':
         return RedirectResponse(REDIRECT+'?'+urlencode({'error':'login_required','state':p['state']}))
-    code=str(uuid4());codes[code]=dict(p)
+    code=str(uuid4());codes[code]={**dict(p),'persona':persona['name']}
     return RedirectResponse(REDIRECT+'?'+urlencode({'code':code,'state':p['state'],'session_state':'synthetic-fixture','iss':ISSUER}))
 
 @app.post('/realms/test/protocol/openid-connect/token')
@@ -51,9 +74,11 @@ async def token(request: Request):
     if (not issued or p.get('grant_type')!='authorization_code' or p.get('client_id')!=CLIENT
         or p.get('redirect_uri')!=REDIRECT or challenge!=issued['code_challenge']):
         raise HTTPException(400,'invalid fixture PKCE')
-    now=int(time.time())
-    common={'sub':SUBJECT,'iss':ISSUER,'iat':now,'exp':now+600,'session_state':'synthetic-fixture','preferred_username':'sintetički-test'}
-    access={**common,'aud':AUDIENCE,'azp':CLIENT,'typ':'Bearer','resource_access':{AUDIENCE:{'roles':['annotator']}}}
+    now=int(time.time());name=issued['persona']
+    common={'sub':SUBJECTS[name],'iss':ISSUER,'iat':now,'exp':now+600,'session_state':'synthetic-fixture',
+            'preferred_username':f'{name}@example.org','email':f'{name}@example.org','email_verified':True}
+    access={**common,'aud':AUDIENCE,'azp':CLIENT,'typ':'Bearer','groups':['curator'] if name in CURATORS else [],
+            'resource_access':{AUDIENCE:{'roles':['annotator']}}}
     identity={**common,'aud':CLIENT,'nonce':issued['nonce']}
     sign=lambda payload:jwt.encode(payload,PRIVATE,algorithm='RS256',headers={'kid':'fixture'})
     return {'access_token':sign(access),'id_token':sign(identity),'refresh_token':sign({**common,'typ':'Refresh'}),'token_type':'Bearer','expires_in':600}

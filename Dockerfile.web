@@ -2,6 +2,7 @@ FROM node:22.16.0-bookworm-slim@sha256:048ed02c5fd52e86fda6fbd2f6a76cf0d4492fd6c
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --omit=dev
+COPY pyproject.toml ./
 COPY scripts/build-web-assets.mjs scripts/
 RUN npm run build
 
@@ -12,6 +13,9 @@ COPY requirements-web.txt ./
 RUN pip install --no-cache-dir --require-hashes -r requirements-web.txt && useradd --uid 10001 --create-home labeling
 COPY src/ src/
 COPY --from=assets /build/src/croatian_stemmer/labeling/web/static/vendor/ src/croatian_stemmer/labeling/web/static/vendor/
+COPY --from=assets /build/src/croatian_stemmer/labeling/web/static/version.js src/croatian_stemmer/labeling/web/static/version.js
+# The server reads the release version (ui_version) from pyproject.toml.
+COPY pyproject.toml ./
 COPY migrations/ migrations/
 COPY alembic.ini ./
 USER 10001:10001

@@ -5,6 +5,12 @@ cd "$(dirname "$0")/.."
 export LABELING_DATABASE_URL=$LABELING_TEST_DATABASE_URL
 export LABELING_OIDC_ISSUER=http://127.0.0.1:55485/realms/test
 export LABELING_ALLOW_LOCAL_HTTP=true
+# Deployment-like identity: any realm human may label, curators come from groups.
+export LABELING_ANNOTATOR_POLICY=open LABELING_OIDC_ROLE_SOURCE=groups LABELING_OIDC_IDP_HINT=google
+# Synthetic compliance values (the legal notices refuse to start without them).
+export LABELING_CONTROLLER_NAME='Synthetic Test Controller' LABELING_CONTROLLER_EMAIL=privacy@example.org
+export LABELING_HOSTING_SUMMARY='Example Hosting Ltd, Germany (synthetic)'
+export LABELING_EDGE_LOG_RETENTION='7 days (synthetic)' LABELING_BACKUP_RETENTION='14 days (synthetic)'
 .venv/bin/python -m alembic upgrade head
 .venv/bin/python -m alembic check
 .venv/bin/python -m pytest

@@ -1,10 +1,28 @@
 # Human labeling application
 
-The app stores candidate questions separately from an append-only answer journal.
-Imports never create annotations. Each signed-in user owns a separate corpus
-namespace, even when two users import the same corpus UUID. TSV exports include
-all revisions; the shared evaluator resolves the latest answer per annotator.
-Invitations and shared browser adjudication are follow-up work.
+A public, multi-user site where people sign in, accept the privacy notice and
+terms, and label items from shared corpora that a curator has published. Every
+judgment is stored with provenance in an append-only journal. Imports never
+create annotations. TSV exports include all revisions; the shared evaluator
+resolves the latest answer per annotator.
+
+The pieces:
+
+- **Annotators** are people with an account in the Keycloak realm. Each gets a
+  random pseudonymous id (`label_annotator.id`); that id, never the login
+  subject or email, is what judgments reference and exports print as
+  `annotator_id`.
+- **Curators** (Keycloak group `curator`) import candidate files, publish a
+  corpus under a labels licence, export judgments, set an annotator's status
+  (`active`, `quarantined`, `blocked`), pause intake, and complete erasures.
+- **Corpora** are shared: one copy per corpus id for everybody. A corpus is a
+  `draft` until published; annotators see published corpora only.
+- **Judgments** are per annotator per item, with revisions. Each row records
+  who (pseudonym), when (server clock), the item revision, the UI version
+  (`client_version`), how it arrived (`source`) and the time taken
+  (`elapsed_ms`, curator-only, removed on erasure). Database triggers keep
+  `label_judgment`, `label_consent` and `label_admin_event` append-only apart
+  from the two erasure updates.
 
 ## Local development
 
@@ -15,72 +33,168 @@ and its Alembic migrations live outside the package. The `web` extra installs th
 app's Python dependencies into a checkout. The offline `croatian-stemmer-labels`
 command does ship in the wheel.
 
-Use Python 3.10+ (CI runs the web suite on 3.14), Node 22 and PostgreSQL. The
-base stemmer has no web dependency; install the optional application
-dependencies explicitly:
+Use Python 3.10+ (CI runs the web suite on 3.14), Node 22 and PostgreSQL:
 
 ```sh
 uv sync --frozen --extra web --extra dev
 npm ci --ignore-scripts
-npm run build
+npm run build   # vendors the Keycloak adapter and writes static/version.js
 export LABELING_DATABASE_URL='postgresql+asyncpg://USER:URI_ENCODED_PASSWORD@HOST:5432/labeling'
 export LABELING_OIDC_ISSUER='https://YOUR_KEYCLOAK/realms/YOUR_REALM'
+export LABELING_CONTROLLER_NAME='Example Project Lead'
+export LABELING_CONTROLLER_EMAIL='privacy@example.org'
+export LABELING_HOSTING_SUMMARY='Example Hosting Ltd, Germany'
+export LABELING_EDGE_LOG_RETENTION='7 days'
+export LABELING_BACKUP_RETENTION='14 days'
 .venv/bin/python -m alembic upgrade head
 .venv/bin/python -m uvicorn croatian_stemmer.labeling.web.serve:app --port 8000
 ```
 
-`LABELING_OIDC_CLIENT_ID`, `LABELING_OIDC_AUDIENCE` and `LABELING_OIDC_ROLE`
-default to `croatian-stemmer-labeling-web`, `croatian-stemmer-labeling-api` and
-`annotator`. The issuer is mandatory and must use HTTPS. `LABELING_ALLOW_LOCAL_HTTP=true`
-permits only a loopback HTTP issuer for the synthetic test fixture; it does not
-skip authentication. Keep it absent in deployment.
+Prepare candidates with the offline command in [labeling.md](labeling.md), sign
+in as a curator, import the JSONL in the curator panel and publish the corpus.
+Each upload must contain one corpus, at most 20,000 candidates and at most 32 MiB
+of JSON. No source corpus or human export is committed to this repository.
 
-Prepare candidates using the offline command in [labeling.md](labeling.md),
-then import its JSONL in the UI. Each upload must contain one corpus, at most
-20,000 candidates and at most 32 MiB of JSON. Split larger candidate sets into
-multiple uploads; existing source questions and saved answers remain intact.
-No source corpus or human export is committed to this repository.
+## Configuration
 
-## Identity provider registration
+Required:
 
-The browser side uses the Keycloak JavaScript adapter, so the issuer must be a
-Keycloak realm (`https://KEYCLOAK_HOST/realms/REALM`).
+| Variable | Example | Meaning |
+|---|---|---|
+| `LABELING_DATABASE_URL` | `postgresql+asyncpg://labeling:…@db:5432/labeling` | PostgreSQL via asyncpg; URL-encode the password |
+| `LABELING_OIDC_ISSUER` | `https://login.example.org/realms/labeling` | Keycloak realm, HTTPS |
+| `LABELING_CONTROLLER_NAME` | `Example Project Lead` | data controller named in the notices and on the landing page |
+| `LABELING_CONTROLLER_EMAIL` | `privacy@example.org` | contact for privacy requests and appeals |
+| `LABELING_HOSTING_SUMMARY` | `Example Hosting Ltd, Germany` | hosting provider and country, named as a processor |
+| `LABELING_EDGE_LOG_RETENTION` | `7 days` | how long the reverse proxy in front of the app keeps access logs |
+| `LABELING_BACKUP_RETENTION` | `14 days` | how long database backups are kept |
 
-Register a **public** browser client `croatian-stemmer-labeling-web` with standard
-flow and PKCE S256 required. Disable implicit flow, direct grants and service
-accounts. Set exact app redirect URI (`https://APP_HOST/`), post-logout redirect
-URI and Web Origin; do not use wildcards. The adapter keeps access and refresh
-tokens in memory. It stores short-lived authorization callback state, not tokens.
+Optional:
 
-Create the API audience client `croatian-stemmer-labeling-api` and its client role
-`annotator`. Add an audience mapper to browser-client access tokens, and map the
-API client role into `resource_access.croatian-stemmer-labeling-api.roles`.
-Assign that role explicitly to participating human accounts.
+| Variable | Default | Meaning |
+|---|---|---|
+| `LABELING_CONTROLLER_ADDRESS` | unset | postal address; the notices leave the address out when unset |
+| `LABELING_ANNOTATOR_POLICY` | `group` | `open`: any human account of the realm may label; `group`: only holders of the annotator role/group |
+| `LABELING_OIDC_ROLE_SOURCE` | `client-role` | where roles are read: `client-role` or `groups` (see below) |
+| `LABELING_OIDC_ROLE` | `annotator` | annotator role/group (used by `group` policy) |
+| `LABELING_CURATOR_GROUP` | `curator` | curator group name (`groups` source) |
+| `LABELING_CURATOR_ROLE` | `curator` | curator client role (`client-role` source) |
+| `LABELING_OIDC_IDP_HINT` | unset | Keycloak identity-provider alias, e.g. `google`; the sign-in button then goes straight to it |
+| `LABELING_OIDC_CLIENT_ID` | `croatian-stemmer-labeling-web` | public browser client |
+| `LABELING_OIDC_AUDIENCE` | `croatian-stemmer-labeling-api` | required token audience |
+| `LABELING_PRIVACY_VERSION`, `LABELING_TERMS_VERSION` | `1.0` | document versions people must accept; must equal the versions the shipped documents declare |
+| `LABELING_DAILY_CAP` | `3000` | judgments per annotator per 24 hours |
+| `LABELING_TARGET_VOTES` | `3` | `/next` stops serving an item once this many people gave a definite answer |
+| `LABELING_READ_ONLY` | `false` | `true` pauses intake regardless of the curator's setting |
+| `LABELING_ALLOW_LOCAL_HTTP` | `false` | test-only: allows a loopback HTTP issuer; never set it in a deployment |
+| `LABELING_MIGRATION_ALLOW_DROP` | unset | see "Migrations" |
 
-Alternatively, set `LABELING_OIDC_ROLE_SOURCE=groups` to read authorization from a
-flat `groups` claim instead (exact group name, not a path). Use this with a realm
-that has a group mapper emitting names (full path off) and an audience mapper that
-adds `croatian-stemmer-labeling-api` to the browser client's access tokens; members
-of group `annotator` may label. The default, `client-role`, ignores `groups`
-entirely, and `groups` mode ignores `resource_access`; no deployment accepts both.
-Because the mapper emits names, not paths, any group named `annotator`, including
-a subgroup with that name anywhere in the realm, grants labeling access.
+The app refuses to start when a required value is missing, when a document's
+declared version differs from the configured one, or when the Croatian and
+English versions of a document differ.
 
-The backend accepts only RS256 access tokens with the configured issuer/audience, required expiry,
-issue time and subject, `typ=Bearer`, browser client `azp`, and annotator role.
-ID tokens and service-client access tokens cannot label data. JWKS refresh fails
-closed after the five-minute cache expires. A failed refresh imposes a
-ten-second retry cooldown starting after the failed fetch completes, shared by
-queued requests; they receive 503 without serially repeating the eight-second
-fetch timeout. A successful refresh resumes normal validation. Fresh cached
-known keys retain normal validation; expired keys are not accepted during an
-outage. No user IDs or timestamps are accepted from the answer payload.
+## Identity
 
-A submitted answer includes the last revision and a request UUID. Concurrent
-edits receive HTTP 409 and reload the current answer. If a save response is lost,
-the UI retains the UUID and exact payload for an idempotent retry. Old revisions
-are retained. Unsure answers withdraw previous definite judgments from current
-progress without erasing the journal.
+The browser uses the Keycloak JavaScript adapter with PKCE S256, so the issuer
+must be a Keycloak realm. Register a **public** browser client
+`croatian-stemmer-labeling-web` with standard flow and PKCE required; disable
+implicit flow, direct grants and service accounts; set exact redirect URI
+(`https://APP_HOST/`), post-logout redirect URI and Web Origin, no wildcards.
+Add an audience mapper so access tokens carry `croatian-stemmer-labeling-api`.
+The adapter keeps tokens in memory; the page does not contact the identity
+server until the person clicks sign in.
+
+To let anyone with a Google account take part, add Google as an identity
+provider of the realm (with "trust email" on) and set
+`LABELING_OIDC_IDP_HINT=google` and `LABELING_ANNOTATOR_POLICY=open`. Enable the
+identity provider only after the notices are published and the app serves the
+consent gate: Google's OAuth consent screen needs the public privacy notice URL
+(`https://APP_HOST/legal/privacy.en`).
+
+Roles come from one source only:
+
+- `LABELING_OIDC_ROLE_SOURCE=groups` reads a flat `groups` claim of group names
+  (a group mapper with full path off). Members of `curator` are curators;
+  members of `annotator` may label under `group` policy. Any group with that
+  exact name, including a subgroup anywhere in the realm, grants the role.
+- `client-role` (the default) reads `resource_access.<audience>.roles` and
+  ignores `groups` entirely.
+
+The backend accepts only RS256 access tokens with the configured issuer and
+audience, required expiry, issue time and subject, `typ=Bearer`, the browser
+client as `azp`, and no `service-account-` username, in every policy. ID tokens
+and service-client tokens cannot label. An email address is stored only when the
+token says it is verified. JWKS refresh fails closed after the five-minute cache
+expires, with a ten-second shared cooldown after a failed fetch.
+
+Each route declares its authorization in code (`api.py` lists the dependencies):
+public (`/`, `/static`, `/legal/*`, `/api/config`, probes); any signed-in
+annotator including a blocked one (`/api/me`, `/api/me/export.json`,
+`/api/me/erase`); a non-blocked annotator; one who accepted the current
+documents (`/next`, `/items`, `/answer`); and curator (`/api/import`, publish,
+unpublish, archive, exports, `/api/admin/*`).
+
+## Consent, legal documents and data-subject rights
+
+`/legal/{privacy,terms,storage}.{hr,en}` serve the privacy notice, the terms of
+participation and licence, and the cookie and storage notice, with the
+controller values substituted from configuration. The templates are in
+`src/croatian_stemmer/labeling/web/documents/`; they are drafts that the
+controller and a lawyer must review before publication. Each declares
+`<meta name="document-version">`. Publishing a new version means editing the
+documents and the matching `LABELING_*_VERSION` together; everyone is asked to
+accept again before their next answer, and earlier consent records are kept.
+
+The consent gate asks for three confirmations: the privacy notice, the terms
+(including the CC BY-SA 4.0 licence of contributions and a CC0 waiver for labels
+alone), and age 16 or over. Without both current consents, `/next`, `/items`
+and `/answer` return 403 `consent_required`.
+
+"My data" offers a JSON export of everything linked to the pseudonym and
+erasure. Erasure, in one transaction, records an erasure request, nulls the
+subject and email, deletes the assignment rows and nulls `elapsed_ms`;
+judgments and consent records stay under the pseudonym. Until the curator has
+deleted the Keycloak user, signing in again returns 409 `erasure_pending`
+rather than creating a new profile. The curator panel lists pending requests
+with the Keycloak username to delete; after deleting it in the Keycloak admin
+console, the curator confirms, which removes the stored username and email.
+The app logs a warning (with the request id only) for requests older than 14
+days, so the 30-day limit is not missed. If a database backup taken before an
+erasure is ever restored, re-apply the erasures requested after it.
+
+The app origin sets no cookies and no persistent storage; the adapter's
+short-lived `kc-callback-*` record is removed when sign-in completes. The
+browser test enforces this; any feature that stores something must update the
+storage notice and that test first.
+
+## Labeling, limits and the kill switch
+
+`GET /api/corpora/{id}/next?kind=` returns one item the caller has not answered,
+not shown to them in the last 30 minutes, and with fewer than
+`LABELING_TARGET_VOTES` definite answers (fewest first). Skipped items come back
+after 30 minutes. `/items?state=mine_labelled|mine_unsure` are the caller's own
+review queues. No response contains another person's answers.
+
+An answer carries the last revision (`base_revision`), a request UUID,
+`client_version` and optionally `elapsed_ms`. Concurrent edits by the same
+person get 409 and reload; different people never block each other. A lost
+response is retried with the same UUID and payload, which is idempotent.
+
+Limits per annotator: 15 answers burst and 30 per minute, 120 queue reads per
+minute, 10 consent/export/erasure calls per hour (in process; they reset on
+restart), and `LABELING_DAILY_CAP` judgments per 24 hours (counted in the
+database). Bodies are limited to 16 KiB, imports to 32 MiB. The curator's
+"pause" switch, or `LABELING_READ_ONLY=true`, makes `/answer` return 503
+`judgments_paused` without writing anything.
+
+Publishing checks licences: share-alike sources (hr500k is CC BY-SA 4.0) may
+only be published as CC BY-SA 4.0; CC BY sources as CC BY 4.0 or CC BY-SA 4.0;
+CC0/public domain as any of the three; NC, ND or unknown licences are refused.
+
+Exports (curator): `export.tsv` is schema v1 and feeds the offline evaluator
+unchanged; `export.jsonl` has every judgment column plus the candidate and the
+annotator status. Judgments of blocked annotators (also after they erase their
+account) are left out unless `?include_excluded=true`.
 
 ## Verification
 
@@ -94,63 +208,45 @@ export LABELING_TEST_DATABASE_URL='postgresql+asyncpg://USER:PASSWORD@127.0.0.1:
 ./scripts/test-web.sh
 ```
 
-The script runs Alembic upgrade/check, the full Python suite and Chromium.
-The loopback OIDC fixture verifies real PKCE challenges/nonces and signs RS256
-JWTs. It is test-only code, outside the packaged application. All browser answers
-use `urn:test` questions and never count as human gold. API tests cover ownership,
-immutable imports, cross-kind rejection, stale revisions, concurrent writers,
-idempotency, streamed export and body bounds. JWT tests cover issuer/audience,
-expiry, algorithms, role shapes, service-client rejection, rotation and JWKS failure.
+The script runs Alembic upgrade/check, the full Python suite and Chromium. The
+migration guard test creates and drops a scratch database, so the test role
+needs `CREATEDB`. The loopback OIDC fixture verifies real PKCE challenges and
+nonces and signs RS256 tokens for named synthetic people, one of them a curator.
+All browser answers use `urn:test` questions and never count as human gold.
 
 ## Container image
 
 `Dockerfile.web` locks Python dependencies with hashes, the official browser
-adapter with the npm lock, and the Python/Node base images with verified registry
-digests. It runs as UID 10001, serves one worker on port 8000, bundles the adapter
-and its Apache license, and performs no migration automatically during normal
-startup. Update `requirements-web.txt` from `uv.lock` with:
+adapter with the npm lock, and the base images with registry digests. It runs as
+UID 10001, serves one worker on port 8000 and performs no migration during
+normal startup. Update `requirements-web.txt` from `uv.lock` with:
 
 ```sh
 uv export --frozen --extra web --no-dev --no-emit-project --output-file requirements-web.txt
 ```
 
 Releases are semver. `./build.sh` builds a clean commit for linux/amd64 and loads
-it locally as `croatian-stemmer/labeling:v<version>`, where the version is
-`[project].version` in `pyproject.toml`. `REGISTRY=registry.example.com/team
-./build.sh --push` pushes `registry.example.com/team/labeling:v<version>` instead
-and prints its digest; it refuses to overwrite an existing tag. Pin that exact tag
-in your deployment, never `latest`.
+it locally as `croatian-stemmer/labeling:v<version>`. `REGISTRY=registry.example.com/team
+./build.sh --push` pushes `registry.example.com/team/labeling:v<version>` and
+prints its digest; it refuses to overwrite an existing tag. Pin that exact tag,
+never `latest`.
 
 ## Deploying
 
-The application is one stateless container plus a PostgreSQL database. What a
-deployment needs:
+The application is one stateless container plus a PostgreSQL database:
 
-- Environment: `LABELING_DATABASE_URL` (a `postgresql+asyncpg://` URL; URL-encode
-  the password) and `LABELING_OIDC_ISSUER` (HTTPS) are required.
-  `LABELING_OIDC_CLIENT_ID`, `LABELING_OIDC_AUDIENCE`, `LABELING_OIDC_ROLE` and
-  `LABELING_OIDC_ROLE_SOURCE` are optional, with the defaults above. Never set
-  `LABELING_ALLOW_LOCAL_HTTP` outside tests.
+- Environment: see "Configuration".
 - Migrations: run `python -m alembic upgrade head` with the same
-  `LABELING_DATABASE_URL` before the app serves, for example as an init container
-  or a one-off job using the same image. It is idempotent.
-- One replica. The initial migration design assumes a single writer.
-- Probes: `/healthz` for liveness and `/readyz` for readiness, both on port 8000.
-- The container runs as a non-root user and works with a read-only root
-  filesystem. It needs outbound HTTPS to the issuer for JWKS and inbound HTTP on
-  8000 from your TLS-terminating proxy.
-- Back up the database. The answer journal is the only copy of human judgments;
-  TSV exports are a useful second copy.
+  `LABELING_DATABASE_URL` before the app serves, for example as an init container.
+  Migration 002 (0.2.0) drops the 0.1 tables. It refuses to run while
+  `label_judgment` has rows unless `LABELING_MIGRATION_ALLOW_DROP=true`; export
+  and back up first. Never set that variable permanently.
+- One replica. Rate limits are in process and migrations run per pod.
+- Probes: `/healthz` for liveness and `/readyz` for readiness, on port 8000.
+- The container runs as a non-root user with a read-only root filesystem. It
+  needs outbound HTTPS to the issuer for JWKS and inbound HTTP on 8000 from your
+  TLS-terminating proxy.
+- Back up the database. The judgment journal is the only copy of human answers.
 
-Before accepting human labels, check real sign-in with an `annotator` member, a
-403 for a non-member, two-account isolation, revise/export/re-import, and
-persistence across a restart.
-
-Roll back the application image first. Alembic's initial downgrade deletes the
-label tables and is for disposable test databases only; preserve backups and
-exports before any destructive schema operation.
-
-Then enroll diverse, licensed corpus sources, collect an actual human pilot and
-report agreement/coverage. Reach at least 10,000 **new human pair judgments**.
-Candidate counts, synthetic tests and extra revisions cannot satisfy that
-criterion.
+Roll back the application image first. Downgrading 002 recreates the 0.1 tables
+empty and is only for a database with nothing worth keeping.

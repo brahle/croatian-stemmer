@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- NACRT / DRAFT. Prije objave ovaj tekst moraju pregledati voditelj obrade (vlasnik) i pravnik.
+     This text must be reviewed by the owner (controller) and a lawyer before publication. It is not legal advice.
+     The inventory below was checked against the application code (app.js, keycloak-js 26.2.4 callback storage)
+     and is enforced by the browser test (no cookie and no persistent storage key on the app origin).
+     Any feature that stores something in the browser must update this notice and that test first.
+     Owner: confirm the sign-in server's session lifetimes if the realm overrides Keycloak's defaults. -->
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="document-version" content="1.0">
+<title>Kolačići i pohrana u pregledniku — označavanje hrvatskih lema</title>
+<link rel="stylesheet" href="/static/legal.css">
+</head>
+<body>
+<main>
+<p class="crumbs"><a href="/?lang=hr">Natrag na označavanje</a> · <a href="/legal/storage.en" hreflang="en" lang="en">English</a></p>
+<h1>Kolačići i pohrana u pregledniku</h1>
+<p class="meta">Verzija 1.0 (17. listopada 2026.). Voditelj: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+
+<p>Ukratko: ova stranica ne koristi kolačiće i ništa ne sprema trajno u Vašem pregledniku. Kratkotrajni zapisi postoje samo dok se prijavljujete, i nužni su za prijavu koju ste zatražili. Zato ne prikazujemo traku za pristanak na kolačiće: za strogo nužnu pohranu pristanak nije potreban (članak 5. stavak 3. Direktive 2002/58/EZ o privatnosti i elektroničkim komunikacijama i hrvatski propis koji je prenosi).</p>
+
+<h2 id="aplikacija">1. Ova stranica ({{app_host}})</h2>
+<ul>
+<li><strong>Kolačići</strong>: ne postavljamo nijedan.</li>
+<li><strong>Tokeni za prijavu</strong> čuvaju se samo u memoriji otvorene stranice. Nestaju kada zatvorite karticu, osvježite stranicu ili se odjavite.</li>
+<li><strong>Zapis za povratak s prijave</strong>: kada kliknete „Prijava”, biblioteka za prijavu (Keycloak JS) u lokalnu pohranu preglednika (localStorage) sprema jedan zapis čiji naziv počinje s <code>kc-callback-</code>. Sadrži nasumične jednokratne vrijednosti kojima se provjerava da se na stranicu vraćate iz prijave koju ste sami započeli (state, nonce i PKCE verifikator). Zapis se briše čim se vratite s prijave. Ako prijavu prekinete, zapis istječe nakon jednog sata i briše se pri sljedećem posjetu. Biblioteka pri pokretanju na trenutak zapiše i odmah obriše probni zapis <code>kc-test</code>. Ako je lokalna pohrana u Vašem pregledniku isključena, isti se kratkotrajni zapis čuva u kolačiću ove stranice najviše jedan sat.</li>
+<li><strong>Odabir jezika</strong> se ne sprema: vrijedi samo dok je stranica otvorena.</li>
+</ul>
+<p>Svrha: provesti prijavu koju ste zatražili. Strogo nužno; pristanak nije potreban.</p>
+
+<h2 id="prijava">2. Poslužitelj za prijavu ({{identity_host}})</h2>
+<p>Prijavu provodi poslužitelj Keycloak na adresi {{identity_host}}. Kada se prijavite, on na svojoj adresi postavlja kolačiće potrebne za prijavu:</p>
+<table>
+<thead><tr><th>Naziv</th><th>Svrha</th><th>Trajanje</th></tr></thead>
+<tbody>
+<tr><td><code>AUTH_SESSION_ID</code>, <code>KC_AUTH_SESSION_HASH</code></td><td>povezuju korake jedne prijave</td><td>do zatvaranja preglednika</td></tr>
+<tr><td><code>KC_RESTART</code></td><td>omogućuje nastavak prijave ako se prekine</td><td>do zatvaranja preglednika</td></tr>
+<tr><td><code>KEYCLOAK_IDENTITY</code>, <code>KEYCLOAK_SESSION</code></td><td>pamte da ste prijavljeni, da se ne morate prijavljivati na svakoj stranici</td><td>do odjave ili isteka sesije prijave (zadano najviše 10 sati, odnosno 30 minuta neaktivnosti)</td></tr>
+</tbody>
+</table>
+<p>Neke inačice poslužitelja postavljaju i iste kolačiće s nastavkom <code>_LEGACY</code> za starije preglednike. Nazivi se mogu neznatno razlikovati među inačicama; svi služe isključivo prijavi. Strogo nužno; pristanak nije potreban.</p>
+
+<h2 id="google">3. Google</h2>
+<p>Prijava Google računom odvija se na Googleovim stranicama (accounts.google.com), gdje Google postavlja vlastite kolačiće. Za njih je odgovoran Google kao samostalni voditelj obrade. Više na <a href="https://policies.google.com/technologies/cookies?hl=hr" rel="noopener noreferrer">policies.google.com/technologies/cookies</a>.</p>
+
+<h2 id="brisanje">4. Kako ukloniti zapise</h2>
+<p>Odjavom završavate sesiju na poslužitelju za prijavu. Sve zapise možete u svakom trenutku izbrisati i u postavkama preglednika (brisanje podataka web-mjesta).</p>
+
+<h2 id="izmjene">5. Izmjene</h2>
+<p>Ako ikad počnemo spremati išta drugo u Vašem pregledniku, najprije ćemo izmijeniti ovu obavijest, a za sve što nije strogo nužno zatražit ćemo Vaš pristanak.</p>
+
+<p class="meta">Povezano: <a href="/legal/privacy.hr">Obavijest o privatnosti</a> · <a href="/legal/terms.hr">Uvjeti sudjelovanja i licencija</a></p>
+</main>
+</body>
+</html>

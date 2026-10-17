@@ -1,0 +1,98 @@
+<!doctype html>
+<!-- NACRT / DRAFT. Prije objave ovaj tekst moraju pregledati voditelj obrade (vlasnik) i pravnik.
+     This text must be reviewed by the owner (controller) and a lawyer before publication. It is not legal advice.
+     Points for review: the legal bases in section 3; the transfer mechanism in section 5 (verify that
+     Google LLC is listed as certified on the EU-U.S. Data Privacy Framework list before launch); whether
+     judgments kept under an erased pseudonym are anonymous (sections 6 and 7); the missing postal
+     address of the controller (section 1). -->
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="document-version" content="1.0">
+<title>Obavijest o privatnosti — označavanje hrvatskih lema</title>
+<link rel="stylesheet" href="/static/legal.css">
+</head>
+<body>
+<main>
+<p class="crumbs"><a href="/?lang=hr">Natrag na označavanje</a> · <a href="/legal/privacy.en" hreflang="en" lang="en">English</a></p>
+<h1>Obavijest o privatnosti</h1>
+<p class="meta">Verzija 1.0 (17. listopada 2026.). Ova obavijest vrijedi za stranicu {{app_host}} na kojoj dobrovoljci označavaju hrvatske riječi (leme, parove riječi i korijene) za otvoreni jezični skup podataka.</p>
+
+<p>Ovdje objašnjavamo koje osobne podatke obrađujemo kada sudjelujete, zašto, na kojoj pravnoj osnovi, koliko dugo ih čuvamo i koja su Vaša prava prema Općoj uredbi o zaštiti podataka (Uredba (EU) 2016/679, „GDPR”).</p>
+
+<h2 id="voditelj">1. Voditelj obrade i kontakt</h2>
+<p>Voditelj obrade je {{controller_name}}.</p>
+<!--if:controller_address--><p>Adresa: {{controller_address}}</p><!--endif:controller_address-->
+<p>Za sva pitanja o privatnosti, ostvarivanje prava i prigovore pišite na <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+<p>Službenik za zaštitu podataka nije imenovan jer za ovu obradu nije propisan (članak 37. GDPR-a). Pitanja upućujte na gornju adresu.</p>
+
+<h2 id="podaci">2. Koje podatke obrađujemo i odakle</h2>
+<h3>Prijava putem Google računa</h3>
+<p>Prijavljujete se Google računom preko poslužitelja za prijavu (Keycloak) na adresi {{identity_host}}. Google nam pri prijavi predaje: oznaku Vašeg Google računa, adresu e-pošte, podatak je li adresa potvrđena te ime i prezime. Te podatke sprema poslužitelj za prijavu u Vaš korisnički račun. Aplikacija za označavanje od njih sprema samo tehničku oznaku Vašeg računa na poslužitelju za prijavu i adresu e-pošte (i to samo ako je potvrđena).</p>
+<h3>Podaci koje unosite ili koji nastaju dok sudjelujete</h3>
+<ul>
+<li>Vaši odgovori (oznake): odgovor na pitanje, upisana lema, oznaka nepravilnog oblika, redni broj izmjene odgovora i vrijeme spremanja.</li>
+<li>Vrijeme potrebno za odgovor na pojedini primjer (u milisekundama) te koji su Vam primjeri prikazani, kada i koliko puta.</li>
+<li>Vaši pristanci na ovu obavijest i na uvjete sudjelovanja: verzija dokumenta, vrijeme prihvaćanja, jezik sučelja, verzija aplikacije i Vaša potvrda da imate najmanje 16 godina.</li>
+<li>Nasumična oznaka sudionika (pseudonim) koju dodjeljujemo Vašem profilu. Svi Vaši odgovori vezani su uz tu oznaku, a ne uz Vaše ime ili adresu e-pošte.</li>
+<li>Status profila (aktivan, privremeno izdvojen, blokiran ili izbrisan) i, ako ga promijenimo, razlog promjene.</li>
+</ul>
+<h3>Podaci koji nastaju automatski na rubu mreže</h3>
+<p>Obrnuti posrednik (reverse proxy) ispred aplikacije bilježi za svaki zahtjev IP adresu, vrijeme, zatraženu adresu stranice i podatke o pregledniku (user agent). Sustav za zaštitu od napada na istoj infrastrukturi koristi te zapise kako bi otkrio i blokirao zlonamjerni promet. Aplikacija za označavanje sama ne vodi zapise o pristupu i ne vidi Vašu IP adresu.</p>
+<p>Ne koristimo kolačiće za praćenje, analitiku ni oglašavanje. Što se sprema u Vašem pregledniku opisano je u <a href="/legal/storage.hr">obavijesti o kolačićima i pohrani</a>.</p>
+
+<h2 id="svrhe">3. Svrhe i pravne osnove</h2>
+<ul>
+<li><strong>Vođenje Vašeg profila i bilježenje odgovora radi izrade jezičnog skupa podataka</strong>: Vaša privola (članak 6. stavak 1. točka (a) GDPR-a), koju dajete na početku sudjelovanja. Privolu možete povući u svakom trenutku brisanjem profila (odjeljak 7).</li>
+<li><strong>Procjena pouzdanosti odgovora, otkrivanje zlouporabe, ograničavanje broja zahtjeva i blokiranje računa</strong>: legitimni interes (članak 6. stavak 1. točka (f)) da javni istraživački skup podataka bude točan i zaštićen od lažnih ili automatiziranih unosa. Pri odvagivanju smo uzeli u obzir da te procjene nemaju nikakav učinak izvan ove stranice i da podaci ne napuštaju voditelja obrade.</li>
+<li><strong>Sigurnosni zapisi na rubu mreže</strong>: legitimni interes (članak 6. stavak 1. točka (f)) u zaštiti usluge od napada.</li>
+<li><strong>Čuvanje zapisa o pristancima</strong>: pravna obveza da možemo dokazati privolu (članak 7. stavak 1. u vezi s člankom 6. stavkom 1. točkom (c)).</li>
+</ul>
+
+<h2 id="primatelji">4. Primatelji i izvršitelji obrade</h2>
+<ul>
+<li><strong>Google</strong> (Google Ireland Limited i Google LLC) kao pružatelj prijave. Google je samostalni voditelj obrade za Vaš Google račun; njegova pravila privatnosti dostupna su na <a href="https://policies.google.com/privacy?hl=hr" rel="noopener noreferrer">policies.google.com/privacy</a>.</li>
+<li><strong>Pružatelj smještaja</strong> na kojem rade aplikacija, baza podataka, poslužitelj za prijavu i obrnuti posrednik: {{hosting_summary}}.</li>
+<li><strong>Javnost</strong>, kada objavimo skup podataka: objavljene datoteke sadrže tekstove primjera i odgovore, vezane najviše uz nasumičnu oznaku sudionika, nikada uz ime ili adresu e-pošte.</li>
+</ul>
+<p>Ne koristimo usluge analitike ni oglašavanja i nemamo drugih izvršitelja obrade.</p>
+
+<h2 id="prijenos">5. Prijenos izvan EU-a i EGP-a</h2>
+<p>Zahtjev za prijavu odlazi Googleu, koji ga može obraditi i u Sjedinjenim Američkim Državama. Google LLC certificiran je u okviru Okvira za zaštitu privatnosti podataka između EU-a i SAD-a (EU-U.S. Data Privacy Framework), pa se takav prijenos temelji na odluci Europske komisije o primjerenosti od 10. srpnja 2023. (članak 45. GDPR-a). Podaci same aplikacije ostaju kod pružatelja smještaja navedenog u odjeljku 4.</p>
+
+<h2 id="cuvanje">6. Koliko dugo čuvamo podatke</h2>
+<ul>
+<li>Profil u aplikaciji (tehnička oznaka računa, adresa e-pošte): dok ne izbrišete profil.</li>
+<li>Korisnički račun na poslužitelju za prijavu (ime, prezime, adresa e-pošte): dok ne izbrišete profil; nakon zahtjeva za brisanje račun brišemo u roku od 30 dana.</li>
+<li>Odgovori: trajno, kao dio skupa podataka, pod nasumičnom oznakom sudionika. Brisanjem profila ta se oznaka trajno odvaja od Vašeg identiteta.</li>
+<li>Vrijeme potrebno za odgovor i popis prikazanih primjera: dok ne izbrišete profil.</li>
+<li>Zapisi o pristancima: pod nasumičnom oznakom, dok god čuvamo odgovore dane na temelju tih pristanaka.</li>
+<li>Sigurnosne kopije baze podataka: {{backup_retention}}. Podaci izbrisani iz aplikacije nestaju iz sigurnosnih kopija nakon tog razdoblja.</li>
+<li>Zapisi obrnutog posrednika na rubu mreže: {{edge_log_retention}}.</li>
+</ul>
+
+<h2 id="prava">7. Vaša prava</h2>
+<ul>
+<li><strong>Pristup i prenosivost</strong>: na stranici „Moji podaci” možete sami preuzeti sve podatke vezane uz Vaš profil u strojno čitljivom obliku (JSON).</li>
+<li><strong>Ispravak</strong>: svoje odgovore možete izmijeniti u aplikaciji; za ostalo nam pišite.</li>
+<li><strong>Brisanje</strong>: na stranici „Moji podaci” možete sami izbrisati profil. Aplikacija odmah briše tehničku oznaku Vašeg računa, adresu e-pošte, vremena odgovora i popis prikazanih primjera. Vaš korisnički račun na poslužitelju za prijavu (s imenom i prezimenom) brišemo u roku od 30 dana od zahtjeva; dok to ne učinimo, ponovna prijava prikazat će obavijest umjesto da otvori novi profil. Vaši odgovori i zapisi o pristancima ostaju u skupu podataka pod nasumičnom oznakom koja se više ne može povezati s Vama.</li>
+<li><strong>Ograničenje obrade i prigovor</strong>: pišite nam na adresu iz odjeljka 1.</li>
+<li><strong>Povlačenje privole</strong>: u svakom trenutku, brisanjem profila. Povlačenje ne utječe na zakonitost obrade prije povlačenja.</li>
+<li><strong>Pritužba nadzornom tijelu</strong>: Agencija za zaštitu osobnih podataka (AZOP), Selska cesta 136, 10000 Zagreb, <a href="mailto:azop@azop.hr">azop@azop.hr</a>, <a href="https://azop.hr" rel="noopener noreferrer">azop.hr</a>. Pritužbu možete podnijeti i nadzornom tijelu države članice u kojoj živite ili radite.</li>
+</ul>
+<p>Na zahtjeve odgovaramo bez nepotrebnog odgađanja, a najkasnije u roku od mjesec dana.</p>
+
+<h2 id="automatizirano">8. Automatizirano odlučivanje</h2>
+<p>Ne donosimo odluke koje se temelje isključivo na automatiziranoj obradi i koje za Vas imaju pravne ili slično značajne učinke (članak 22. GDPR-a). Aplikacija može procjenjivati pouzdanost odgovora (na primjer usporedbom s primjerima poznatog odgovora), prema tome im davati veću ili manju težinu u skupu podataka te privremeno zanemariti odgovore profila ili ograničiti njegovo sudjelovanje. Te procjene nemaju nikakav učinak izvan ove stranice. Ako se ne slažete s odlukom o svom profilu, pišite nam na adresu iz odjeljka 1 i čovjek će je preispitati.</p>
+
+<h2 id="djeca">9. Djeca</h2>
+<p>Usluga je namijenjena osobama koje imaju najmanje 16 godina i nije usmjerena djeci. Na početku sudjelovanja tražimo potvrdu da imate najmanje 16 godina; datum rođenja ne prikupljamo. Profile mlađih osoba brišemo čim za njih saznamo.</p>
+
+<h2 id="izmjene">10. Izmjene ove obavijesti</h2>
+<p>Obavijest ima broj verzije i datum na vrhu. Kada objavimo novu verziju, prije sljedećeg odgovora tražit ćemo da je ponovno prihvatite. Zapisi o ranije prihvaćenim verzijama ostaju sačuvani.</p>
+
+<p class="meta">Povezano: <a href="/legal/terms.hr">Uvjeti sudjelovanja i licencija</a> · <a href="/legal/storage.hr">Kolačići i pohrana u pregledniku</a></p>
+</main>
+</body>
+</html>

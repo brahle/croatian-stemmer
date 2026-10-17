@@ -86,6 +86,9 @@ class ImportRequest(BaseModel):
         return self
 
 
+VERSION = r"^[0-9A-Za-z._-]{1,32}$"
+
+
 class AnswerRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     request_id: UUID
@@ -93,8 +96,56 @@ class AnswerRequest(BaseModel):
     answer: Literal["same", "different", "unsure", "confirmed", "accept", "reject"]
     lemma: StrictStr = Field(default="", max_length=128)
     irregular: StrictBool = False
+    # Provenance: the UI build that produced the answer and the time it took.
+    # Stored as validated; the server clamps nothing.
+    client_version: StrictStr = Field(pattern=VERSION)
+    elapsed_ms: StrictInt | None = Field(default=None, ge=0, le=3_600_000)
 
     @field_validator("lemma")
     @classmethod
     def normalized_lemma(cls, value):
         return word(value, "lemma") if value else ""
+
+
+class ConsentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    privacy_version: StrictStr = Field(pattern=VERSION)
+    terms_version: StrictStr = Field(pattern=VERSION)
+    age_confirmed: StrictBool
+    locale: Literal["hr", "en"]
+    ui_version: StrictStr = Field(pattern=VERSION)
+
+    @field_validator("age_confirmed")
+    @classmethod
+    def adult(cls, value):
+        if value is not True:
+            raise ValueError("participants must confirm they are at least 16")
+        return value
+
+
+class PublishRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    labels_license: Literal["CC0 1.0", "CC BY 4.0", "CC BY-SA 4.0"]
+
+
+class StatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    status: Literal["active", "quarantined", "blocked"]
+    reason: StrictStr = Field(min_length=1, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def meaningful_reason(cls, value):
+        if not value.strip() or "\x00" in value:
+            raise ValueError("a reason is required")
+        return value.strip()
+
+
+class EraseRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    confirm: Literal["IZBRIŠI", "DELETE"]
+
+
+class SettingsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    accepting_judgments: StrictBool
