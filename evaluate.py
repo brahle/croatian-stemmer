@@ -16,6 +16,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from croatian_stemmer import stem
+from evaluate_score import EXCLUDED_FORMS
 
 CORPUS_PATH = Path(__file__).parent / "data" / "hr500k.conllup"
 
@@ -37,6 +38,10 @@ def load_hr500k() -> list[tuple[str, str, str]]:
             if "-" in token_id or "." in token_id:
                 continue
             if not form.isalpha():
+                continue
+            # The v0.1 stop words are returned unchanged and dropped from
+            # text; see evaluate_score.py.
+            if form.lower() in EXCLUDED_FORMS:
                 continue
             pairs.append((form.lower(), lemma.lower(), upos))
 

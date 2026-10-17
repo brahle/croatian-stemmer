@@ -1,8 +1,8 @@
 # Evaluation: Croatian Stemmer on hr500k Corpus
 
-> This report describes the v0.1 baseline, before the rule additions and the
-> lexicon were tuned against hr500k. The README has the current numbers and the
-> in-sample caveat that applies to them.
+> This report describes the v0.1 baseline, before the rule additions were tuned
+> against hr500k. The README has the current numbers, including a held-out
+> evaluation on ParlaMint-HR.
 
 **Date:** 2026-04-11
 **Corpus:** hr500k v2.0 (CLARIN.SI), 427,270 word tokens, 65,685 unique form-lemma pairs

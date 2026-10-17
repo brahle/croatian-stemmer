@@ -21,32 +21,32 @@ typedef struct
 } TestCase;
 
 static const TestCase tests[] = {
-	/* Stop words and other lexicon forms: canonical lemma stems */
-	{"biti", "bit", "stop"},
-	{"jesam", "bit", "stop"},
-	{"sam", "bit", "stop"},
-	{"smo", "bit", "stop"},
-	{"su", "bit", "stop"},
-	{"bio", "bit", "stop"},
-	{"bila", "bit", "stop"},
-	{"bilo", "bit", "stop"},
-	{"ću", "ht", "stop"},
-	{"ćeš", "ht", "stop"},
-	{"će", "ht", "stop"},
-	{"ćemo", "ht", "stop"},
-	{"ćete", "ht", "stop"},
-	{"mogu", "moć", "stop"},
-	{"možeš", "moć", "stop"},
-	{"može", "moć", "stop"},
-	{"možemo", "moć", "stop"},
-	{"možete", "moć", "stop"},
-	{"trebam", "treb", "stop"},
-	{"treba", "treb", "stop"},
-	{"moram", "mor", "stop"},
-	{"mora", "mor", "stop"},
-	{"želim", "želj", "stop"},
-	{"želi", "želj", "stop"},
-	{"žele", "želj", "stop"},
+	/* Stop words: returned unchanged */
+	{"biti", "biti", "stop"},
+	{"jesam", "jesam", "stop"},
+	{"sam", "sam", "stop"},
+	{"smo", "smo", "stop"},
+	{"su", "su", "stop"},
+	{"bio", "bio", "stop"},
+	{"bila", "bila", "stop"},
+	{"bilo", "bilo", "stop"},
+	{"ću", "ću", "stop"},
+	{"ćeš", "ćeš", "stop"},
+	{"će", "će", "stop"},
+	{"ćemo", "ćemo", "stop"},
+	{"ćete", "ćete", "stop"},
+	{"mogu", "mogu", "stop"},
+	{"možeš", "možeš", "stop"},
+	{"može", "može", "stop"},
+	{"možemo", "možemo", "stop"},
+	{"možete", "možete", "stop"},
+	{"trebam", "trebam", "stop"},
+	{"treba", "treba", "stop"},
+	{"moram", "moram", "stop"},
+	{"mora", "mora", "stop"},
+	{"želim", "želim", "stop"},
+	{"želi", "želi", "stop"},
+	{"žele", "žele", "stop"},
 
 	/* Nouns */
 	{"kuća", "kuć", "noun"},
@@ -68,15 +68,15 @@ static const TestCase tests[] = {
 	{"lijepo", "lijep", "adj"},
 	{"lijepog", "lijep", "adj"},
 	{"lijepom", "lijep", "adj"},
-	{"lijepim", "lijepi", "adj"},
+	{"lijepim", "lijep", "adj"},
 	{"lijepih", "lijep", "adj"},
 
 	/* Verbs */
-	{"raditi", "radit", "verb"},
-	{"radimo", "radit", "verb"},
-	{"radite", "radit", "verb"},
-	{"radim", "radit", "verb"},
-	{"radi", "radit", "verb"},
+	{"raditi", "rad", "verb"},
+	{"radimo", "rad", "verb"},
+	{"radite", "rad", "verb"},
+	{"radim", "rad", "verb"},
+	{"radi", "rad", "verb"},
 
 	/* Transformations */
 	{"metara", "metr", "trans"},
@@ -93,7 +93,7 @@ static const TestCase tests[] = {
 	{"šumu", "šum", "lit"},
 	{"šumom", "šum", "lit"},
 	{"put", "put", "lit"},
-	{"zašao", "zaša", "lit"},
+	{"zašao", "zađ", "lit"},
 	{"začarana", "začarn", "lit"},
 
 	{NULL, NULL, NULL}
@@ -139,34 +139,10 @@ main(void)
 		fprintf(stderr, "FAIL: \"grad\" should NOT be a stop word\n");
 		failed++;
 	}
-	/* Lexicon forms that are content words must not be stop words. */
 	if (croatian_is_stopword("saznali") || croatian_is_stopword("starim"))
 	{
-		fprintf(stderr, "FAIL: lexicon content words must not be stop words\n");
+		fprintf(stderr, "FAIL: content words must not be stop words\n");
 		failed++;
-	}
-
-	{
-		const char *canon = croatian_lexicon_canonical("biti");
-
-		if (!canon || strcmp(canon, "bit") != 0)
-		{
-			fprintf(stderr, "FAIL: lexicon_canonical(\"biti\") = \"%s\", expected \"bit\"\n",
-					canon ? canon : "(null)");
-			failed++;
-		}
-		canon = croatian_lexicon_canonical("saznali");
-		if (!canon || strcmp(canon, "saznat") != 0)
-		{
-			fprintf(stderr, "FAIL: lexicon_canonical(\"saznali\") = \"%s\", expected \"saznat\"\n",
-					canon ? canon : "(null)");
-			failed++;
-		}
-		if (croatian_lexicon_canonical("grad") != NULL)
-		{
-			fprintf(stderr, "FAIL: \"grad\" should not be in the lexicon\n");
-			failed++;
-		}
 	}
 
 	printf("%d passed, %d failed\n", passed, failed);

@@ -12,20 +12,13 @@
  * Stem a single word. The input must be lowercase UTF-8.
  * Returns a malloc'd string containing the stem (caller must free()).
  *
- * Lexicon forms (including stop words) return their lemma's canonical
- * stem, matching stem() in the Python package.
+ * Stop words are returned unchanged, matching stem() in the Python package.
  */
 char *croatian_stem(const char *word);
 
 /*
- * Look up the canonical lemma stem for a lexicon form.
- * Returns a static pointer (do not free) or NULL if the form is not listed.
- */
-const char *croatian_lexicon_canonical(const char *word);
-
-/*
  * Returns true iff the word is a built-in stop word (auxiliary/modal form).
- * The text search dictionary drops these; croatian_stem() still stems them.
+ * The text search dictionary drops these; croatian_stem() returns them as is.
  */
 bool croatian_is_stopword(const char *word);
 

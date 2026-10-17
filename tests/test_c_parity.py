@@ -1,7 +1,7 @@
 """Cross-check the C stemmer (pg/croatian_stemmer.c) against the Python one.
 
 Builds a tiny driver with the system C compiler and compares both stemmers on
-every lexicon form plus synthetic inflections built from each rule's suffix
+every stop word plus synthetic inflections built from each rule's suffix
 set and each transformation. Skipped when no C compiler is available.
 """
 
@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from croatian_stemmer import stem
-from croatian_stemmer.rules import LEXICON, TRANSFORMATIONS, _RULES
+from croatian_stemmer.rules import STOP_WORDS, TRANSFORMATIONS, _RULES
 
 PG_DIR = Path(__file__).resolve().parent.parent / "pg"
 
@@ -46,11 +46,30 @@ BASES = [
     "kralj", "važn", "slobodn", "trg", "krv", "prst", "šum", "duš", "riječ",
     "metr", "centr", "gradov", "učitelj", "pjesnik", "zakon", "polj", "more",
     "rad", "pis", "čit", "gled", "prič", "jezik", "pjesm", "dobr", "mlad",
+    # Thematic vowel, -ova-/-uj- and -je- verbs (radi-la, djelova-ti,
+    # djeluj-e, vidje-ti, donije-la), -stati and velar -gn presents.
+    "radi", "gleda", "djelova", "djeluj", "pokaziva", "vidje", "donije",
+    "posta", "postan", "pomogn",
+    # Passive participles: jotated, palatal, -iran, -ivan, -nut, a-verb.
+    "objavljen", "učinjen", "vraćen", "izgrađen", "završen", "korišten",
+    "otvoren", "razvijen", "doveden", "organiziran", "očekivan",
+    "spomenut", "napisan",
+    # Fleeting a: -ak/-ac/-tak nouns, -tar/-bar/-dar, -ao, -stan, -ij.
+    "postupak", "odlazak", "kupac", "stranac", "podatak", "metar", "dobar",
+    "zadar", "kupc", "postupk", "posao", "pos", "topao", "došao", "koristan", "starij",
+    "laks", "materijal", "program", "dijalog",
+    # -aj nouns (slučaj-u, kraj-u), -dak nouns, -ozil, soft -eg/-ega
+    # (naš-eg, snijeg, starij-eg, koleg-a), the checked -je- theme
+    # (posjet, savjet, umrije), -ići -šl- (došl), -šljen participles,
+    # a non-syllabic r before -at (brat) and a syllabic one (cvrč).
+    "slučaj", "kraj", "igraj", "pogodak", "napredak", "vozil", "naš",
+    "boljeg", "snijeg", "kolega", "posje", "savje", "umrije", "podije",
+    "došl", "prošl", "mišljen", "struj", "bra", "cvrčak", "rđ",
 ]
 
 
 def _words() -> list[str]:
-    words = set(LEXICON)
+    words = set(STOP_WORDS)
     suffixes = {"", "naj"}
     for _, alternatives in _RULES:
         suffixes.update(alternatives.split("|"))

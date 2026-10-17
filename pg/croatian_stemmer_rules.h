@@ -4,3838 +4,78 @@
 
 #include <stddef.h> /* for NULL */
 
-#define N_LEXICON 3826
-typedef struct { const char *form; const char *canonical; int is_stop; } LexiconEntry;
-static const LexiconEntry lexicon[] = {
-    {"bace", "bacit", 0},
-    {"baci", "bacit", 0},
-    {"bacila", "bacit", 0},
-    {"bacile", "bacit", 0},
-    {"bacili", "bacit", 0},
-    {"bacilo", "bacit", 0},
-    {"bacim", "bacit", 0},
-    {"bacimo", "bacit", 0},
-    {"bacio", "bacit", 0},
-    {"bacit", "bacit", 0},
-    {"bacite", "bacit", 0},
-    {"baciti", "bacit", 0},
-    {"baciš", "bacit", 0},
-    {"bi", "bit", 1},
-    {"bih", "bit", 1},
-    {"bijah", "bit", 1},
-    {"bijahu", "bit", 1},
-    {"bijasmo", "bit", 1},
-    {"bijaste", "bit", 1},
-    {"bijaše", "bit", 1},
-    {"bijelim", "bijel", 0},
-    {"bijelima", "bijel", 0},
-    {"bijelimi", "bijel", 0},
-    {"bila", "bit", 1},
-    {"bile", "bit", 1},
-    {"bili", "bit", 1},
-    {"bilo", "bit", 1},
-    {"bio", "bit", 1},
-    {"bira", "birat", 0},
-    {"biraju", "birat", 0},
-    {"birala", "birat", 0},
-    {"birale", "birat", 0},
-    {"birali", "birat", 0},
-    {"biralo", "birat", 0},
-    {"biram", "birat", 0},
-    {"biramo", "birat", 0},
-    {"birao", "birat", 0},
-    {"birat", "birat", 0},
-    {"birate", "birat", 0},
-    {"birati", "birat", 0},
-    {"biraš", "birat", 0},
-    {"bismo", "bit", 1},
-    {"bistar", "bistr", 0},
-    {"biste", "bit", 1},
-    {"biti", "bit", 1},
-    {"biše", "bit", 1},
-    {"bje", "bit", 1},
-    {"bjeh", "bit", 1},
-    {"bjehu", "bit", 1},
-    {"bjesmo", "bit", 1},
-    {"bjeste", "bit", 1},
-    {"bješe", "bit", 1},
-    {"bježala", "bježat", 0},
-    {"bježale", "bježat", 0},
-    {"bježali", "bježat", 0},
-    {"bježalo", "bježat", 0},
-    {"bježao", "bježat", 0},
-    {"bježat", "bježat", 0},
-    {"bježati", "bježat", 0},
-    {"bježe", "bježat", 0},
-    {"bježi", "bježat", 0},
-    {"bježim", "bježat", 0},
-    {"bježimo", "bježat", 0},
-    {"bježite", "bježat", 0},
-    {"bježiš", "bježat", 0},
-    {"blizak", "blisk", 0},
-    {"bliža", "blisk", 0},
-    {"bliže", "blisk", 0},
-    {"bližeg", "blisk", 0},
-    {"bližega", "blisk", 0},
-    {"bližem", "blisk", 0},
-    {"bližemu", "blisk", 0},
-    {"bliži", "blisk", 0},
-    {"bližih", "blisk", 0},
-    {"bližim", "blisk", 0},
-    {"bližima", "blisk", 0},
-    {"bližoj", "blisk", 0},
-    {"bližom", "blisk", 0},
-    {"bližu", "blisk", 0},
-    {"bolja", "dobr", 0},
-    {"bolje", "dobr", 0},
-    {"boljeg", "dobr", 0},
-    {"boljega", "dobr", 0},
-    {"boljem", "dobr", 0},
-    {"boljemu", "dobr", 0},
-    {"bolji", "dobr", 0},
-    {"boljih", "dobr", 0},
-    {"boljim", "dobr", 0},
-    {"boljima", "dobr", 0},
-    {"boljoj", "dobr", 0},
-    {"boljom", "dobr", 0},
-    {"bolju", "dobr", 0},
-    {"bore", "borit", 0},
-    {"boreći", "borit", 0},
-    {"bori", "borit", 0},
-    {"borila", "borit", 0},
-    {"borile", "borit", 0},
-    {"borili", "borit", 0},
-    {"borilo", "borit", 0},
-    {"borim", "borit", 0},
-    {"borimo", "borit", 0},
-    {"borio", "borit", 0},
-    {"borit", "borit", 0},
-    {"borite", "borit", 0},
-    {"boriti", "borit", 0},
-    {"boriš", "borit", 0},
-    {"brane", "branit", 0},
-    {"braneći", "branit", 0},
-    {"brani", "branit", 0},
-    {"branila", "branit", 0},
-    {"branile", "branit", 0},
-    {"branili", "branit", 0},
-    {"branilo", "branit", 0},
-    {"branim", "branit", 0},
-    {"branimo", "branit", 0},
-    {"branio", "branit", 0},
-    {"branit", "branit", 0},
-    {"branite", "branit", 0},
-    {"braniti", "branit", 0},
-    {"braniš", "branit", 0},
-    {"brine", "brinut", 0},
-    {"brinem", "brinut", 0},
-    {"brinemo", "brinut", 0},
-    {"brinete", "brinut", 0},
-    {"brineš", "brinut", 0},
-    {"brinu", "brinut", 0},
-    {"brinula", "brinut", 0},
-    {"brinule", "brinut", 0},
-    {"brinuli", "brinut", 0},
-    {"brinulo", "brinut", 0},
-    {"brinuo", "brinut", 0},
-    {"brinut", "brinut", 0},
-    {"brinuti", "brinut", 0},
-    {"brojala", "brojat", 0},
-    {"brojale", "brojat", 0},
-    {"brojali", "brojat", 0},
-    {"brojalo", "brojat", 0},
-    {"brojao", "brojat", 0},
-    {"brojat", "brojat", 0},
-    {"brojati", "brojat", 0},
-    {"broje", "brojat", 0},
-    {"broji", "brojat", 0},
-    {"brojim", "brojat", 0},
-    {"brojimo", "brojat", 0},
-    {"brojite", "brojat", 0},
-    {"brojiš", "brojat", 0},
-    {"brža", "brz", 0},
-    {"brže", "brz", 0},
-    {"bržeg", "brz", 0},
-    {"bržega", "brz", 0},
-    {"bržem", "brz", 0},
-    {"bržemu", "brz", 0},
-    {"brži", "brz", 0},
-    {"bržih", "brz", 0},
-    {"bržim", "brz", 0},
-    {"bržima", "brz", 0},
-    {"bržoj", "brz", 0},
-    {"bržom", "brz", 0},
-    {"bržu", "brz", 0},
-    {"budem", "bit", 1},
-    {"budemo", "bit", 1},
-    {"budete", "bit", 1},
-    {"budeš", "bit", 1},
-    {"budimo", "bit", 1},
-    {"budite", "bit", 1},
-    {"budu", "bit", 1},
-    {"cijene", "cijenit", 0},
-    {"cijeni", "cijenit", 0},
-    {"cijenila", "cijenit", 0},
-    {"cijenile", "cijenit", 0},
-    {"cijenili", "cijenit", 0},
-    {"cijenilo", "cijenit", 0},
-    {"cijenim", "cijenit", 0},
-    {"cijenimo", "cijenit", 0},
-    {"cijenio", "cijenit", 0},
-    {"cijenit", "cijenit", 0},
-    {"cijenite", "cijenit", 0},
-    {"cijeniti", "cijenit", 0},
-    {"cijeniš", "cijenit", 0},
-    {"crnim", "crn", 0},
-    {"crnima", "crn", 0},
-    {"crnimi", "crn", 0},
-    {"daj", "dat", 0},
-    {"daje", "davat", 0},
-    {"dajem", "davat", 0},
-    {"dajemo", "davat", 0},
-    {"dajete", "davat", 0},
-    {"daješ", "davat", 0},
-    {"dajmo", "dat", 0},
-    {"dajte", "dat", 0},
-    {"daju", "davat", 0},
-    {"dajući", "dat", 0},
-    {"dala", "dat", 0},
-    {"dale", "dat", 0},
-    {"dali", "dat", 0},
-    {"dalo", "dat", 0},
-    {"dam", "dat", 0},
-    {"damo", "dat", 0},
-    {"dao", "dat", 0},
-    {"date", "dat", 0},
-    {"dati", "dat", 0},
-    {"davala", "davat", 0},
-    {"davale", "davat", 0},
-    {"davali", "davat", 0},
-    {"davalo", "davat", 0},
-    {"davao", "davat", 0},
-    {"davat", "davat", 0},
-    {"davati", "davat", 0},
-    {"davši", "dat", 0},
-    {"daš", "dat", 0},
-    {"disala", "disat", 0},
-    {"disale", "disat", 0},
-    {"disali", "disat", 0},
-    {"disalo", "disat", 0},
-    {"disao", "disat", 0},
-    {"disat", "disat", 0},
-    {"disati", "disat", 0},
-    {"diše", "disat", 0},
-    {"dišem", "disat", 0},
-    {"dišemo", "disat", 0},
-    {"dišete", "disat", 0},
-    {"dišeš", "disat", 0},
-    {"dišu", "disat", 0},
-    {"djelovala", "djelovat", 0},
-    {"djelovale", "djelovat", 0},
-    {"djelovali", "djelovat", 0},
-    {"djelovalo", "djelovat", 0},
-    {"djelovao", "djelovat", 0},
-    {"djelovat", "djelovat", 0},
-    {"djelovati", "djelovat", 0},
-    {"djeluje", "djelovat", 0},
-    {"djelujem", "djelovat", 0},
-    {"djelujemo", "djelovat", 0},
-    {"djelujete", "djelovat", 0},
-    {"djeluješ", "djelovat", 0},
-    {"djeluju", "djelovat", 0},
-    {"dobar", "dobr", 0},
-    {"dobije", "dobit", 0},
-    {"dobijem", "dobit", 0},
-    {"dobijemo", "dobit", 0},
-    {"dobijete", "dobit", 0},
-    {"dobiješ", "dobit", 0},
-    {"dobiju", "dobit", 0},
-    {"dobila", "dobit", 0},
-    {"dobile", "dobit", 0},
-    {"dobili", "dobit", 0},
-    {"dobilo", "dobit", 0},
-    {"dobio", "dobit", 0},
-    {"dobit", "dobit", 0},
-    {"dobiti", "dobit", 0},
-    {"dobra", "dobr", 0},
-    {"dobre", "dobr", 0},
-    {"dobri", "dobr", 0},
-    {"dobrih", "dobr", 0},
-    {"dobrim", "dobr", 0},
-    {"dobrima", "dobr", 0},
-    {"dobro", "dobr", 0},
-    {"dobrog", "dobr", 0},
-    {"dobroga", "dobr", 0},
-    {"dobroj", "dobr", 0},
-    {"dobrom", "dobr", 0},
-    {"dobrome", "dobr", 0},
-    {"dobromu", "dobr", 0},
-    {"dobru", "dobr", 0},
-    {"doda", "dodat", 0},
-    {"dodaju", "dodat", 0},
-    {"dodala", "dodat", 0},
-    {"dodale", "dodat", 0},
-    {"dodali", "dodat", 0},
-    {"dodalo", "dodat", 0},
-    {"dodam", "dodat", 0},
-    {"dodamo", "dodat", 0},
-    {"dodao", "dodat", 0},
-    {"dodat", "dodat", 0},
-    {"dodate", "dodat", 0},
-    {"dodati", "dodat", 0},
-    {"dodaš", "dodat", 0},
-    {"dogode", "dogodit", 0},
-    {"dogodi", "dogodit", 0},
-    {"dogodila", "dogodit", 0},
-    {"dogodile", "dogodit", 0},
-    {"dogodili", "dogodit", 0},
-    {"dogodilo", "dogodit", 0},
-    {"dogodim", "dogodit", 0},
-    {"dogodimo", "dogodit", 0},
-    {"dogodio", "dogodit", 0},
-    {"dogodit", "dogodit", 0},
-    {"dogodite", "dogodit", 0},
-    {"dogoditi", "dogodit", 0},
-    {"dogodiš", "dogodit", 0},
-    {"dogovore", "dogovorit", 0},
-    {"dogovori", "dogovorit", 0},
-    {"dogovorila", "dogovorit", 0},
-    {"dogovorile", "dogovorit", 0},
-    {"dogovorili", "dogovorit", 0},
-    {"dogovorilo", "dogovorit", 0},
-    {"dogovorim", "dogovorit", 0},
-    {"dogovorimo", "dogovorit", 0},
-    {"dogovorio", "dogovorit", 0},
-    {"dogovorit", "dogovorit", 0},
-    {"dogovorite", "dogovorit", 0},
-    {"dogovoriti", "dogovorit", 0},
-    {"dogovoriš", "dogovorit", 0},
-    {"dolaze", "dolazit", 0},
-    {"dolazeći", "dolazit", 0},
-    {"dolazi", "dolazit", 0},
-    {"dolazila", "dolazit", 0},
-    {"dolazile", "dolazit", 0},
-    {"dolazili", "dolazit", 0},
-    {"dolazilo", "dolazit", 0},
-    {"dolazim", "dolazit", 0},
-    {"dolazimo", "dolazit", 0},
-    {"dolazio", "dolazit", 0},
-    {"dolazit", "dolazit", 0},
-    {"dolazite", "dolazit", 0},
-    {"dolaziti", "dolazit", 0},
-    {"dolaziš", "dolazit", 0},
-    {"donese", "donijet", 0},
-    {"donesem", "donijet", 0},
-    {"donesemo", "donijet", 0},
-    {"donesete", "donijet", 0},
-    {"doneseš", "donijet", 0},
-    {"donesu", "donijet", 0},
-    {"donijela", "donijet", 0},
-    {"donijele", "donijet", 0},
-    {"donijeli", "donijet", 0},
-    {"donijelo", "donijet", 0},
-    {"donijet", "donijet", 0},
-    {"donijeti", "donijet", 0},
-    {"donio", "donijet", 0},
-    {"donose", "donosit", 0},
-    {"donosi", "donosit", 0},
-    {"donosila", "donosit", 0},
-    {"donosile", "donosit", 0},
-    {"donosili", "donosit", 0},
-    {"donosilo", "donosit", 0},
-    {"donosim", "donosit", 0},
-    {"donosimo", "donosit", 0},
-    {"donosio", "donosit", 0},
-    {"donosit", "donosit", 0},
-    {"donosite", "donosit", 0},
-    {"donositi", "donosit", 0},
-    {"donosiš", "donosit", 0},
-    {"dopuste", "dopustit", 0},
-    {"dopusti", "dopustit", 0},
-    {"dopustila", "dopustit", 0},
-    {"dopustile", "dopustit", 0},
-    {"dopustili", "dopustit", 0},
-    {"dopustilo", "dopustit", 0},
-    {"dopustim", "dopustit", 0},
-    {"dopustimo", "dopustit", 0},
-    {"dopustio", "dopustit", 0},
-    {"dopustit", "dopustit", 0},
-    {"dopustite", "dopustit", 0},
-    {"dopustiti", "dopustit", 0},
-    {"dopustiš", "dopustit", 0},
-    {"dosegao", "dosegnut", 0},
-    {"dosegla", "dosegnut", 0},
-    {"dosegle", "dosegnut", 0},
-    {"dosegli", "dosegnut", 0},
-    {"doseglo", "dosegnut", 0},
-    {"dosegne", "dosegnut", 0},
-    {"dosegnem", "dosegnut", 0},
-    {"dosegnemo", "dosegnut", 0},
-    {"dosegnete", "dosegnut", 0},
-    {"dosegneš", "dosegnut", 0},
-    {"dosegnu", "dosegnut", 0},
-    {"dosegnut", "dosegnut", 0},
-    {"dosegnuti", "dosegnut", 0},
-    {"doći", "doć", 0},
-    {"dođe", "doć", 0},
-    {"dođem", "doć", 0},
-    {"dođemo", "doć", 0},
-    {"dođete", "doć", 0},
-    {"dođeš", "doć", 0},
-    {"dođi", "doć", 0},
-    {"dođite", "doć", 0},
-    {"dođu", "doć", 0},
-    {"došao", "doć", 0},
-    {"došla", "doć", 0},
-    {"došle", "doć", 0},
-    {"došli", "doć", 0},
-    {"došlo", "doć", 0},
-    {"dožive", "doživjet", 0},
-    {"doživi", "doživjet", 0},
-    {"doživim", "doživjet", 0},
-    {"doživimo", "doživjet", 0},
-    {"doživio", "doživjet", 0},
-    {"doživite", "doživjet", 0},
-    {"doživiš", "doživjet", 0},
-    {"doživjela", "doživjet", 0},
-    {"doživjele", "doživjet", 0},
-    {"doživjeli", "doživjet", 0},
-    {"doživjelo", "doživjet", 0},
-    {"doživjet", "doživjet", 0},
-    {"doživjeti", "doživjet", 0},
-    {"dragim", "drag", 0},
-    {"dragima", "drag", 0},
-    {"dragimi", "drag", 0},
-    {"držala", "držat", 0},
-    {"držale", "držat", 0},
-    {"držali", "držat", 0},
-    {"držalo", "držat", 0},
-    {"držao", "držat", 0},
-    {"držat", "držat", 0},
-    {"držati", "držat", 0},
-    {"drže", "držat", 0},
-    {"držeći", "držat", 0},
-    {"drži", "držat", 0},
-    {"držim", "držat", 0},
-    {"držimo", "držat", 0},
-    {"držite", "držat", 0},
-    {"držiš", "držat", 0},
-    {"dublja", "dubok", 0},
-    {"dublje", "dubok", 0},
-    {"dubljeg", "dubok", 0},
-    {"dubljega", "dubok", 0},
-    {"dubljem", "dubok", 0},
-    {"dubljemu", "dubok", 0},
-    {"dublji", "dubok", 0},
-    {"dubljih", "dubok", 0},
-    {"dubljim", "dubok", 0},
-    {"dubljima", "dubok", 0},
-    {"dubljoj", "dubok", 0},
-    {"dubljom", "dubok", 0},
-    {"dublju", "dubok", 0},
-    {"financira", "financirat", 0},
-    {"financiraju", "financirat", 0},
-    {"financirala", "financirat", 0},
-    {"financirale", "financirat", 0},
-    {"financirali", "financirat", 0},
-    {"financiralo", "financirat", 0},
-    {"financiram", "financirat", 0},
-    {"financiramo", "financirat", 0},
-    {"financirao", "financirat", 0},
-    {"financirat", "financirat", 0},
-    {"financirate", "financirat", 0},
-    {"financirati", "financirat", 0},
-    {"financiraš", "financirat", 0},
-    {"gase", "gasit", 0},
-    {"gasi", "gasit", 0},
-    {"gasila", "gasit", 0},
-    {"gasile", "gasit", 0},
-    {"gasili", "gasit", 0},
-    {"gasilo", "gasit", 0},
-    {"gasim", "gasit", 0},
-    {"gasimo", "gasit", 0},
-    {"gasio", "gasit", 0},
-    {"gasit", "gasit", 0},
-    {"gasite", "gasit", 0},
-    {"gasiti", "gasit", 0},
-    {"gasiš", "gasit", 0},
-    {"gladak", "glatk", 0},
-    {"gleda", "gledat", 0},
-    {"gledaju", "gledat", 0},
-    {"gledajući", "gledat", 0},
-    {"gledala", "gledat", 0},
-    {"gledale", "gledat", 0},
-    {"gledali", "gledat", 0},
-    {"gledalo", "gledat", 0},
-    {"gledam", "gledat", 0},
-    {"gledamo", "gledat", 0},
-    {"gledao", "gledat", 0},
-    {"gledat", "gledat", 0},
-    {"gledate", "gledat", 0},
-    {"gledati", "gledat", 0},
-    {"gledaš", "gledat", 0},
-    {"glume", "glumit", 0},
-    {"glumi", "glumit", 0},
-    {"glumila", "glumit", 0},
-    {"glumile", "glumit", 0},
-    {"glumili", "glumit", 0},
-    {"glumilo", "glumit", 0},
-    {"glumim", "glumit", 0},
-    {"glumimo", "glumit", 0},
-    {"glumio", "glumit", 0},
-    {"glumit", "glumit", 0},
-    {"glumite", "glumit", 0},
-    {"glumiti", "glumit", 0},
-    {"glumiš", "glumit", 0},
-    {"goreg", "loš", 0},
-    {"gorega", "loš", 0},
-    {"gorem", "loš", 0},
-    {"gori", "loš", 0},
-    {"gorih", "loš", 0},
-    {"gorim", "loš", 0},
-    {"gorima", "loš", 0},
-    {"goroj", "loš", 0},
-    {"govore", "govorit", 0},
-    {"govoreći", "govorit", 0},
-    {"govori", "govorit", 0},
-    {"govorila", "govorit", 0},
-    {"govorile", "govorit", 0},
-    {"govorili", "govorit", 0},
-    {"govorilo", "govorit", 0},
-    {"govorim", "govorit", 0},
-    {"govorimo", "govorit", 0},
-    {"govorio", "govorit", 0},
-    {"govorit", "govorit", 0},
-    {"govorite", "govorit", 0},
-    {"govoriti", "govorit", 0},
-    {"govoriš", "govorit", 0},
-    {"grade", "gradit", 0},
-    {"gradeći", "gradit", 0},
-    {"gradi", "gradit", 0},
-    {"gradila", "gradit", 0},
-    {"gradile", "gradit", 0},
-    {"gradili", "gradit", 0},
-    {"gradilo", "gradit", 0},
-    {"gradim", "gradit", 0},
-    {"gradimo", "gradit", 0},
-    {"gradio", "gradit", 0},
-    {"gradit", "gradit", 0},
-    {"gradite", "gradit", 0},
-    {"graditi", "gradit", 0},
-    {"gradiš", "gradit", 0},
-    {"gube", "gubit", 0},
-    {"gubi", "gubit", 0},
-    {"gubila", "gubit", 0},
-    {"gubile", "gubit", 0},
-    {"gubili", "gubit", 0},
-    {"gubilo", "gubit", 0},
-    {"gubim", "gubit", 0},
-    {"gubimo", "gubit", 0},
-    {"gubio", "gubit", 0},
-    {"gubit", "gubit", 0},
-    {"gubite", "gubit", 0},
-    {"gubiti", "gubit", 0},
-    {"gubiš", "gubit", 0},
-    {"hoda", "hodat", 0},
-    {"hodaju", "hodat", 0},
-    {"hodala", "hodat", 0},
-    {"hodale", "hodat", 0},
-    {"hodali", "hodat", 0},
-    {"hodalo", "hodat", 0},
-    {"hodam", "hodat", 0},
-    {"hodamo", "hodat", 0},
-    {"hodao", "hodat", 0},
-    {"hodat", "hodat", 0},
-    {"hodate", "hodat", 0},
-    {"hodati", "hodat", 0},
-    {"hodaš", "hodat", 0},
-    {"hoće", "ht", 0},
-    {"hoćemo", "ht", 0},
-    {"hoćete", "ht", 0},
-    {"hoćeš", "ht", 0},
-    {"hoću", "ht", 0},
-    {"htijaše", "ht", 0},
-    {"htijući", "ht", 0},
-    {"htio", "ht", 0},
-    {"htjede", "ht", 0},
-    {"htjedoh", "ht", 0},
-    {"htjedosmo", "ht", 0},
-    {"htjedoste", "ht", 0},
-    {"htjedoše", "ht", 0},
-    {"htjela", "ht", 0},
-    {"htjele", "ht", 0},
-    {"htjeli", "ht", 0},
-    {"htjelo", "ht", 0},
-    {"htjeti", "ht", 0},
-    {"ide", "id", 0},
-    {"idem", "id", 0},
-    {"idemo", "id", 0},
-    {"idete", "id", 0},
-    {"ideći", "id", 0},
-    {"ideš", "id", 0},
-    {"idi", "id", 0},
-    {"idimo", "id", 0},
-    {"idite", "id", 0},
-    {"idu", "id", 0},
-    {"idući", "id", 0},
-    {"igra", "igrat", 0},
-    {"igraju", "igrat", 0},
-    {"igrajući", "igrat", 0},
-    {"igrala", "igrat", 0},
-    {"igrale", "igrat", 0},
-    {"igrali", "igrat", 0},
-    {"igralo", "igrat", 0},
-    {"igram", "igrat", 0},
-    {"igramo", "igrat", 0},
-    {"igrao", "igrat", 0},
-    {"igrat", "igrat", 0},
-    {"igrate", "igrat", 0},
-    {"igrati", "igrat", 0},
-    {"igraš", "igrat", 0},
-    {"ima", "imat", 0},
-    {"imaj", "imat", 0},
-    {"imajte", "imat", 0},
-    {"imaju", "imat", 0},
-    {"imajući", "imat", 0},
-    {"imala", "imat", 0},
-    {"imale", "imat", 0},
-    {"imali", "imat", 0},
-    {"imalo", "imat", 0},
-    {"imam", "imat", 0},
-    {"imamo", "imat", 0},
-    {"imao", "imat", 0},
-    {"imat", "imat", 0},
-    {"imate", "imat", 0},
-    {"imati", "imat", 0},
-    {"imavši", "imat", 0},
-    {"imaš", "imat", 0},
-    {"ime", "imen", 0},
-    {"iskoriste", "iskoristit", 0},
-    {"iskoristi", "iskoristit", 0},
-    {"iskoristila", "iskoristit", 0},
-    {"iskoristile", "iskoristit", 0},
-    {"iskoristili", "iskoristit", 0},
-    {"iskoristilo", "iskoristit", 0},
-    {"iskoristim", "iskoristit", 0},
-    {"iskoristimo", "iskoristit", 0},
-    {"iskoristio", "iskoristit", 0},
-    {"iskoristit", "iskoristit", 0},
-    {"iskoristite", "iskoristit", 0},
-    {"iskoristiti", "iskoristit", 0},
-    {"iskoristiš", "iskoristit", 0},
-    {"istraže", "istražit", 0},
-    {"istraži", "istražit", 0},
-    {"istražila", "istražit", 0},
-    {"istražile", "istražit", 0},
-    {"istražili", "istražit", 0},
-    {"istražilo", "istražit", 0},
-    {"istražim", "istražit", 0},
-    {"istražimo", "istražit", 0},
-    {"istražio", "istražit", 0},
-    {"istražit", "istražit", 0},
-    {"istražite", "istražit", 0},
-    {"istražiti", "istražit", 0},
-    {"istraživala", "istraživat", 0},
-    {"istraživale", "istraživat", 0},
-    {"istraživali", "istraživat", 0},
-    {"istraživalo", "istraživat", 0},
-    {"istraživao", "istraživat", 0},
-    {"istraživat", "istraživat", 0},
-    {"istraživati", "istraživat", 0},
-    {"istražiš", "istražit", 0},
-    {"istražuje", "istraživat", 0},
-    {"istražujem", "istraživat", 0},
-    {"istražujemo", "istraživat", 0},
-    {"istražujete", "istraživat", 0},
-    {"istražuješ", "istraživat", 0},
-    {"istražuju", "istraživat", 0},
-    {"izabere", "izabrat", 0},
-    {"izaberem", "izabrat", 0},
-    {"izaberemo", "izabrat", 0},
-    {"izaberete", "izabrat", 0},
-    {"izabereš", "izabrat", 0},
-    {"izaberu", "izabrat", 0},
-    {"izabrala", "izabrat", 0},
-    {"izabrale", "izabrat", 0},
-    {"izabrali", "izabrat", 0},
-    {"izabralo", "izabrat", 0},
-    {"izabrao", "izabrat", 0},
-    {"izabrat", "izabrat", 0},
-    {"izabrati", "izabrat", 0},
-    {"izaći", "izać", 0},
-    {"izađe", "izać", 0},
-    {"izađem", "izać", 0},
-    {"izađemo", "izać", 0},
-    {"izađete", "izać", 0},
-    {"izađeš", "izać", 0},
-    {"izađu", "izać", 0},
-    {"izašao", "izać", 0},
-    {"izašla", "izać", 0},
-    {"izašle", "izać", 0},
-    {"izašli", "izać", 0},
-    {"izašlo", "izać", 0},
-    {"izgube", "izgubit", 0},
-    {"izgubi", "izgubit", 0},
-    {"izgubila", "izgubit", 0},
-    {"izgubile", "izgubit", 0},
-    {"izgubili", "izgubit", 0},
-    {"izgubilo", "izgubit", 0},
-    {"izgubim", "izgubit", 0},
-    {"izgubimo", "izgubit", 0},
-    {"izgubio", "izgubit", 0},
-    {"izgubit", "izgubit", 0},
-    {"izgubite", "izgubit", 0},
-    {"izgubiti", "izgubit", 0},
-    {"izgubiš", "izgubit", 0},
-    {"izlaze", "izlazit", 0},
-    {"izlazi", "izlazit", 0},
-    {"izlazila", "izlazit", 0},
-    {"izlazile", "izlazit", 0},
-    {"izlazili", "izlazit", 0},
-    {"izlazilo", "izlazit", 0},
-    {"izlazim", "izlazit", 0},
-    {"izlazimo", "izlazit", 0},
-    {"izlazio", "izlazit", 0},
-    {"izlazit", "izlazit", 0},
-    {"izlazite", "izlazit", 0},
-    {"izlaziti", "izlazit", 0},
-    {"izlaziš", "izlazit", 0},
-    {"iznese", "iznijet", 0},
-    {"iznesem", "iznijet", 0},
-    {"iznesemo", "iznijet", 0},
-    {"iznesete", "iznijet", 0},
-    {"izneseš", "iznijet", 0},
-    {"iznesu", "iznijet", 0},
-    {"iznijela", "iznijet", 0},
-    {"iznijele", "iznijet", 0},
-    {"iznijeli", "iznijet", 0},
-    {"iznijelo", "iznijet", 0},
-    {"iznijet", "iznijet", 0},
-    {"iznijeti", "iznijet", 0},
-    {"iznio", "iznijet", 0},
-    {"ići", "id", 0},
-    {"išao", "id", 0},
-    {"išla", "id", 0},
-    {"išle", "id", 0},
-    {"išli", "id", 0},
-    {"išlo", "id", 0},
-    {"jakim", "jak", 0},
-    {"jakima", "jak", 0},
-    {"jakimi", "jak", 0},
-    {"jave", "javit", 0},
-    {"javi", "javit", 0},
-    {"javila", "javit", 0},
-    {"javile", "javit", 0},
-    {"javili", "javit", 0},
-    {"javilo", "javit", 0},
-    {"javim", "javit", 0},
-    {"javimo", "javit", 0},
-    {"javio", "javit", 0},
-    {"javit", "javit", 0},
-    {"javite", "javit", 0},
-    {"javiti", "javit", 0},
-    {"javiš", "javit", 0},
-    {"javlja", "javljat", 0},
-    {"javljaju", "javljat", 0},
-    {"javljala", "javljat", 0},
-    {"javljale", "javljat", 0},
-    {"javljali", "javljat", 0},
-    {"javljalo", "javljat", 0},
-    {"javljam", "javljat", 0},
-    {"javljamo", "javljat", 0},
-    {"javljao", "javljat", 0},
-    {"javljat", "javljat", 0},
-    {"javljate", "javljat", 0},
-    {"javljati", "javljat", 0},
-    {"javljaš", "javljat", 0},
-    {"jede", "jed", 0},
-    {"jedem", "jed", 0},
-    {"jedemo", "jed", 0},
-    {"jedete", "jed", 0},
-    {"jedeš", "jed", 0},
-    {"jedi", "jed", 0},
-    {"jedimo", "jed", 0},
-    {"jedite", "jed", 0},
-    {"jedu", "jed", 0},
-    {"jedući", "jed", 0},
-    {"jeo", "jed", 0},
-    {"jesam", "bit", 1},
-    {"jesi", "bit", 1},
-    {"jesmo", "bit", 1},
-    {"jeste", "bit", 1},
-    {"jesti", "jed", 0},
-    {"jesu", "bit", 1},
-    {"kazala", "kazat", 0},
-    {"kazale", "kazat", 0},
-    {"kazali", "kazat", 0},
-    {"kazalo", "kazat", 0},
-    {"kazao", "kazat", 0},
-    {"kazat", "kazat", 0},
-    {"kazati", "kazat", 0},
-    {"kaže", "kazat", 0},
-    {"kažem", "kazat", 0},
-    {"kažemo", "kazat", 0},
-    {"kažete", "kazat", 0},
-    {"kažeš", "kazat", 0},
-    {"kažu", "kazat", 0},
-    {"koriste", "koristit", 0},
-    {"koristeći", "koristit", 0},
-    {"koristi", "koristit", 0},
-    {"koristila", "koristit", 0},
-    {"koristile", "koristit", 0},
-    {"koristili", "koristit", 0},
-    {"koristilo", "koristit", 0},
-    {"koristim", "koristit", 0},
-    {"koristimo", "koristit", 0},
-    {"koristio", "koristit", 0},
-    {"koristit", "koristit", 0},
-    {"koristite", "koristit", 0},
-    {"koristiti", "koristit", 0},
-    {"koristiš", "koristit", 0},
-    {"košta", "koštat", 0},
-    {"koštaju", "koštat", 0},
-    {"koštala", "koštat", 0},
-    {"koštale", "koštat", 0},
-    {"koštali", "koštat", 0},
-    {"koštalo", "koštat", 0},
-    {"koštam", "koštat", 0},
-    {"koštamo", "koštat", 0},
-    {"koštao", "koštat", 0},
-    {"koštat", "koštat", 0},
-    {"koštate", "koštat", 0},
-    {"koštati", "koštat", 0},
-    {"koštaš", "koštat", 0},
-    {"krene", "krenut", 0},
-    {"krenem", "krenut", 0},
-    {"krenemo", "krenut", 0},
-    {"krenete", "krenut", 0},
-    {"kreneš", "krenut", 0},
-    {"krenu", "krenut", 0},
-    {"krenula", "krenut", 0},
-    {"krenule", "krenut", 0},
-    {"krenuli", "krenut", 0},
-    {"krenulo", "krenut", 0},
-    {"krenuo", "krenut", 0},
-    {"krenut", "krenut", 0},
-    {"krenuti", "krenut", 0},
-    {"kretala", "kretat", 0},
-    {"kretale", "kretat", 0},
-    {"kretali", "kretat", 0},
-    {"kretalo", "kretat", 0},
-    {"kretao", "kretat", 0},
-    {"kretat", "kretat", 0},
-    {"kretati", "kretat", 0},
-    {"kreće", "kretat", 0},
-    {"krećem", "kretat", 0},
-    {"krećemo", "kretat", 0},
-    {"krećete", "kretat", 0},
-    {"krećeš", "kretat", 0},
-    {"kreću", "kretat", 0},
-    {"kuha", "kuhat", 0},
-    {"kuhaju", "kuhat", 0},
-    {"kuhala", "kuhat", 0},
-    {"kuhale", "kuhat", 0},
-    {"kuhali", "kuhat", 0},
-    {"kuhalo", "kuhat", 0},
-    {"kuham", "kuhat", 0},
-    {"kuhamo", "kuhat", 0},
-    {"kuhao", "kuhat", 0},
-    {"kuhat", "kuhat", 0},
-    {"kuhate", "kuhat", 0},
-    {"kuhati", "kuhat", 0},
-    {"kuhaš", "kuhat", 0},
-    {"kupe", "kupit", 0},
-    {"kupi", "kupit", 0},
-    {"kupila", "kupit", 0},
-    {"kupile", "kupit", 0},
-    {"kupili", "kupit", 0},
-    {"kupilo", "kupit", 0},
-    {"kupim", "kupit", 0},
-    {"kupimo", "kupit", 0},
-    {"kupio", "kupit", 0},
-    {"kupit", "kupit", 0},
-    {"kupite", "kupit", 0},
-    {"kupiti", "kupit", 0},
-    {"kupiš", "kupit", 0},
-    {"kupovala", "kupovat", 0},
-    {"kupovale", "kupovat", 0},
-    {"kupovali", "kupovat", 0},
-    {"kupovalo", "kupovat", 0},
-    {"kupovao", "kupovat", 0},
-    {"kupovat", "kupovat", 0},
-    {"kupovati", "kupovat", 0},
-    {"kupuje", "kupovat", 0},
-    {"kupujem", "kupovat", 0},
-    {"kupujemo", "kupovat", 0},
-    {"kupujete", "kupovat", 0},
-    {"kupuješ", "kupovat", 0},
-    {"kupuju", "kupovat", 0},
-    {"lagala", "lagat", 0},
-    {"lagale", "lagat", 0},
-    {"lagali", "lagat", 0},
-    {"lagalo", "lagat", 0},
-    {"lagao", "lagat", 0},
-    {"lagat", "lagat", 0},
-    {"lagati", "lagat", 0},
-    {"lakša", "lak", 0},
-    {"lakše", "lak", 0},
-    {"lakšeg", "lak", 0},
-    {"lakšega", "lak", 0},
-    {"lakšem", "lak", 0},
-    {"lakšemu", "lak", 0},
-    {"lakši", "lak", 0},
-    {"lakših", "lak", 0},
-    {"lakšim", "lak", 0},
-    {"lakšima", "lak", 0},
-    {"lakšoj", "lak", 0},
-    {"lakšom", "lak", 0},
-    {"lakšu", "lak", 0},
-    {"laže", "lagat", 0},
-    {"lažem", "lagat", 0},
-    {"lažemo", "lagat", 0},
-    {"lažete", "lagat", 0},
-    {"lažeš", "lagat", 0},
-    {"lažu", "lagat", 0},
-    {"ljube", "ljubit", 0},
-    {"ljubi", "ljubit", 0},
-    {"ljubila", "ljubit", 0},
-    {"ljubile", "ljubit", 0},
-    {"ljubili", "ljubit", 0},
-    {"ljubilo", "ljubit", 0},
-    {"ljubim", "ljubit", 0},
-    {"ljubimo", "ljubit", 0},
-    {"ljubio", "ljubit", 0},
-    {"ljubit", "ljubit", 0},
-    {"ljubite", "ljubit", 0},
-    {"ljubiti", "ljubit", 0},
-    {"ljubiš", "ljubit", 0},
-    {"ljuća", "ljut", 0},
-    {"ljuće", "ljut", 0},
-    {"ljućeg", "ljut", 0},
-    {"ljućega", "ljut", 0},
-    {"ljućem", "ljut", 0},
-    {"ljućemu", "ljut", 0},
-    {"ljući", "ljut", 0},
-    {"ljućih", "ljut", 0},
-    {"ljućim", "ljut", 0},
-    {"ljućima", "ljut", 0},
-    {"ljućoj", "ljut", 0},
-    {"ljućom", "ljut", 0},
-    {"ljuću", "ljut", 0},
-    {"loš", "loš", 0},
-    {"loša", "loš", 0},
-    {"loše", "loš", 0},
-    {"lošeg", "loš", 0},
-    {"lošega", "loš", 0},
-    {"lošem", "loš", 0},
-    {"lošemu", "loš", 0},
-    {"loši", "loš", 0},
-    {"loših", "loš", 0},
-    {"lošim", "loš", 0},
-    {"lošima", "loš", 0},
-    {"lošoj", "loš", 0},
-    {"lošom", "loš", 0},
-    {"lošu", "loš", 0},
-    {"mala", "mal", 0},
-    {"male", "mal", 0},
-    {"mali", "mal", 0},
-    {"malih", "mal", 0},
-    {"malim", "mal", 0},
-    {"malima", "mal", 0},
-    {"malimi", "mal", 0},
-    {"malog", "mal", 0},
-    {"maloga", "mal", 0},
-    {"maloj", "mal", 0},
-    {"malom", "mal", 0},
-    {"malome", "mal", 0},
-    {"malomu", "mal", 0},
-    {"malu", "mal", 0},
-    {"manja", "mal", 0},
-    {"manjeg", "mal", 0},
-    {"manjega", "mal", 0},
-    {"manjem", "mal", 0},
-    {"manjemu", "mal", 0},
-    {"manji", "mal", 0},
-    {"manjih", "mal", 0},
-    {"manjim", "mal", 0},
-    {"manjima", "mal", 0},
-    {"manjoj", "mal", 0},
-    {"manjom", "mal", 0},
-    {"manju", "mal", 0},
-    {"mijenja", "mijenjat", 0},
-    {"mijenjaju", "mijenjat", 0},
-    {"mijenjajući", "mijenjat", 0},
-    {"mijenjala", "mijenjat", 0},
-    {"mijenjale", "mijenjat", 0},
-    {"mijenjali", "mijenjat", 0},
-    {"mijenjalo", "mijenjat", 0},
-    {"mijenjam", "mijenjat", 0},
-    {"mijenjamo", "mijenjat", 0},
-    {"mijenjao", "mijenjat", 0},
-    {"mijenjat", "mijenjat", 0},
-    {"mijenjate", "mijenjat", 0},
-    {"mijenjati", "mijenjat", 0},
-    {"mijenjaš", "mijenjat", 0},
-    {"misle", "mislit", 0},
-    {"misleći", "mislit", 0},
-    {"misli", "mislit", 0},
-    {"mislila", "mislit", 0},
-    {"mislile", "mislit", 0},
-    {"mislili", "mislit", 0},
-    {"mislilo", "mislit", 0},
-    {"mislim", "mislit", 0},
-    {"mislimo", "mislit", 0},
-    {"mislio", "mislit", 0},
-    {"mislit", "mislit", 0},
-    {"mislite", "mislit", 0},
-    {"misliti", "mislit", 0},
-    {"misliš", "mislit", 0},
-    {"mjere", "mjerit", 0},
-    {"mjeri", "mjerit", 0},
-    {"mjerila", "mjerit", 0},
-    {"mjerile", "mjerit", 0},
-    {"mjerili", "mjerit", 0},
-    {"mjerilo", "mjerit", 0},
-    {"mjerim", "mjerit", 0},
-    {"mjerimo", "mjerit", 0},
-    {"mjerio", "mjerit", 0},
-    {"mjerit", "mjerit", 0},
-    {"mjerite", "mjerit", 0},
-    {"mjeriti", "mjerit", 0},
-    {"mjeriš", "mjerit", 0},
-    {"mlad", "mlad", 0},
-    {"mlada", "mlad", 0},
-    {"mlade", "mlad", 0},
-    {"mladi", "mlad", 0},
-    {"mladih", "mlad", 0},
-    {"mladim", "mlad", 0},
-    {"mladima", "mlad", 0},
-    {"mlado", "mlad", 0},
-    {"mladog", "mlad", 0},
-    {"mladoga", "mlad", 0},
-    {"mladoj", "mlad", 0},
-    {"mladom", "mlad", 0},
-    {"mladome", "mlad", 0},
-    {"mladomu", "mlad", 0},
-    {"mladu", "mlad", 0},
-    {"mlađa", "mlad", 0},
-    {"mlađe", "mlad", 0},
-    {"mlađeg", "mlad", 0},
-    {"mlađega", "mlad", 0},
-    {"mlađem", "mlad", 0},
-    {"mlađemu", "mlad", 0},
-    {"mlađi", "mlad", 0},
-    {"mlađih", "mlad", 0},
-    {"mlađim", "mlad", 0},
-    {"mlađima", "mlad", 0},
-    {"mlađoj", "mlad", 0},
-    {"mlađom", "mlad", 0},
-    {"mlađu", "mlad", 0},
-    {"modar", "modr", 0},
-    {"mogu", "moć", 1},
-    {"mokar", "mokr", 0},
-    {"mora", "mor", 1},
-    {"moraju", "mor", 1},
-    {"moram", "mor", 1},
-    {"moramo", "mor", 1},
-    {"morate", "mor", 1},
-    {"moraš", "mor", 1},
-    {"može", "moć", 1},
-    {"možemo", "moć", 1},
-    {"možete", "moć", 1},
-    {"možeš", "moć", 1},
-    {"mrtav", "mrtv", 0},
-    {"mudar", "mudr", 0},
-    {"nada", "nadat", 0},
-    {"nadaju", "nadat", 0},
-    {"nadala", "nadat", 0},
-    {"nadale", "nadat", 0},
-    {"nadali", "nadat", 0},
-    {"nadalo", "nadat", 0},
-    {"nadam", "nadat", 0},
-    {"nadamo", "nadat", 0},
-    {"nadao", "nadat", 0},
-    {"nadat", "nadat", 0},
-    {"nadate", "nadat", 0},
-    {"nadati", "nadat", 0},
-    {"nadaš", "nadat", 0},
-    {"nalaze", "nalazit", 0},
-    {"nalazeći", "nalazit", 0},
-    {"nalazi", "nalazit", 0},
-    {"nalazila", "nalazit", 0},
-    {"nalazile", "nalazit", 0},
-    {"nalazili", "nalazit", 0},
-    {"nalazilo", "nalazit", 0},
-    {"nalazim", "nalazit", 0},
-    {"nalazimo", "nalazit", 0},
-    {"nalazio", "nalazit", 0},
-    {"nalazit", "nalazit", 0},
-    {"nalazite", "nalazit", 0},
-    {"nalaziti", "nalazit", 0},
-    {"nalaziš", "nalazit", 0},
-    {"napada", "napadat", 0},
-    {"napadaju", "napadat", 0},
-    {"napadala", "napadat", 0},
-    {"napadale", "napadat", 0},
-    {"napadali", "napadat", 0},
-    {"napadalo", "napadat", 0},
-    {"napadam", "napadat", 0},
-    {"napadamo", "napadat", 0},
-    {"napadao", "napadat", 0},
-    {"napadat", "napadat", 0},
-    {"napadate", "napadat", 0},
-    {"napadati", "napadat", 0},
-    {"napadaš", "napadat", 0},
-    {"napisala", "napisat", 0},
-    {"napisale", "napisat", 0},
-    {"napisali", "napisat", 0},
-    {"napisalo", "napisat", 0},
-    {"napisao", "napisat", 0},
-    {"napisat", "napisat", 0},
-    {"napisati", "napisat", 0},
-    {"napiše", "napisat", 0},
-    {"napišem", "napisat", 0},
-    {"napišemo", "napisat", 0},
-    {"napišete", "napisat", 0},
-    {"napišeš", "napisat", 0},
-    {"napišu", "napisat", 0},
-    {"naprave", "napravit", 0},
-    {"napravi", "napravit", 0},
-    {"napravila", "napravit", 0},
-    {"napravile", "napravit", 0},
-    {"napravili", "napravit", 0},
-    {"napravilo", "napravit", 0},
-    {"napravim", "napravit", 0},
-    {"napravimo", "napravit", 0},
-    {"napravio", "napravit", 0},
-    {"napravit", "napravit", 0},
-    {"napravite", "napravit", 0},
-    {"napraviti", "napravit", 0},
-    {"napraviš", "napravit", 0},
-    {"napuste", "napustit", 0},
-    {"napusti", "napustit", 0},
-    {"napustila", "napustit", 0},
-    {"napustile", "napustit", 0},
-    {"napustili", "napustit", 0},
-    {"napustilo", "napustit", 0},
-    {"napustim", "napustit", 0},
-    {"napustimo", "napustit", 0},
-    {"napustio", "napustit", 0},
-    {"napustit", "napustit", 0},
-    {"napustite", "napustit", 0},
-    {"napustiti", "napustit", 0},
-    {"napustiš", "napustit", 0},
-    {"napušta", "napuštat", 0},
-    {"napuštaju", "napuštat", 0},
-    {"napuštala", "napuštat", 0},
-    {"napuštale", "napuštat", 0},
-    {"napuštali", "napuštat", 0},
-    {"napuštalo", "napuštat", 0},
-    {"napuštam", "napuštat", 0},
-    {"napuštamo", "napuštat", 0},
-    {"napuštao", "napuštat", 0},
-    {"napuštat", "napuštat", 0},
-    {"napuštate", "napuštat", 0},
-    {"napuštati", "napuštat", 0},
-    {"napuštaš", "napuštat", 0},
-    {"nastala", "nastat", 0},
-    {"nastale", "nastat", 0},
-    {"nastali", "nastat", 0},
-    {"nastalo", "nastat", 0},
-    {"nastane", "nastat", 0},
-    {"nastanem", "nastat", 0},
-    {"nastanemo", "nastat", 0},
-    {"nastanete", "nastat", 0},
-    {"nastaneš", "nastat", 0},
-    {"nastanu", "nastat", 0},
-    {"nastao", "nastat", 0},
-    {"nastat", "nastat", 0},
-    {"nastati", "nastat", 0},
-    {"nastave", "nastavit", 0},
-    {"nastavi", "nastavit", 0},
-    {"nastavila", "nastavit", 0},
-    {"nastavile", "nastavit", 0},
-    {"nastavili", "nastavit", 0},
-    {"nastavilo", "nastavit", 0},
-    {"nastavim", "nastavit", 0},
-    {"nastavimo", "nastavit", 0},
-    {"nastavio", "nastavit", 0},
-    {"nastavit", "nastavit", 0},
-    {"nastavite", "nastavit", 0},
-    {"nastaviti", "nastavit", 0},
-    {"nastaviš", "nastavit", 0},
-    {"nastavlja", "nastavljat", 0},
-    {"nastavljaju", "nastavljat", 0},
-    {"nastavljala", "nastavljat", 0},
-    {"nastavljale", "nastavljat", 0},
-    {"nastavljali", "nastavljat", 0},
-    {"nastavljalo", "nastavljat", 0},
-    {"nastavljam", "nastavljat", 0},
-    {"nastavljamo", "nastavljat", 0},
-    {"nastavljao", "nastavljat", 0},
-    {"nastavljat", "nastavljat", 0},
-    {"nastavljate", "nastavljat", 0},
-    {"nastavljati", "nastavljat", 0},
-    {"nastavljaš", "nastavljat", 0},
-    {"nastupa", "nastupat", 0},
-    {"nastupaju", "nastupat", 0},
-    {"nastupala", "nastupat", 0},
-    {"nastupale", "nastupat", 0},
-    {"nastupali", "nastupat", 0},
-    {"nastupalo", "nastupat", 0},
-    {"nastupam", "nastupat", 0},
-    {"nastupamo", "nastupat", 0},
-    {"nastupao", "nastupat", 0},
-    {"nastupat", "nastupat", 0},
-    {"nastupate", "nastupat", 0},
-    {"nastupati", "nastupat", 0},
-    {"nastupaš", "nastupat", 0},
-    {"nastupe", "nastupit", 0},
-    {"nastupi", "nastupit", 0},
-    {"nastupila", "nastupit", 0},
-    {"nastupile", "nastupit", 0},
-    {"nastupili", "nastupit", 0},
-    {"nastupilo", "nastupit", 0},
-    {"nastupim", "nastupit", 0},
-    {"nastupimo", "nastupit", 0},
-    {"nastupio", "nastupit", 0},
-    {"nastupit", "nastupit", 0},
-    {"nastupite", "nastupit", 0},
-    {"nastupiti", "nastupit", 0},
-    {"nastupiš", "nastupit", 0},
-    {"natjecala", "natjecat", 0},
-    {"natjecale", "natjecat", 0},
-    {"natjecali", "natjecat", 0},
-    {"natjecalo", "natjecat", 0},
-    {"natjecao", "natjecat", 0},
-    {"natjecat", "natjecat", 0},
-    {"natjecati", "natjecat", 0},
-    {"natjera", "natjerat", 0},
-    {"natjeraju", "natjerat", 0},
-    {"natjerala", "natjerat", 0},
-    {"natjerale", "natjerat", 0},
-    {"natjerali", "natjerat", 0},
-    {"natjeralo", "natjerat", 0},
-    {"natjeram", "natjerat", 0},
-    {"natjeramo", "natjerat", 0},
-    {"natjerao", "natjerat", 0},
-    {"natjerat", "natjerat", 0},
-    {"natjerate", "natjerat", 0},
-    {"natjerati", "natjerat", 0},
-    {"natjeraš", "natjerat", 0},
-    {"natječe", "natjecat", 0},
-    {"natječem", "natjecat", 0},
-    {"natječemo", "natjecat", 0},
-    {"natječete", "natjecat", 0},
-    {"natječeš", "natjecat", 0},
-    {"natječu", "natjecat", 0},
-    {"naći", "nać", 0},
-    {"nađe", "nać", 0},
-    {"nađem", "nać", 0},
-    {"nađemo", "nać", 0},
-    {"nađete", "nać", 0},
-    {"nađeš", "nać", 0},
-    {"nađu", "nać", 0},
-    {"našao", "nać", 0},
-    {"našla", "nać", 0},
-    {"našle", "nać", 0},
-    {"našli", "nać", 0},
-    {"našlo", "nać", 0},
-    {"neće", "ht", 0},
-    {"nećemo", "ht", 0},
-    {"nećete", "ht", 0},
-    {"nećeš", "ht", 0},
-    {"neću", "ht", 0},
-    {"nizak", "nisk", 0},
-    {"niža", "nisk", 0},
-    {"niže", "nisk", 0},
-    {"nižeg", "nisk", 0},
-    {"nižega", "nisk", 0},
-    {"nižem", "nisk", 0},
-    {"nižemu", "nisk", 0},
-    {"niži", "nisk", 0},
-    {"nižih", "nisk", 0},
-    {"nižim", "nisk", 0},
-    {"nižima", "nisk", 0},
-    {"nižoj", "nisk", 0},
-    {"nižom", "nisk", 0},
-    {"nižu", "nisk", 0},
-    {"nose", "nosit", 0},
-    {"noseći", "nosit", 0},
-    {"nosi", "nosit", 0},
-    {"nosila", "nosit", 0},
-    {"nosile", "nosit", 0},
-    {"nosili", "nosit", 0},
-    {"nosilo", "nosit", 0},
-    {"nosim", "nosit", 0},
-    {"nosimo", "nosit", 0},
-    {"nosio", "nosit", 0},
-    {"nosit", "nosit", 0},
-    {"nosite", "nosit", 0},
-    {"nositi", "nosit", 0},
-    {"nosiš", "nosit", 0},
-    {"novim", "nov", 0},
-    {"novima", "nov", 0},
-    {"novimi", "nov", 0},
-    {"obave", "obavit", 0},
-    {"obavi", "obavit", 0},
-    {"obavila", "obavit", 0},
-    {"obavile", "obavit", 0},
-    {"obavili", "obavit", 0},
-    {"obavilo", "obavit", 0},
-    {"obavim", "obavit", 0},
-    {"obavimo", "obavit", 0},
-    {"obavio", "obavit", 0},
-    {"obavit", "obavit", 0},
-    {"obavite", "obavit", 0},
-    {"obaviti", "obavit", 0},
-    {"obaviš", "obavit", 0},
-    {"obeća", "obećat", 0},
-    {"obećaju", "obećat", 0},
-    {"obećala", "obećat", 0},
-    {"obećale", "obećat", 0},
-    {"obećali", "obećat", 0},
-    {"obećalo", "obećat", 0},
-    {"obećam", "obećat", 0},
-    {"obećamo", "obećat", 0},
-    {"obećao", "obećat", 0},
-    {"obećat", "obećat", 0},
-    {"obećate", "obećat", 0},
-    {"obećati", "obećat", 0},
-    {"obećava", "obećavat", 0},
-    {"obećavaju", "obećavat", 0},
-    {"obećavala", "obećavat", 0},
-    {"obećavale", "obećavat", 0},
-    {"obećavali", "obećavat", 0},
-    {"obećavalo", "obećavat", 0},
-    {"obećavam", "obećavat", 0},
-    {"obećavamo", "obećavat", 0},
-    {"obećavao", "obećavat", 0},
-    {"obećavat", "obećavat", 0},
-    {"obećavate", "obećavat", 0},
-    {"obećavati", "obećavat", 0},
-    {"obećavaš", "obećavat", 0},
-    {"obećaš", "obećat", 0},
-    {"objasne", "objasnit", 0},
-    {"objasni", "objasnit", 0},
-    {"objasnila", "objasnit", 0},
-    {"objasnile", "objasnit", 0},
-    {"objasnili", "objasnit", 0},
-    {"objasnilo", "objasnit", 0},
-    {"objasnim", "objasnit", 0},
-    {"objasnimo", "objasnit", 0},
-    {"objasnio", "objasnit", 0},
-    {"objasnit", "objasnit", 0},
-    {"objasnite", "objasnit", 0},
-    {"objasniti", "objasnit", 0},
-    {"objasniš", "objasnit", 0},
-    {"objave", "objavit", 0},
-    {"objavi", "objavit", 0},
-    {"objavila", "objavit", 0},
-    {"objavile", "objavit", 0},
-    {"objavili", "objavit", 0},
-    {"objavilo", "objavit", 0},
-    {"objavim", "objavit", 0},
-    {"objavimo", "objavit", 0},
-    {"objavio", "objavit", 0},
-    {"objavit", "objavit", 0},
-    {"objavite", "objavit", 0},
-    {"objaviti", "objavit", 0},
-    {"objaviš", "objavit", 0},
-    {"objašnjava", "objašnjavat", 0},
-    {"objašnjavaju", "objašnjavat", 0},
-    {"objašnjavala", "objašnjavat", 0},
-    {"objašnjavale", "objašnjavat", 0},
-    {"objašnjavali", "objašnjavat", 0},
-    {"objašnjavalo", "objašnjavat", 0},
-    {"objašnjavam", "objašnjavat", 0},
-    {"objašnjavamo", "objašnjavat", 0},
-    {"objašnjavao", "objašnjavat", 0},
-    {"objašnjavat", "objašnjavat", 0},
-    {"objašnjavate", "objašnjavat", 0},
-    {"objašnjavati", "objašnjavat", 0},
-    {"objašnjavaš", "objašnjavat", 0},
-    {"odbija", "odbijat", 0},
-    {"odbijaju", "odbijat", 0},
-    {"odbijala", "odbijat", 0},
-    {"odbijale", "odbijat", 0},
-    {"odbijali", "odbijat", 0},
-    {"odbijalo", "odbijat", 0},
-    {"odbijam", "odbijat", 0},
-    {"odbijamo", "odbijat", 0},
-    {"odbijao", "odbijat", 0},
-    {"odbijat", "odbijat", 0},
-    {"odbijate", "odbijat", 0},
-    {"odbijati", "odbijat", 0},
-    {"odbijaš", "odbijat", 0},
-    {"odbije", "odbit", 0},
-    {"odbijem", "odbit", 0},
-    {"odbijemo", "odbit", 0},
-    {"odbijete", "odbit", 0},
-    {"odbiješ", "odbit", 0},
-    {"odbiju", "odbit", 0},
-    {"odbila", "odbit", 0},
-    {"odbile", "odbit", 0},
-    {"odbili", "odbit", 0},
-    {"odbilo", "odbit", 0},
-    {"odbio", "odbit", 0},
-    {"odbit", "odbit", 0},
-    {"odbiti", "odbit", 0},
-    {"ode", "otić", 0},
-    {"odem", "otić", 0},
-    {"odemo", "otić", 0},
-    {"odete", "otić", 0},
-    {"odeš", "otić", 0},
-    {"odgovara", "odgovarat", 0},
-    {"odgovaraju", "odgovarat", 0},
-    {"odgovarala", "odgovarat", 0},
-    {"odgovarale", "odgovarat", 0},
-    {"odgovarali", "odgovarat", 0},
-    {"odgovaralo", "odgovarat", 0},
-    {"odgovaram", "odgovarat", 0},
-    {"odgovaramo", "odgovarat", 0},
-    {"odgovarao", "odgovarat", 0},
-    {"odgovarat", "odgovarat", 0},
-    {"odgovarate", "odgovarat", 0},
-    {"odgovarati", "odgovarat", 0},
-    {"odgovaraš", "odgovarat", 0},
-    {"odgovore", "odgovorit", 0},
-    {"odgovori", "odgovorit", 0},
-    {"odgovorila", "odgovorit", 0},
-    {"odgovorile", "odgovorit", 0},
-    {"odgovorili", "odgovorit", 0},
-    {"odgovorilo", "odgovorit", 0},
-    {"odgovorim", "odgovorit", 0},
-    {"odgovorimo", "odgovorit", 0},
-    {"odgovorio", "odgovorit", 0},
-    {"odgovorit", "odgovorit", 0},
-    {"odgovorite", "odgovorit", 0},
-    {"odgovoriti", "odgovorit", 0},
-    {"odgovoriš", "odgovorit", 0},
-    {"odi", "otić", 0},
-    {"odite", "otić", 0},
-    {"odlaze", "odlazit", 0},
-    {"odlazi", "odlazit", 0},
-    {"odlazila", "odlazit", 0},
-    {"odlazile", "odlazit", 0},
-    {"odlazili", "odlazit", 0},
-    {"odlazilo", "odlazit", 0},
-    {"odlazim", "odlazit", 0},
-    {"odlazimo", "odlazit", 0},
-    {"odlazio", "odlazit", 0},
-    {"odlazit", "odlazit", 0},
-    {"odlazite", "odlazit", 0},
-    {"odlaziti", "odlazit", 0},
-    {"odlaziš", "odlazit", 0},
-    {"odluče", "odlučit", 0},
-    {"odluči", "odlučit", 0},
-    {"odlučila", "odlučit", 0},
-    {"odlučile", "odlučit", 0},
-    {"odlučili", "odlučit", 0},
-    {"odlučilo", "odlučit", 0},
-    {"odlučim", "odlučit", 0},
-    {"odlučimo", "odlučit", 0},
-    {"odlučio", "odlučit", 0},
-    {"odlučit", "odlučit", 0},
-    {"odlučite", "odlučit", 0},
-    {"odlučiti", "odlučit", 0},
-    {"odlučivala", "odlučivat", 0},
-    {"odlučivale", "odlučivat", 0},
-    {"odlučivali", "odlučivat", 0},
-    {"odlučivalo", "odlučivat", 0},
-    {"odlučivao", "odlučivat", 0},
-    {"odlučivat", "odlučivat", 0},
-    {"odlučivati", "odlučivat", 0},
-    {"odlučiš", "odlučit", 0},
-    {"odlučuje", "odlučivat", 0},
-    {"odlučujem", "odlučivat", 0},
-    {"odlučujemo", "odlučivat", 0},
-    {"odlučujete", "odlučivat", 0},
-    {"odlučuješ", "odlučivat", 0},
-    {"odlučuju", "odlučivat", 0},
-    {"održala", "održat", 0},
-    {"održale", "održat", 0},
-    {"održali", "održat", 0},
-    {"održalo", "održat", 0},
-    {"održao", "održat", 0},
-    {"održat", "održat", 0},
-    {"održati", "održat", 0},
-    {"održava", "održavat", 0},
-    {"održavaju", "održavat", 0},
-    {"održavala", "održavat", 0},
-    {"održavale", "održavat", 0},
-    {"održavali", "održavat", 0},
-    {"održavalo", "održavat", 0},
-    {"održavam", "održavat", 0},
-    {"održavamo", "održavat", 0},
-    {"održavao", "održavat", 0},
-    {"održavat", "održavat", 0},
-    {"održavate", "održavat", 0},
-    {"održavati", "održavat", 0},
-    {"održavaš", "održavat", 0},
-    {"održe", "održat", 0},
-    {"održi", "održat", 0},
-    {"održim", "održat", 0},
-    {"održimo", "održat", 0},
-    {"održite", "održat", 0},
-    {"održiš", "održat", 0},
-    {"odu", "otić", 0},
-    {"opisala", "opisat", 0},
-    {"opisale", "opisat", 0},
-    {"opisali", "opisat", 0},
-    {"opisalo", "opisat", 0},
-    {"opisao", "opisat", 0},
-    {"opisat", "opisat", 0},
-    {"opisati", "opisat", 0},
-    {"opiše", "opisat", 0},
-    {"opišem", "opisat", 0},
-    {"opišemo", "opisat", 0},
-    {"opišete", "opisat", 0},
-    {"opišeš", "opisat", 0},
-    {"opišu", "opisat", 0},
-    {"organizira", "organizirat", 0},
-    {"organiziraju", "organizirat", 0},
-    {"organizirala", "organizirat", 0},
-    {"organizirale", "organizirat", 0},
-    {"organizirali", "organizirat", 0},
-    {"organiziralo", "organizirat", 0},
-    {"organiziram", "organizirat", 0},
-    {"organiziramo", "organizirat", 0},
-    {"organizirao", "organizirat", 0},
-    {"organizirat", "organizirat", 0},
-    {"organizirate", "organizirat", 0},
-    {"organizirati", "organizirat", 0},
-    {"organiziraš", "organizirat", 0},
-    {"osjete", "osjetit", 0},
-    {"osjeti", "osjetit", 0},
-    {"osjetila", "osjetit", 0},
-    {"osjetile", "osjetit", 0},
-    {"osjetili", "osjetit", 0},
-    {"osjetilo", "osjetit", 0},
-    {"osjetim", "osjetit", 0},
-    {"osjetimo", "osjetit", 0},
-    {"osjetio", "osjetit", 0},
-    {"osjetit", "osjetit", 0},
-    {"osjetite", "osjetit", 0},
-    {"osjetiti", "osjetit", 0},
-    {"osjetiš", "osjetit", 0},
-    {"osjeća", "osjećat", 0},
-    {"osjećaju", "osjećat", 0},
-    {"osjećala", "osjećat", 0},
-    {"osjećale", "osjećat", 0},
-    {"osjećali", "osjećat", 0},
-    {"osjećalo", "osjećat", 0},
-    {"osjećam", "osjećat", 0},
-    {"osjećamo", "osjećat", 0},
-    {"osjećao", "osjećat", 0},
-    {"osjećat", "osjećat", 0},
-    {"osjećate", "osjećat", 0},
-    {"osjećati", "osjećat", 0},
-    {"osjećaš", "osjećat", 0},
-    {"oslone", "oslonit", 0},
-    {"osloni", "oslonit", 0},
-    {"oslonila", "oslonit", 0},
-    {"oslonile", "oslonit", 0},
-    {"oslonili", "oslonit", 0},
-    {"oslonilo", "oslonit", 0},
-    {"oslonim", "oslonit", 0},
-    {"oslonimo", "oslonit", 0},
-    {"oslonio", "oslonit", 0},
-    {"oslonit", "oslonit", 0},
-    {"oslonite", "oslonit", 0},
-    {"osloniti", "oslonit", 0},
-    {"osloniš", "oslonit", 0},
-    {"ostala", "ostat", 0},
-    {"ostale", "ostat", 0},
-    {"ostali", "ostat", 0},
-    {"ostalo", "ostat", 0},
-    {"ostane", "ostat", 0},
-    {"ostanem", "ostat", 0},
-    {"ostanemo", "ostat", 0},
-    {"ostanete", "ostat", 0},
-    {"ostaneš", "ostat", 0},
-    {"ostanu", "ostat", 0},
-    {"ostao", "ostat", 0},
-    {"ostat", "ostat", 0},
-    {"ostati", "ostat", 0},
-    {"ostave", "ostavit", 0},
-    {"ostavi", "ostavit", 0},
-    {"ostavila", "ostavit", 0},
-    {"ostavile", "ostavit", 0},
-    {"ostavili", "ostavit", 0},
-    {"ostavilo", "ostavit", 0},
-    {"ostavim", "ostavit", 0},
-    {"ostavimo", "ostavit", 0},
-    {"ostavio", "ostavit", 0},
-    {"ostavit", "ostavit", 0},
-    {"ostavite", "ostavit", 0},
-    {"ostaviti", "ostavit", 0},
-    {"ostaviš", "ostavit", 0},
-    {"ostvare", "ostvarit", 0},
-    {"ostvari", "ostvarit", 0},
-    {"ostvarila", "ostvarit", 0},
-    {"ostvarile", "ostvarit", 0},
-    {"ostvarili", "ostvarit", 0},
-    {"ostvarilo", "ostvarit", 0},
-    {"ostvarim", "ostvarit", 0},
-    {"ostvarimo", "ostvarit", 0},
-    {"ostvario", "ostvarit", 0},
-    {"ostvarit", "ostvarit", 0},
-    {"ostvarite", "ostvarit", 0},
-    {"ostvariti", "ostvarit", 0},
-    {"ostvarivala", "ostvarivat", 0},
-    {"ostvarivale", "ostvarivat", 0},
-    {"ostvarivali", "ostvarivat", 0},
-    {"ostvarivalo", "ostvarivat", 0},
-    {"ostvarivao", "ostvarivat", 0},
-    {"ostvarivat", "ostvarivat", 0},
-    {"ostvarivati", "ostvarivat", 0},
-    {"ostvariš", "ostvarit", 0},
-    {"ostvaruje", "ostvarivat", 0},
-    {"ostvarujem", "ostvarivat", 0},
-    {"ostvarujemo", "ostvarivat", 0},
-    {"ostvarujete", "ostvarivat", 0},
-    {"ostvaruješ", "ostvarivat", 0},
-    {"ostvaruju", "ostvarivat", 0},
-    {"otići", "otić", 0},
-    {"otišao", "otić", 0},
-    {"otišla", "otić", 0},
-    {"otišle", "otić", 0},
-    {"otišli", "otić", 0},
-    {"otišlo", "otić", 0},
-    {"otvore", "otvorit", 0},
-    {"otvori", "otvorit", 0},
-    {"otvorila", "otvorit", 0},
-    {"otvorile", "otvorit", 0},
-    {"otvorili", "otvorit", 0},
-    {"otvorilo", "otvorit", 0},
-    {"otvorim", "otvorit", 0},
-    {"otvorimo", "otvorit", 0},
-    {"otvorio", "otvorit", 0},
-    {"otvorit", "otvorit", 0},
-    {"otvorite", "otvorit", 0},
-    {"otvoriti", "otvorit", 0},
-    {"otvoriš", "otvorit", 0},
-    {"očekivala", "očekivat", 0},
-    {"očekivale", "očekivat", 0},
-    {"očekivali", "očekivat", 0},
-    {"očekivalo", "očekivat", 0},
-    {"očekivao", "očekivat", 0},
-    {"očekivat", "očekivat", 0},
-    {"očekivati", "očekivat", 0},
-    {"očekuje", "očekivat", 0},
-    {"očekujem", "očekivat", 0},
-    {"očekujemo", "očekivat", 0},
-    {"očekujete", "očekivat", 0},
-    {"očekuješ", "očekivat", 0},
-    {"očekuju", "očekivat", 0},
-    {"oštar", "oštr", 0},
-    {"padne", "past", 0},
-    {"padnem", "past", 0},
-    {"padnemo", "past", 0},
-    {"padnete", "past", 0},
-    {"padneš", "past", 0},
-    {"padnu", "past", 0},
-    {"pala", "past", 0},
-    {"pale", "past", 0},
-    {"pali", "past", 0},
-    {"palo", "past", 0},
-    {"pao", "past", 0},
-    {"past", "past", 0},
-    {"pasti", "past", 0},
-    {"paze", "pazit", 0},
-    {"pazi", "pazit", 0},
-    {"pazila", "pazit", 0},
-    {"pazile", "pazit", 0},
-    {"pazili", "pazit", 0},
-    {"pazilo", "pazit", 0},
-    {"pazim", "pazit", 0},
-    {"pazimo", "pazit", 0},
-    {"pazio", "pazit", 0},
-    {"pazit", "pazit", 0},
-    {"pazite", "pazit", 0},
-    {"paziti", "pazit", 0},
-    {"paziš", "pazit", 0},
-    {"pije", "pit", 0},
-    {"pijem", "pit", 0},
-    {"pijemo", "pit", 0},
-    {"pijete", "pit", 0},
-    {"piješ", "pit", 0},
-    {"piju", "pit", 0},
-    {"pila", "pit", 0},
-    {"pile", "pit", 0},
-    {"pili", "pit", 0},
-    {"pilo", "pit", 0},
-    {"pio", "pit", 0},
-    {"pisala", "pisat", 0},
-    {"pisale", "pisat", 0},
-    {"pisali", "pisat", 0},
-    {"pisalo", "pisat", 0},
-    {"pisao", "pisat", 0},
-    {"pisat", "pisat", 0},
-    {"pisati", "pisat", 0},
-    {"pit", "pit", 0},
-    {"pita", "pitat", 0},
-    {"pitaju", "pitat", 0},
-    {"pitajući", "pitat", 0},
-    {"pitala", "pitat", 0},
-    {"pitale", "pitat", 0},
-    {"pitali", "pitat", 0},
-    {"pitalo", "pitat", 0},
-    {"pitam", "pitat", 0},
-    {"pitamo", "pitat", 0},
-    {"pitao", "pitat", 0},
-    {"pitat", "pitat", 0},
-    {"pitate", "pitat", 0},
-    {"pitati", "pitat", 0},
-    {"pitaš", "pitat", 0},
-    {"piti", "pit", 0},
-    {"piše", "pisat", 0},
-    {"pišem", "pisat", 0},
-    {"pišemo", "pisat", 0},
-    {"pišete", "pisat", 0},
-    {"pišeš", "pisat", 0},
-    {"pišu", "pisat", 0},
-    {"pišući", "pisat", 0},
-    {"pjeva", "pjevat", 0},
-    {"pjevaju", "pjevat", 0},
-    {"pjevala", "pjevat", 0},
-    {"pjevale", "pjevat", 0},
-    {"pjevali", "pjevat", 0},
-    {"pjevalo", "pjevat", 0},
-    {"pjevam", "pjevat", 0},
-    {"pjevamo", "pjevat", 0},
-    {"pjevao", "pjevat", 0},
-    {"pjevat", "pjevat", 0},
-    {"pjevate", "pjevat", 0},
-    {"pjevati", "pjevat", 0},
-    {"pjevaš", "pjevat", 0},
-    {"plakala", "plakat", 0},
-    {"plakale", "plakat", 0},
-    {"plakali", "plakat", 0},
-    {"plakalo", "plakat", 0},
-    {"plakao", "plakat", 0},
-    {"plakat", "plakat", 0},
-    {"plakati", "plakat", 0},
-    {"plate", "platit", 0},
-    {"plati", "platit", 0},
-    {"platila", "platit", 0},
-    {"platile", "platit", 0},
-    {"platili", "platit", 0},
-    {"platilo", "platit", 0},
-    {"platim", "platit", 0},
-    {"platimo", "platit", 0},
-    {"platio", "platit", 0},
-    {"platit", "platit", 0},
-    {"platite", "platit", 0},
-    {"platiti", "platit", 0},
-    {"platiš", "platit", 0},
-    {"plače", "plakat", 0},
-    {"plačem", "plakat", 0},
-    {"plačemo", "plakat", 0},
-    {"plačete", "plakat", 0},
-    {"plačeš", "plakat", 0},
-    {"plaču", "plakat", 0},
-    {"pobijede", "pobijedit", 0},
-    {"pobijedi", "pobijedit", 0},
-    {"pobijedila", "pobijedit", 0},
-    {"pobijedile", "pobijedit", 0},
-    {"pobijedili", "pobijedit", 0},
-    {"pobijedilo", "pobijedit", 0},
-    {"pobijedim", "pobijedit", 0},
-    {"pobijedimo", "pobijedit", 0},
-    {"pobijedio", "pobijedit", 0},
-    {"pobijedit", "pobijedit", 0},
-    {"pobijedite", "pobijedit", 0},
-    {"pobijediti", "pobijedit", 0},
-    {"pobijediš", "pobijedit", 0},
-    {"pobjegao", "pobjeć", 0},
-    {"pobjegla", "pobjeć", 0},
-    {"pobjegle", "pobjeć", 0},
-    {"pobjegli", "pobjeć", 0},
-    {"pobjeglo", "pobjeć", 0},
-    {"pobjegne", "pobjeć", 0},
-    {"pobjegnem", "pobjeć", 0},
-    {"pobjegnemo", "pobjeć", 0},
-    {"pobjegnete", "pobjeć", 0},
-    {"pobjegneš", "pobjeć", 0},
-    {"pobjegnu", "pobjeć", 0},
-    {"pobjeći", "pobjeć", 0},
-    {"pogleda", "pogledat", 0},
-    {"pogledaju", "pogledat", 0},
-    {"pogledala", "pogledat", 0},
-    {"pogledale", "pogledat", 0},
-    {"pogledali", "pogledat", 0},
-    {"pogledalo", "pogledat", 0},
-    {"pogledam", "pogledat", 0},
-    {"pogledamo", "pogledat", 0},
-    {"pogledao", "pogledat", 0},
-    {"pogledat", "pogledat", 0},
-    {"pogledate", "pogledat", 0},
-    {"pogledati", "pogledat", 0},
-    {"pogledaš", "pogledat", 0},
-    {"pogode", "pogodit", 0},
-    {"pogodi", "pogodit", 0},
-    {"pogodila", "pogodit", 0},
-    {"pogodile", "pogodit", 0},
-    {"pogodili", "pogodit", 0},
-    {"pogodilo", "pogodit", 0},
-    {"pogodim", "pogodit", 0},
-    {"pogodimo", "pogodit", 0},
-    {"pogodio", "pogodit", 0},
-    {"pogodit", "pogodit", 0},
-    {"pogodite", "pogodit", 0},
-    {"pogoditi", "pogodit", 0},
-    {"pogodiš", "pogodit", 0},
-    {"pojave", "pojavit", 0},
-    {"pojavi", "pojavit", 0},
-    {"pojavila", "pojavit", 0},
-    {"pojavile", "pojavit", 0},
-    {"pojavili", "pojavit", 0},
-    {"pojavilo", "pojavit", 0},
-    {"pojavim", "pojavit", 0},
-    {"pojavimo", "pojavit", 0},
-    {"pojavio", "pojavit", 0},
-    {"pojavit", "pojavit", 0},
-    {"pojavite", "pojavit", 0},
-    {"pojaviti", "pojavit", 0},
-    {"pojaviš", "pojavit", 0},
-    {"pojavljivala", "pojavljivat", 0},
-    {"pojavljivale", "pojavljivat", 0},
-    {"pojavljivali", "pojavljivat", 0},
-    {"pojavljivalo", "pojavljivat", 0},
-    {"pojavljivao", "pojavljivat", 0},
-    {"pojavljivat", "pojavljivat", 0},
-    {"pojavljivati", "pojavljivat", 0},
-    {"pojavljuje", "pojavljivat", 0},
-    {"pojavljujem", "pojavljivat", 0},
-    {"pojavljujemo", "pojavljivat", 0},
-    {"pojavljujete", "pojavljivat", 0},
-    {"pojavljuješ", "pojavljivat", 0},
-    {"pojavljuju", "pojavljivat", 0},
-    {"pojede", "pojest", 0},
-    {"pojedem", "pojest", 0},
-    {"pojedemo", "pojest", 0},
-    {"pojedete", "pojest", 0},
-    {"pojedeš", "pojest", 0},
-    {"pojedu", "pojest", 0},
-    {"pojela", "pojest", 0},
-    {"pojele", "pojest", 0},
-    {"pojeli", "pojest", 0},
-    {"pojelo", "pojest", 0},
-    {"pojeo", "pojest", 0},
-    {"pojest", "pojest", 0},
-    {"pojesti", "pojest", 0},
-    {"pokazala", "pokazat", 0},
-    {"pokazale", "pokazat", 0},
-    {"pokazali", "pokazat", 0},
-    {"pokazalo", "pokazat", 0},
-    {"pokazao", "pokazat", 0},
-    {"pokazat", "pokazat", 0},
-    {"pokazati", "pokazat", 0},
-    {"pokazivala", "pokazivat", 0},
-    {"pokazivale", "pokazivat", 0},
-    {"pokazivali", "pokazivat", 0},
-    {"pokazivalo", "pokazivat", 0},
-    {"pokazivao", "pokazivat", 0},
-    {"pokazivat", "pokazivat", 0},
-    {"pokazivati", "pokazivat", 0},
-    {"pokazuje", "pokazivat", 0},
-    {"pokazujem", "pokazivat", 0},
-    {"pokazujemo", "pokazivat", 0},
-    {"pokazujete", "pokazivat", 0},
-    {"pokazuješ", "pokazivat", 0},
-    {"pokazuju", "pokazivat", 0},
-    {"pokaže", "pokazat", 0},
-    {"pokažem", "pokazat", 0},
-    {"pokažemo", "pokazat", 0},
-    {"pokažete", "pokazat", 0},
-    {"pokažeš", "pokazat", 0},
-    {"pokažu", "pokazat", 0},
-    {"pokrene", "pokrenut", 0},
-    {"pokrenem", "pokrenut", 0},
-    {"pokrenemo", "pokrenut", 0},
-    {"pokrenete", "pokrenut", 0},
-    {"pokreneš", "pokrenut", 0},
-    {"pokrenu", "pokrenut", 0},
-    {"pokrenula", "pokrenut", 0},
-    {"pokrenule", "pokrenut", 0},
-    {"pokrenuli", "pokrenut", 0},
-    {"pokrenulo", "pokrenut", 0},
-    {"pokrenuo", "pokrenut", 0},
-    {"pokrenut", "pokrenut", 0},
-    {"pokrenuti", "pokrenut", 0},
-    {"pokrije", "pokrit", 0},
-    {"pokrijem", "pokrit", 0},
-    {"pokrijemo", "pokrit", 0},
-    {"pokrijete", "pokrit", 0},
-    {"pokriješ", "pokrit", 0},
-    {"pokriju", "pokrit", 0},
-    {"pokrila", "pokrit", 0},
-    {"pokrile", "pokrit", 0},
-    {"pokrili", "pokrit", 0},
-    {"pokrilo", "pokrit", 0},
-    {"pokrio", "pokrit", 0},
-    {"pokrit", "pokrit", 0},
-    {"pokriti", "pokrit", 0},
-    {"pokuša", "pokušat", 0},
-    {"pokušaju", "pokušat", 0},
-    {"pokušala", "pokušat", 0},
-    {"pokušale", "pokušat", 0},
-    {"pokušali", "pokušat", 0},
-    {"pokušalo", "pokušat", 0},
-    {"pokušam", "pokušat", 0},
-    {"pokušamo", "pokušat", 0},
-    {"pokušao", "pokušat", 0},
-    {"pokušat", "pokušat", 0},
-    {"pokušate", "pokušat", 0},
-    {"pokušati", "pokušat", 0},
-    {"pokušava", "pokušavat", 0},
-    {"pokušavaju", "pokušavat", 0},
-    {"pokušavala", "pokušavat", 0},
-    {"pokušavale", "pokušavat", 0},
-    {"pokušavali", "pokušavat", 0},
-    {"pokušavalo", "pokušavat", 0},
-    {"pokušavam", "pokušavat", 0},
-    {"pokušavamo", "pokušavat", 0},
-    {"pokušavao", "pokušavat", 0},
-    {"pokušavat", "pokušavat", 0},
-    {"pokušavate", "pokušavat", 0},
-    {"pokušavati", "pokušavat", 0},
-    {"pokušavaš", "pokušavat", 0},
-    {"pokušaš", "pokušat", 0},
-    {"pomogao", "pomoć", 0},
-    {"pomogla", "pomoć", 0},
-    {"pomogle", "pomoć", 0},
-    {"pomogli", "pomoć", 0},
-    {"pomoglo", "pomoć", 0},
-    {"pomogne", "pomoć", 0},
-    {"pomognem", "pomoć", 0},
-    {"pomognemo", "pomoć", 0},
-    {"pomognete", "pomoć", 0},
-    {"pomogneš", "pomoć", 0},
-    {"pomognu", "pomoć", 0},
-    {"pomoći", "pomoć", 0},
-    {"ponavlja", "ponavljat", 0},
-    {"ponavljaju", "ponavljat", 0},
-    {"ponavljala", "ponavljat", 0},
-    {"ponavljale", "ponavljat", 0},
-    {"ponavljali", "ponavljat", 0},
-    {"ponavljalo", "ponavljat", 0},
-    {"ponavljam", "ponavljat", 0},
-    {"ponavljamo", "ponavljat", 0},
-    {"ponavljao", "ponavljat", 0},
-    {"ponavljat", "ponavljat", 0},
-    {"ponavljate", "ponavljat", 0},
-    {"ponavljati", "ponavljat", 0},
-    {"ponavljaš", "ponavljat", 0},
-    {"ponaša", "ponašat", 0},
-    {"ponašaju", "ponašat", 0},
-    {"ponašala", "ponašat", 0},
-    {"ponašale", "ponašat", 0},
-    {"ponašali", "ponašat", 0},
-    {"ponašalo", "ponašat", 0},
-    {"ponašam", "ponašat", 0},
-    {"ponašamo", "ponašat", 0},
-    {"ponašao", "ponašat", 0},
-    {"ponašat", "ponašat", 0},
-    {"ponašate", "ponašat", 0},
-    {"ponašati", "ponašat", 0},
-    {"ponašaš", "ponašat", 0},
-    {"ponove", "ponovit", 0},
-    {"ponovi", "ponovit", 0},
-    {"ponovila", "ponovit", 0},
-    {"ponovile", "ponovit", 0},
-    {"ponovili", "ponovit", 0},
-    {"ponovilo", "ponovit", 0},
-    {"ponovim", "ponovit", 0},
-    {"ponovimo", "ponovit", 0},
-    {"ponovio", "ponovit", 0},
-    {"ponovit", "ponovit", 0},
-    {"ponovite", "ponovit", 0},
-    {"ponoviti", "ponovit", 0},
-    {"ponoviš", "ponovit", 0},
-    {"ponude", "ponudit", 0},
-    {"ponudi", "ponudit", 0},
-    {"ponudila", "ponudit", 0},
-    {"ponudile", "ponudit", 0},
-    {"ponudili", "ponudit", 0},
-    {"ponudilo", "ponudit", 0},
-    {"ponudim", "ponudit", 0},
-    {"ponudimo", "ponudit", 0},
-    {"ponudio", "ponudit", 0},
-    {"ponudit", "ponudit", 0},
-    {"ponudite", "ponudit", 0},
-    {"ponuditi", "ponudit", 0},
-    {"ponudiš", "ponudit", 0},
-    {"popije", "popit", 0},
-    {"popijem", "popit", 0},
-    {"popijemo", "popit", 0},
-    {"popijete", "popit", 0},
-    {"popiješ", "popit", 0},
-    {"popiju", "popit", 0},
-    {"popila", "popit", 0},
-    {"popile", "popit", 0},
-    {"popili", "popit", 0},
-    {"popilo", "popit", 0},
-    {"popio", "popit", 0},
-    {"popit", "popit", 0},
-    {"popiti", "popit", 0},
-    {"posjete", "posjetit", 0},
-    {"posjeti", "posjetit", 0},
-    {"posjetila", "posjetit", 0},
-    {"posjetile", "posjetit", 0},
-    {"posjetili", "posjetit", 0},
-    {"posjetilo", "posjetit", 0},
-    {"posjetim", "posjetit", 0},
-    {"posjetimo", "posjetit", 0},
-    {"posjetio", "posjetit", 0},
-    {"posjetit", "posjetit", 0},
-    {"posjetite", "posjetit", 0},
-    {"posjetiti", "posjetit", 0},
-    {"posjetiš", "posjetit", 0},
-    {"posjećivala", "posjećivat", 0},
-    {"posjećivale", "posjećivat", 0},
-    {"posjećivali", "posjećivat", 0},
-    {"posjećivalo", "posjećivat", 0},
-    {"posjećivao", "posjećivat", 0},
-    {"posjećivat", "posjećivat", 0},
-    {"posjećivati", "posjećivat", 0},
-    {"posjećuje", "posjećivat", 0},
-    {"posjećujem", "posjećivat", 0},
-    {"posjećujemo", "posjećivat", 0},
-    {"posjećujete", "posjećivat", 0},
-    {"posjećuješ", "posjećivat", 0},
-    {"posjećuju", "posjećivat", 0},
-    {"poslala", "poslat", 0},
-    {"poslale", "poslat", 0},
-    {"poslali", "poslat", 0},
-    {"poslalo", "poslat", 0},
-    {"poslao", "poslat", 0},
-    {"poslat", "poslat", 0},
-    {"poslati", "poslat", 0},
-    {"postala", "postat", 0},
-    {"postale", "postat", 0},
-    {"postali", "postat", 0},
-    {"postalo", "postat", 0},
-    {"postane", "postat", 0},
-    {"postanem", "postat", 0},
-    {"postanemo", "postat", 0},
-    {"postanete", "postat", 0},
-    {"postaneš", "postat", 0},
-    {"postanu", "postat", 0},
-    {"postao", "postat", 0},
-    {"postat", "postat", 0},
-    {"postati", "postat", 0},
-    {"postave", "postavit", 0},
-    {"postavi", "postavit", 0},
-    {"postavila", "postavit", 0},
-    {"postavile", "postavit", 0},
-    {"postavili", "postavit", 0},
-    {"postavilo", "postavit", 0},
-    {"postavim", "postavit", 0},
-    {"postavimo", "postavit", 0},
-    {"postavio", "postavit", 0},
-    {"postavit", "postavit", 0},
-    {"postavite", "postavit", 0},
-    {"postaviti", "postavit", 0},
-    {"postaviš", "postavit", 0},
-    {"potpisala", "potpisat", 0},
-    {"potpisale", "potpisat", 0},
-    {"potpisali", "potpisat", 0},
-    {"potpisalo", "potpisat", 0},
-    {"potpisao", "potpisat", 0},
-    {"potpisat", "potpisat", 0},
-    {"potpisati", "potpisat", 0},
-    {"potpisivala", "potpisivat", 0},
-    {"potpisivale", "potpisivat", 0},
-    {"potpisivali", "potpisivat", 0},
-    {"potpisivalo", "potpisivat", 0},
-    {"potpisivao", "potpisivat", 0},
-    {"potpisivat", "potpisivat", 0},
-    {"potpisivati", "potpisivat", 0},
-    {"potpisuje", "potpisivat", 0},
-    {"potpisujem", "potpisivat", 0},
-    {"potpisujemo", "potpisivat", 0},
-    {"potpisujete", "potpisivat", 0},
-    {"potpisuješ", "potpisivat", 0},
-    {"potpisuju", "potpisivat", 0},
-    {"potpiše", "potpisat", 0},
-    {"potpišem", "potpisat", 0},
-    {"potpišemo", "potpisat", 0},
-    {"potpišete", "potpisat", 0},
-    {"potpišeš", "potpisat", 0},
-    {"potpišu", "potpisat", 0},
-    {"potroše", "potrošit", 0},
-    {"potroši", "potrošit", 0},
-    {"potrošila", "potrošit", 0},
-    {"potrošile", "potrošit", 0},
-    {"potrošili", "potrošit", 0},
-    {"potrošilo", "potrošit", 0},
-    {"potrošim", "potrošit", 0},
-    {"potrošimo", "potrošit", 0},
-    {"potrošio", "potrošit", 0},
-    {"potrošit", "potrošit", 0},
-    {"potrošite", "potrošit", 0},
-    {"potrošiti", "potrošit", 0},
-    {"potrošiš", "potrošit", 0},
-    {"poznaje", "poznavat", 0},
-    {"poznajem", "poznavat", 0},
-    {"poznajemo", "poznavat", 0},
-    {"poznajete", "poznavat", 0},
-    {"poznaješ", "poznavat", 0},
-    {"poznaju", "poznavat", 0},
-    {"poznavala", "poznavat", 0},
-    {"poznavale", "poznavat", 0},
-    {"poznavali", "poznavat", 0},
-    {"poznavalo", "poznavat", 0},
-    {"poznavao", "poznavat", 0},
-    {"poznavat", "poznavat", 0},
-    {"poznavati", "poznavat", 0},
-    {"počela", "počet", 0},
-    {"počele", "počet", 0},
-    {"počeli", "počet", 0},
-    {"počelo", "počet", 0},
-    {"počeo", "počet", 0},
-    {"početi", "počet", 0},
-    {"počne", "počet", 0},
-    {"počnem", "počet", 0},
-    {"počnemo", "počet", 0},
-    {"počnete", "počet", 0},
-    {"počneš", "počet", 0},
-    {"počnu", "počet", 0},
-    {"pošalje", "poslat", 0},
-    {"pošaljem", "poslat", 0},
-    {"pošaljemo", "poslat", 0},
-    {"pošaljete", "poslat", 0},
-    {"pošalješ", "poslat", 0},
-    {"pošalju", "poslat", 0},
-    {"prate", "pratit", 0},
-    {"prateći", "pratit", 0},
-    {"prati", "pratit", 0},
-    {"pratila", "pratit", 0},
-    {"pratile", "pratit", 0},
-    {"pratili", "pratit", 0},
-    {"pratilo", "pratit", 0},
-    {"pratim", "pratit", 0},
-    {"pratimo", "pratit", 0},
-    {"pratio", "pratit", 0},
-    {"pratit", "pratit", 0},
-    {"pratite", "pratit", 0},
-    {"pratiti", "pratit", 0},
-    {"pratiš", "pratit", 0},
-    {"predlagala", "predlagat", 0},
-    {"predlagale", "predlagat", 0},
-    {"predlagali", "predlagat", 0},
-    {"predlagalo", "predlagat", 0},
-    {"predlagao", "predlagat", 0},
-    {"predlagat", "predlagat", 0},
-    {"predlagati", "predlagat", 0},
-    {"predlaže", "predlagat", 0},
-    {"predlažem", "predlagat", 0},
-    {"predlažemo", "predlagat", 0},
-    {"predlažete", "predlagat", 0},
-    {"predlažeš", "predlagat", 0},
-    {"predlažu", "predlagat", 0},
-    {"predlože", "predložit", 0},
-    {"predloži", "predložit", 0},
-    {"predložila", "predložit", 0},
-    {"predložile", "predložit", 0},
-    {"predložili", "predložit", 0},
-    {"predložilo", "predložit", 0},
-    {"predložim", "predložit", 0},
-    {"predložimo", "predložit", 0},
-    {"predložio", "predložit", 0},
-    {"predložit", "predložit", 0},
-    {"predložite", "predložit", 0},
-    {"predložiti", "predložit", 0},
-    {"predložiš", "predložit", 0},
-    {"predstave", "predstavit", 0},
-    {"predstavi", "predstavit", 0},
-    {"predstavila", "predstavit", 0},
-    {"predstavile", "predstavit", 0},
-    {"predstavili", "predstavit", 0},
-    {"predstavilo", "predstavit", 0},
-    {"predstavim", "predstavit", 0},
-    {"predstavimo", "predstavit", 0},
-    {"predstavio", "predstavit", 0},
-    {"predstavit", "predstavit", 0},
-    {"predstavite", "predstavit", 0},
-    {"predstaviti", "predstavit", 0},
-    {"predstaviš", "predstavit", 0},
-    {"predstavlja", "predstavljat", 0},
-    {"predstavljaju", "predstavljat", 0},
-    {"predstavljala", "predstavljat", 0},
-    {"predstavljale", "predstavljat", 0},
-    {"predstavljali", "predstavljat", 0},
-    {"predstavljalo", "predstavljat", 0},
-    {"predstavljam", "predstavljat", 0},
-    {"predstavljamo", "predstavljat", 0},
-    {"predstavljao", "predstavljat", 0},
-    {"predstavljat", "predstavljat", 0},
-    {"predstavljate", "predstavljat", 0},
-    {"predstavljati", "predstavljat", 0},
-    {"predstavljaš", "predstavljat", 0},
-    {"predvide", "predvidjet", 0},
-    {"predvidi", "predvidjet", 0},
-    {"predvidim", "predvidjet", 0},
-    {"predvidimo", "predvidjet", 0},
-    {"predvidio", "predvidjet", 0},
-    {"predvidite", "predvidjet", 0},
-    {"predvidiš", "predvidjet", 0},
-    {"predvidjela", "predvidjet", 0},
-    {"predvidjele", "predvidjet", 0},
-    {"predvidjeli", "predvidjet", 0},
-    {"predvidjelo", "predvidjet", 0},
-    {"predvidjet", "predvidjet", 0},
-    {"predvidjeti", "predvidjet", 0},
-    {"predviđa", "predviđat", 0},
-    {"predviđaju", "predviđat", 0},
-    {"predviđala", "predviđat", 0},
-    {"predviđale", "predviđat", 0},
-    {"predviđali", "predviđat", 0},
-    {"predviđalo", "predviđat", 0},
-    {"predviđam", "predviđat", 0},
-    {"predviđamo", "predviđat", 0},
-    {"predviđao", "predviđat", 0},
-    {"predviđat", "predviđat", 0},
-    {"predviđate", "predviđat", 0},
-    {"predviđati", "predviđat", 0},
-    {"predviđaš", "predviđat", 0},
-    {"pregleda", "pregledat", 0},
-    {"pregledaju", "pregledat", 0},
-    {"pregledala", "pregledat", 0},
-    {"pregledale", "pregledat", 0},
-    {"pregledali", "pregledat", 0},
-    {"pregledalo", "pregledat", 0},
-    {"pregledam", "pregledat", 0},
-    {"pregledamo", "pregledat", 0},
-    {"pregledao", "pregledat", 0},
-    {"pregledat", "pregledat", 0},
-    {"pregledate", "pregledat", 0},
-    {"pregledati", "pregledat", 0},
-    {"pregledaš", "pregledat", 0},
-    {"prekida", "prekidat", 0},
-    {"prekidaju", "prekidat", 0},
-    {"prekidala", "prekidat", 0},
-    {"prekidale", "prekidat", 0},
-    {"prekidali", "prekidat", 0},
-    {"prekidalo", "prekidat", 0},
-    {"prekidam", "prekidat", 0},
-    {"prekidamo", "prekidat", 0},
-    {"prekidao", "prekidat", 0},
-    {"prekidat", "prekidat", 0},
-    {"prekidate", "prekidat", 0},
-    {"prekidati", "prekidat", 0},
-    {"prekidaš", "prekidat", 0},
-    {"prekine", "prekinut", 0},
-    {"prekinem", "prekinut", 0},
-    {"prekinemo", "prekinut", 0},
-    {"prekinete", "prekinut", 0},
-    {"prekineš", "prekinut", 0},
-    {"prekinu", "prekinut", 0},
-    {"prekinula", "prekinut", 0},
-    {"prekinule", "prekinut", 0},
-    {"prekinuli", "prekinut", 0},
-    {"prekinulo", "prekinut", 0},
-    {"prekinuo", "prekinut", 0},
-    {"prekinut", "prekinut", 0},
-    {"prekinuti", "prekinut", 0},
-    {"prepozna", "prepoznat", 0},
-    {"prepoznaju", "prepoznat", 0},
-    {"prepoznala", "prepoznat", 0},
-    {"prepoznale", "prepoznat", 0},
-    {"prepoznali", "prepoznat", 0},
-    {"prepoznalo", "prepoznat", 0},
-    {"prepoznam", "prepoznat", 0},
-    {"prepoznamo", "prepoznat", 0},
-    {"prepoznao", "prepoznat", 0},
-    {"prepoznat", "prepoznat", 0},
-    {"prepoznate", "prepoznat", 0},
-    {"prepoznati", "prepoznat", 0},
-    {"prepoznaš", "prepoznat", 0},
-    {"prestala", "prestat", 0},
-    {"prestale", "prestat", 0},
-    {"prestali", "prestat", 0},
-    {"prestalo", "prestat", 0},
-    {"prestane", "prestat", 0},
-    {"prestanem", "prestat", 0},
-    {"prestanemo", "prestat", 0},
-    {"prestanete", "prestat", 0},
-    {"prestaneš", "prestat", 0},
-    {"prestanu", "prestat", 0},
-    {"prestao", "prestat", 0},
-    {"prestat", "prestat", 0},
-    {"prestati", "prestat", 0},
-    {"prežive", "preživjet", 0},
-    {"preživi", "preživjet", 0},
-    {"preživim", "preživjet", 0},
-    {"preživimo", "preživjet", 0},
-    {"preživio", "preživjet", 0},
-    {"preživite", "preživjet", 0},
-    {"preživiš", "preživjet", 0},
-    {"preživjela", "preživjet", 0},
-    {"preživjele", "preživjet", 0},
-    {"preživjeli", "preživjet", 0},
-    {"preživjelo", "preživjet", 0},
-    {"preživjet", "preživjet", 0},
-    {"preživjeti", "preživjet", 0},
-    {"prihvate", "prihvatit", 0},
-    {"prihvati", "prihvatit", 0},
-    {"prihvatila", "prihvatit", 0},
-    {"prihvatile", "prihvatit", 0},
-    {"prihvatili", "prihvatit", 0},
-    {"prihvatilo", "prihvatit", 0},
-    {"prihvatim", "prihvatit", 0},
-    {"prihvatimo", "prihvatit", 0},
-    {"prihvatio", "prihvatit", 0},
-    {"prihvatit", "prihvatit", 0},
-    {"prihvatite", "prihvatit", 0},
-    {"prihvatiti", "prihvatit", 0},
-    {"prihvatiš", "prihvatit", 0},
-    {"prime", "primit", 0},
-    {"primi", "primit", 0},
-    {"primijete", "primijetit", 0},
-    {"primijeti", "primijetit", 0},
-    {"primijetila", "primijetit", 0},
-    {"primijetile", "primijetit", 0},
-    {"primijetili", "primijetit", 0},
-    {"primijetilo", "primijetit", 0},
-    {"primijetim", "primijetit", 0},
-    {"primijetimo", "primijetit", 0},
-    {"primijetio", "primijetit", 0},
-    {"primijetit", "primijetit", 0},
-    {"primijetite", "primijetit", 0},
-    {"primijetiti", "primijetit", 0},
-    {"primijetiš", "primijetit", 0},
-    {"primila", "primit", 0},
-    {"primile", "primit", 0},
-    {"primili", "primit", 0},
-    {"primilo", "primit", 0},
-    {"primim", "primit", 0},
-    {"primimo", "primit", 0},
-    {"primio", "primit", 0},
-    {"primit", "primit", 0},
-    {"primite", "primit", 0},
-    {"primiti", "primit", 0},
-    {"primiš", "primit", 0},
-    {"pripreme", "pripremit", 0},
-    {"pripremi", "pripremit", 0},
-    {"pripremila", "pripremit", 0},
-    {"pripremile", "pripremit", 0},
-    {"pripremili", "pripremit", 0},
-    {"pripremilo", "pripremit", 0},
-    {"pripremim", "pripremit", 0},
-    {"pripremimo", "pripremit", 0},
-    {"pripremio", "pripremit", 0},
-    {"pripremit", "pripremit", 0},
-    {"pripremite", "pripremit", 0},
-    {"pripremiti", "pripremit", 0},
-    {"pripremiš", "pripremit", 0},
-    {"pristala", "pristat", 0},
-    {"pristale", "pristat", 0},
-    {"pristali", "pristat", 0},
-    {"pristalo", "pristat", 0},
-    {"pristane", "pristat", 0},
-    {"pristanem", "pristat", 0},
-    {"pristanemo", "pristat", 0},
-    {"pristanete", "pristat", 0},
-    {"pristaneš", "pristat", 0},
-    {"pristanu", "pristat", 0},
-    {"pristao", "pristat", 0},
-    {"pristat", "pristat", 0},
-    {"pristati", "pristat", 0},
-    {"prizna", "priznat", 0},
-    {"priznaje", "priznavat", 0},
-    {"priznajem", "priznavat", 0},
-    {"priznajemo", "priznavat", 0},
-    {"priznajete", "priznavat", 0},
-    {"priznaješ", "priznavat", 0},
-    {"priznaju", "priznavat", 0},
-    {"priznala", "priznat", 0},
-    {"priznale", "priznat", 0},
-    {"priznali", "priznat", 0},
-    {"priznalo", "priznat", 0},
-    {"priznam", "priznat", 0},
-    {"priznamo", "priznat", 0},
-    {"priznao", "priznat", 0},
-    {"priznat", "priznat", 0},
-    {"priznate", "priznat", 0},
-    {"priznati", "priznat", 0},
-    {"priznavala", "priznavat", 0},
-    {"priznavale", "priznavat", 0},
-    {"priznavali", "priznavat", 0},
-    {"priznavalo", "priznavat", 0},
-    {"priznavao", "priznavat", 0},
-    {"priznavat", "priznavat", 0},
-    {"priznavati", "priznavat", 0},
-    {"priznaš", "priznat", 0},
-    {"priča", "pričat", 0},
-    {"pričaju", "pričat", 0},
-    {"pričala", "pričat", 0},
-    {"pričale", "pričat", 0},
-    {"pričali", "pričat", 0},
-    {"pričalo", "pričat", 0},
-    {"pričam", "pričat", 0},
-    {"pričamo", "pričat", 0},
-    {"pričao", "pričat", 0},
-    {"pričat", "pričat", 0},
-    {"pričate", "pričat", 0},
-    {"pričati", "pričat", 0},
-    {"pričaš", "pričat", 0},
-    {"proda", "prodat", 0},
-    {"prodaje", "prodavat", 0},
-    {"prodajem", "prodavat", 0},
-    {"prodajemo", "prodavat", 0},
-    {"prodajete", "prodavat", 0},
-    {"prodaješ", "prodavat", 0},
-    {"prodaju", "prodat", 0},
-    {"prodala", "prodat", 0},
-    {"prodale", "prodat", 0},
-    {"prodali", "prodat", 0},
-    {"prodalo", "prodat", 0},
-    {"prodam", "prodat", 0},
-    {"prodamo", "prodat", 0},
-    {"prodao", "prodat", 0},
-    {"prodat", "prodat", 0},
-    {"prodate", "prodat", 0},
-    {"prodati", "prodat", 0},
-    {"prodavala", "prodavat", 0},
-    {"prodavale", "prodavat", 0},
-    {"prodavali", "prodavat", 0},
-    {"prodavalo", "prodavat", 0},
-    {"prodavao", "prodavat", 0},
-    {"prodavat", "prodavat", 0},
-    {"prodavati", "prodavat", 0},
-    {"prodaš", "prodat", 0},
-    {"promijene", "promijenit", 0},
-    {"promijeni", "promijenit", 0},
-    {"promijenila", "promijenit", 0},
-    {"promijenile", "promijenit", 0},
-    {"promijenili", "promijenit", 0},
-    {"promijenilo", "promijenit", 0},
-    {"promijenim", "promijenit", 0},
-    {"promijenimo", "promijenit", 0},
-    {"promijenio", "promijenit", 0},
-    {"promijenit", "promijenit", 0},
-    {"promijenite", "promijenit", 0},
-    {"promijeniti", "promijenit", 0},
-    {"promijeniš", "promijenit", 0},
-    {"pronaći", "pronać", 0},
-    {"pronađe", "pronać", 0},
-    {"pronađem", "pronać", 0},
-    {"pronađemo", "pronać", 0},
-    {"pronađete", "pronać", 0},
-    {"pronađeš", "pronać", 0},
-    {"pronađu", "pronać", 0},
-    {"pronašao", "pronać", 0},
-    {"pronašla", "pronać", 0},
-    {"pronašle", "pronać", 0},
-    {"pronašli", "pronać", 0},
-    {"pronašlo", "pronać", 0},
-    {"proslave", "proslavit", 0},
-    {"proslavi", "proslavit", 0},
-    {"proslavila", "proslavit", 0},
-    {"proslavile", "proslavit", 0},
-    {"proslavili", "proslavit", 0},
-    {"proslavilo", "proslavit", 0},
-    {"proslavim", "proslavit", 0},
-    {"proslavimo", "proslavit", 0},
-    {"proslavio", "proslavit", 0},
-    {"proslavit", "proslavit", 0},
-    {"proslavite", "proslavit", 0},
-    {"proslaviti", "proslavit", 0},
-    {"proslaviš", "proslavit", 0},
-    {"proučava", "proučavat", 0},
-    {"proučavaju", "proučavat", 0},
-    {"proučavala", "proučavat", 0},
-    {"proučavale", "proučavat", 0},
-    {"proučavali", "proučavat", 0},
-    {"proučavalo", "proučavat", 0},
-    {"proučavam", "proučavat", 0},
-    {"proučavamo", "proučavat", 0},
-    {"proučavao", "proučavat", 0},
-    {"proučavat", "proučavat", 0},
-    {"proučavate", "proučavat", 0},
-    {"proučavati", "proučavat", 0},
-    {"proučavaš", "proučavat", 0},
-    {"proći", "proć", 0},
-    {"prođe", "proć", 0},
-    {"prođem", "proć", 0},
-    {"prođemo", "proć", 0},
-    {"prođete", "proć", 0},
-    {"prođeš", "proć", 0},
-    {"prođu", "proć", 0},
-    {"prošao", "proć", 0},
-    {"prošla", "proć", 0},
-    {"prošle", "proć", 0},
-    {"prošli", "proć", 0},
-    {"prošlo", "proć", 0},
-    {"punim", "pun", 0},
-    {"punima", "pun", 0},
-    {"punimi", "pun", 0},
-    {"puste", "pustit", 0},
-    {"pusti", "pustit", 0},
-    {"pustila", "pustit", 0},
-    {"pustile", "pustit", 0},
-    {"pustili", "pustit", 0},
-    {"pustilo", "pustit", 0},
-    {"pustim", "pustit", 0},
-    {"pustimo", "pustit", 0},
-    {"pustio", "pustit", 0},
-    {"pustit", "pustit", 0},
-    {"pustite", "pustit", 0},
-    {"pustiti", "pustit", 0},
-    {"pustiš", "pustit", 0},
-    {"putovala", "putovat", 0},
-    {"putovale", "putovat", 0},
-    {"putovali", "putovat", 0},
-    {"putovalo", "putovat", 0},
-    {"putovao", "putovat", 0},
-    {"putovat", "putovat", 0},
-    {"putovati", "putovat", 0},
-    {"putuje", "putovat", 0},
-    {"putujem", "putovat", 0},
-    {"putujemo", "putovat", 0},
-    {"putujete", "putovat", 0},
-    {"putuješ", "putovat", 0},
-    {"putuju", "putovat", 0},
-    {"rade", "radit", 0},
-    {"radeći", "radit", 0},
-    {"radi", "radit", 0},
-    {"radila", "radit", 0},
-    {"radile", "radit", 0},
-    {"radili", "radit", 0},
-    {"radilo", "radit", 0},
-    {"radim", "radit", 0},
-    {"radimo", "radit", 0},
-    {"radio", "radit", 0},
-    {"radit", "radit", 0},
-    {"radite", "radit", 0},
-    {"raditi", "radit", 0},
-    {"radiš", "radit", 0},
-    {"radovala", "radovat", 0},
-    {"radovale", "radovat", 0},
-    {"radovali", "radovat", 0},
-    {"radovalo", "radovat", 0},
-    {"radovao", "radovat", 0},
-    {"radovat", "radovat", 0},
-    {"radovati", "radovat", 0},
-    {"raduje", "radovat", 0},
-    {"radujem", "radovat", 0},
-    {"radujemo", "radovat", 0},
-    {"radujete", "radovat", 0},
-    {"raduješ", "radovat", 0},
-    {"raduju", "radovat", 0},
-    {"razgovara", "razgovarat", 0},
-    {"razgovaraju", "razgovarat", 0},
-    {"razgovarala", "razgovarat", 0},
-    {"razgovarale", "razgovarat", 0},
-    {"razgovarali", "razgovarat", 0},
-    {"razgovaralo", "razgovarat", 0},
-    {"razgovaram", "razgovarat", 0},
-    {"razgovaramo", "razgovarat", 0},
-    {"razgovarao", "razgovarat", 0},
-    {"razgovarat", "razgovarat", 0},
-    {"razgovarate", "razgovarat", 0},
-    {"razgovarati", "razgovarat", 0},
-    {"razgovaraš", "razgovarat", 0},
-    {"razmisle", "razmislit", 0},
-    {"razmisli", "razmislit", 0},
-    {"razmislila", "razmislit", 0},
-    {"razmislile", "razmislit", 0},
-    {"razmislili", "razmislit", 0},
-    {"razmislilo", "razmislit", 0},
-    {"razmislim", "razmislit", 0},
-    {"razmislimo", "razmislit", 0},
-    {"razmislio", "razmislit", 0},
-    {"razmislit", "razmislit", 0},
-    {"razmislite", "razmislit", 0},
-    {"razmisliti", "razmislit", 0},
-    {"razmisliš", "razmislit", 0},
-    {"razmišlja", "razmišljat", 0},
-    {"razmišljaju", "razmišljat", 0},
-    {"razmišljala", "razmišljat", 0},
-    {"razmišljale", "razmišljat", 0},
-    {"razmišljali", "razmišljat", 0},
-    {"razmišljalo", "razmišljat", 0},
-    {"razmišljam", "razmišljat", 0},
-    {"razmišljamo", "razmišljat", 0},
-    {"razmišljao", "razmišljat", 0},
-    {"razmišljat", "razmišljat", 0},
-    {"razmišljate", "razmišljat", 0},
-    {"razmišljati", "razmišljat", 0},
-    {"razmišljaš", "razmišljat", 0},
-    {"razumije", "razumjet", 0},
-    {"razumijem", "razumjet", 0},
-    {"razumijemo", "razumjet", 0},
-    {"razumijete", "razumjet", 0},
-    {"razumiješ", "razumjet", 0},
-    {"razumiju", "razumjet", 0},
-    {"razumio", "razumjet", 0},
-    {"razumjela", "razumjet", 0},
-    {"razumjele", "razumjet", 0},
-    {"razumjeli", "razumjet", 0},
-    {"razumjelo", "razumjet", 0},
-    {"razumjet", "razumjet", 0},
-    {"razumjeti", "razumjet", 0},
-    {"razvija", "razvijat", 0},
-    {"razvijaju", "razvijat", 0},
-    {"razvijala", "razvijat", 0},
-    {"razvijale", "razvijat", 0},
-    {"razvijali", "razvijat", 0},
-    {"razvijalo", "razvijat", 0},
-    {"razvijam", "razvijat", 0},
-    {"razvijamo", "razvijat", 0},
-    {"razvijao", "razvijat", 0},
-    {"razvijat", "razvijat", 0},
-    {"razvijate", "razvijat", 0},
-    {"razvijati", "razvijat", 0},
-    {"razvijaš", "razvijat", 0},
-    {"razvije", "razvit", 0},
-    {"razvijem", "razvit", 0},
-    {"razvijemo", "razvit", 0},
-    {"razvijete", "razvit", 0},
-    {"razviješ", "razvit", 0},
-    {"razviju", "razvit", 0},
-    {"razvila", "razvit", 0},
-    {"razvile", "razvit", 0},
-    {"razvili", "razvit", 0},
-    {"razvilo", "razvit", 0},
-    {"razvio", "razvit", 0},
-    {"razvit", "razvit", 0},
-    {"razviti", "razvit", 0},
-    {"računa", "računat", 0},
-    {"računaju", "računat", 0},
-    {"računala", "računat", 0},
-    {"računale", "računat", 0},
-    {"računali", "računat", 0},
-    {"računalo", "računat", 0},
-    {"računam", "računat", 0},
-    {"računamo", "računat", 0},
-    {"računao", "računat", 0},
-    {"računat", "računat", 0},
-    {"računate", "računat", 0},
-    {"računati", "računat", 0},
-    {"računaš", "računat", 0},
-    {"rađa", "rađat", 0},
-    {"rađaju", "rađat", 0},
-    {"rađala", "rađat", 0},
-    {"rađale", "rađat", 0},
-    {"rađali", "rađat", 0},
-    {"rađalo", "rađat", 0},
-    {"rađam", "rađat", 0},
-    {"rađamo", "rađat", 0},
-    {"rađao", "rađat", 0},
-    {"rađat", "rađat", 0},
-    {"rađate", "rađat", 0},
-    {"rađati", "rađat", 0},
-    {"rađaš", "rađat", 0},
-    {"reci", "reć", 0},
-    {"recite", "reć", 0},
-    {"rekao", "reć", 0},
-    {"rekla", "reć", 0},
-    {"rekle", "reć", 0},
-    {"rekli", "reć", 0},
-    {"reklo", "reć", 0},
-    {"reku", "reć", 0},
-    {"reći", "reć", 0},
-    {"reče", "reć", 0},
-    {"rečem", "reć", 0},
-    {"rečemo", "reć", 0},
-    {"rečete", "reć", 0},
-    {"rečeš", "reć", 0},
-    {"rijedak", "rijetk", 0},
-    {"riješe", "riješit", 0},
-    {"riješi", "riješit", 0},
-    {"riješila", "riješit", 0},
-    {"riješile", "riješit", 0},
-    {"riješili", "riješit", 0},
-    {"riješilo", "riješit", 0},
-    {"riješim", "riješit", 0},
-    {"riješimo", "riješit", 0},
-    {"riješio", "riješit", 0},
-    {"riješit", "riješit", 0},
-    {"riješite", "riješit", 0},
-    {"riješiti", "riješit", 0},
-    {"riješiš", "riješit", 0},
-    {"rješava", "rješavat", 0},
-    {"rješavaju", "rješavat", 0},
-    {"rješavala", "rješavat", 0},
-    {"rješavale", "rješavat", 0},
-    {"rješavali", "rješavat", 0},
-    {"rješavalo", "rješavat", 0},
-    {"rješavam", "rješavat", 0},
-    {"rješavamo", "rješavat", 0},
-    {"rješavao", "rješavat", 0},
-    {"rješavat", "rješavat", 0},
-    {"rješavate", "rješavat", 0},
-    {"rješavati", "rješavat", 0},
-    {"rješavaš", "rješavat", 0},
-    {"rode", "rodit", 0},
-    {"rodi", "rodit", 0},
-    {"rodila", "rodit", 0},
-    {"rodile", "rodit", 0},
-    {"rodili", "rodit", 0},
-    {"rodilo", "rodit", 0},
-    {"rodim", "rodit", 0},
-    {"rodimo", "rodit", 0},
-    {"rodio", "rodit", 0},
-    {"rodit", "rodit", 0},
-    {"rodite", "rodit", 0},
-    {"roditi", "rodit", 0},
-    {"rodiš", "rodit", 0},
-    {"sam", "bit", 1},
-    {"sazna", "saznat", 0},
-    {"saznaje", "saznavat", 0},
-    {"saznajem", "saznavat", 0},
-    {"saznajemo", "saznavat", 0},
-    {"saznajete", "saznavat", 0},
-    {"saznaješ", "saznavat", 0},
-    {"saznaju", "saznavat", 0},
-    {"saznala", "saznat", 0},
-    {"saznale", "saznat", 0},
-    {"saznali", "saznat", 0},
-    {"saznalo", "saznat", 0},
-    {"saznam", "saznat", 0},
-    {"saznamo", "saznat", 0},
-    {"saznao", "saznat", 0},
-    {"saznat", "saznat", 0},
-    {"saznate", "saznat", 0},
-    {"saznati", "saznat", 0},
-    {"saznavala", "saznavat", 0},
-    {"saznavale", "saznavat", 0},
-    {"saznavali", "saznavat", 0},
-    {"saznavalo", "saznavat", 0},
-    {"saznavao", "saznavat", 0},
-    {"saznavat", "saznavat", 0},
-    {"saznavati", "saznavat", 0},
-    {"saznaš", "saznat", 0},
-    {"shvate", "shvatit", 0},
-    {"shvati", "shvatit", 0},
-    {"shvatila", "shvatit", 0},
-    {"shvatile", "shvatit", 0},
-    {"shvatili", "shvatit", 0},
-    {"shvatilo", "shvatit", 0},
-    {"shvatim", "shvatit", 0},
-    {"shvatimo", "shvatit", 0},
-    {"shvatio", "shvatit", 0},
-    {"shvatit", "shvatit", 0},
-    {"shvatite", "shvatit", 0},
-    {"shvatiti", "shvatit", 0},
-    {"shvatiš", "shvatit", 0},
-    {"si", "bit", 1},
-    {"sjede", "sjedit", 0},
-    {"sjedi", "sjedit", 0},
-    {"sjedila", "sjedit", 0},
-    {"sjedile", "sjedit", 0},
-    {"sjedili", "sjedit", 0},
-    {"sjedilo", "sjedit", 0},
-    {"sjedim", "sjedit", 0},
-    {"sjedimo", "sjedit", 0},
-    {"sjedio", "sjedit", 0},
-    {"sjedit", "sjedit", 0},
-    {"sjedite", "sjedit", 0},
-    {"sjediti", "sjedit", 0},
-    {"sjediš", "sjedit", 0},
-    {"sjedne", "sjest", 0},
-    {"sjednem", "sjest", 0},
-    {"sjednemo", "sjest", 0},
-    {"sjednete", "sjest", 0},
-    {"sjedneš", "sjest", 0},
-    {"sjednu", "sjest", 0},
-    {"sjela", "sjest", 0},
-    {"sjele", "sjest", 0},
-    {"sjeli", "sjest", 0},
-    {"sjelo", "sjest", 0},
-    {"sjeo", "sjest", 0},
-    {"sjest", "sjest", 0},
-    {"sjesti", "sjest", 0},
-    {"sjeća", "sjećat", 0},
-    {"sjećaju", "sjećat", 0},
-    {"sjećala", "sjećat", 0},
-    {"sjećale", "sjećat", 0},
-    {"sjećali", "sjećat", 0},
-    {"sjećalo", "sjećat", 0},
-    {"sjećam", "sjećat", 0},
-    {"sjećamo", "sjećat", 0},
-    {"sjećao", "sjećat", 0},
-    {"sjećat", "sjećat", 0},
-    {"sjećate", "sjećat", 0},
-    {"sjećati", "sjećat", 0},
-    {"sjećaš", "sjećat", 0},
-    {"skine", "skinut", 0},
-    {"skinem", "skinut", 0},
-    {"skinemo", "skinut", 0},
-    {"skinete", "skinut", 0},
-    {"skineš", "skinut", 0},
-    {"skinu", "skinut", 0},
-    {"skinula", "skinut", 0},
-    {"skinule", "skinut", 0},
-    {"skinuli", "skinut", 0},
-    {"skinulo", "skinut", 0},
-    {"skinuo", "skinut", 0},
-    {"skinut", "skinut", 0},
-    {"skinuti", "skinut", 0},
-    {"skoče", "skočit", 0},
-    {"skoči", "skočit", 0},
-    {"skočila", "skočit", 0},
-    {"skočile", "skočit", 0},
-    {"skočili", "skočit", 0},
-    {"skočilo", "skočit", 0},
-    {"skočim", "skočit", 0},
-    {"skočimo", "skočit", 0},
-    {"skočio", "skočit", 0},
-    {"skočit", "skočit", 0},
-    {"skočite", "skočit", 0},
-    {"skočiti", "skočit", 0},
-    {"skočiš", "skočit", 0},
-    {"skupe", "skupit", 0},
-    {"skupi", "skupit", 0},
-    {"skupila", "skupit", 0},
-    {"skupile", "skupit", 0},
-    {"skupili", "skupit", 0},
-    {"skupilo", "skupit", 0},
-    {"skupim", "skupit", 0},
-    {"skupimo", "skupit", 0},
-    {"skupio", "skupit", 0},
-    {"skupit", "skupit", 0},
-    {"skupite", "skupit", 0},
-    {"skupiti", "skupit", 0},
-    {"skupiš", "skupit", 0},
-    {"skuplja", "skupljat", 0},
-    {"skupljaju", "skupljat", 0},
-    {"skupljala", "skupljat", 0},
-    {"skupljale", "skupljat", 0},
-    {"skupljali", "skupljat", 0},
-    {"skupljalo", "skupljat", 0},
-    {"skupljam", "skupljat", 0},
-    {"skupljamo", "skupljat", 0},
-    {"skupljao", "skupljat", 0},
-    {"skupljat", "skupljat", 0},
-    {"skupljate", "skupljat", 0},
-    {"skupljati", "skupljat", 0},
-    {"skupljaš", "skupljat", 0},
-    {"slabim", "slab", 0},
-    {"slabima", "slab", 0},
-    {"slabimi", "slab", 0},
-    {"sladak", "slatk", 0},
-    {"slagala", "slagat", 0},
-    {"slagale", "slagat", 0},
-    {"slagali", "slagat", 0},
-    {"slagalo", "slagat", 0},
-    {"slagao", "slagat", 0},
-    {"slagat", "slagat", 0},
-    {"slagati", "slagat", 0},
-    {"slaže", "slagat", 0},
-    {"slažem", "slagat", 0},
-    {"slažemo", "slagat", 0},
-    {"slažete", "slagat", 0},
-    {"slažeš", "slagat", 0},
-    {"slažu", "slagat", 0},
-    {"sluša", "slušat", 0},
-    {"slušaju", "slušat", 0},
-    {"slušala", "slušat", 0},
-    {"slušale", "slušat", 0},
-    {"slušali", "slušat", 0},
-    {"slušalo", "slušat", 0},
-    {"slušam", "slušat", 0},
-    {"slušamo", "slušat", 0},
-    {"slušao", "slušat", 0},
-    {"slušat", "slušat", 0},
-    {"slušate", "slušat", 0},
-    {"slušati", "slušat", 0},
-    {"slušaš", "slušat", 0},
-    {"služe", "služit", 0},
-    {"služeći", "služit", 0},
-    {"služi", "služit", 0},
-    {"služila", "služit", 0},
-    {"služile", "služit", 0},
-    {"služili", "služit", 0},
-    {"služilo", "služit", 0},
-    {"služim", "služit", 0},
-    {"služimo", "služit", 0},
-    {"služio", "služit", 0},
-    {"služit", "služit", 0},
-    {"služite", "služit", 0},
-    {"služiti", "služit", 0},
-    {"služiš", "služit", 0},
-    {"smatra", "smatrat", 0},
-    {"smatraju", "smatrat", 0},
-    {"smatrala", "smatrat", 0},
-    {"smatrale", "smatrat", 0},
-    {"smatrali", "smatrat", 0},
-    {"smatralo", "smatrat", 0},
-    {"smatram", "smatrat", 0},
-    {"smatramo", "smatrat", 0},
-    {"smatrao", "smatrat", 0},
-    {"smatrat", "smatrat", 0},
-    {"smatrate", "smatrat", 0},
-    {"smatrati", "smatrat", 0},
-    {"smatraš", "smatrat", 0},
-    {"smijala", "smijat", 0},
-    {"smijale", "smijat", 0},
-    {"smijali", "smijat", 0},
-    {"smijalo", "smijat", 0},
-    {"smijao", "smijat", 0},
-    {"smijat", "smijat", 0},
-    {"smijati", "smijat", 0},
-    {"smije", "smijat", 0},
-    {"smijem", "smijat", 0},
-    {"smijemo", "smijat", 0},
-    {"smijete", "smijat", 0},
-    {"smiješ", "smijat", 0},
-    {"smiju", "smijat", 0},
-    {"smio", "smjet", 0},
-    {"smjela", "smjet", 0},
-    {"smjele", "smjet", 0},
-    {"smjeli", "smjet", 0},
-    {"smjelo", "smjet", 0},
-    {"smjet", "smjet", 0},
-    {"smjeti", "smjet", 0},
-    {"smo", "bit", 1},
-    {"snima", "snimat", 0},
-    {"snimaju", "snimat", 0},
-    {"snimala", "snimat", 0},
-    {"snimale", "snimat", 0},
-    {"snimali", "snimat", 0},
-    {"snimalo", "snimat", 0},
-    {"snimam", "snimat", 0},
-    {"snimamo", "snimat", 0},
-    {"snimao", "snimat", 0},
-    {"snimat", "snimat", 0},
-    {"snimate", "snimat", 0},
-    {"snimati", "snimat", 0},
-    {"snimaš", "snimat", 0},
-    {"snime", "snimit", 0},
-    {"snimi", "snimit", 0},
-    {"snimila", "snimit", 0},
-    {"snimile", "snimit", 0},
-    {"snimili", "snimit", 0},
-    {"snimilo", "snimit", 0},
-    {"snimim", "snimit", 0},
-    {"snimimo", "snimit", 0},
-    {"snimio", "snimit", 0},
-    {"snimit", "snimit", 0},
-    {"snimite", "snimit", 0},
-    {"snimiti", "snimit", 0},
-    {"snimiš", "snimit", 0},
-    {"spase", "spasit", 0},
-    {"spasi", "spasit", 0},
-    {"spasila", "spasit", 0},
-    {"spasile", "spasit", 0},
-    {"spasili", "spasit", 0},
-    {"spasilo", "spasit", 0},
-    {"spasim", "spasit", 0},
-    {"spasimo", "spasit", 0},
-    {"spasio", "spasit", 0},
-    {"spasit", "spasit", 0},
-    {"spasite", "spasit", 0},
-    {"spasiti", "spasit", 0},
-    {"spasiš", "spasit", 0},
-    {"spava", "spavat", 0},
-    {"spavaju", "spavat", 0},
-    {"spavala", "spavat", 0},
-    {"spavale", "spavat", 0},
-    {"spavali", "spavat", 0},
-    {"spavalo", "spavat", 0},
-    {"spavam", "spavat", 0},
-    {"spavamo", "spavat", 0},
-    {"spavao", "spavat", 0},
-    {"spavat", "spavat", 0},
-    {"spavate", "spavat", 0},
-    {"spavati", "spavat", 0},
-    {"spavaš", "spavat", 0},
-    {"sprema", "spremat", 0},
-    {"spremaju", "spremat", 0},
-    {"spremala", "spremat", 0},
-    {"spremale", "spremat", 0},
-    {"spremali", "spremat", 0},
-    {"spremalo", "spremat", 0},
-    {"spremam", "spremat", 0},
-    {"spremamo", "spremat", 0},
-    {"spremao", "spremat", 0},
-    {"spremat", "spremat", 0},
-    {"spremate", "spremat", 0},
-    {"spremati", "spremat", 0},
-    {"spremaš", "spremat", 0},
-    {"spreme", "spremit", 0},
-    {"spremi", "spremit", 0},
-    {"spremila", "spremit", 0},
-    {"spremile", "spremit", 0},
-    {"spremili", "spremit", 0},
-    {"spremilo", "spremit", 0},
-    {"spremim", "spremit", 0},
-    {"spremimo", "spremit", 0},
-    {"spremio", "spremit", 0},
-    {"spremit", "spremit", 0},
-    {"spremite", "spremit", 0},
-    {"spremiti", "spremit", 0},
-    {"spremiš", "spremit", 0},
-    {"stajala", "stajat", 0},
-    {"stajale", "stajat", 0},
-    {"stajali", "stajat", 0},
-    {"stajalo", "stajat", 0},
-    {"stajao", "stajat", 0},
-    {"stajat", "stajat", 0},
-    {"stajati", "stajat", 0},
-    {"starim", "star", 0},
-    {"starima", "star", 0},
-    {"starimi", "star", 0},
-    {"stave", "stavit", 0},
-    {"stavi", "stavit", 0},
-    {"stavila", "stavit", 0},
-    {"stavile", "stavit", 0},
-    {"stavili", "stavit", 0},
-    {"stavilo", "stavit", 0},
-    {"stavim", "stavit", 0},
-    {"stavimo", "stavit", 0},
-    {"stavio", "stavit", 0},
-    {"stavit", "stavit", 0},
-    {"stavite", "stavit", 0},
-    {"staviti", "stavit", 0},
-    {"staviš", "stavit", 0},
-    {"stavlja", "stavljat", 0},
-    {"stavljaju", "stavljat", 0},
-    {"stavljala", "stavljat", 0},
-    {"stavljale", "stavljat", 0},
-    {"stavljali", "stavljat", 0},
-    {"stavljalo", "stavljat", 0},
-    {"stavljam", "stavljat", 0},
-    {"stavljamo", "stavljat", 0},
-    {"stavljao", "stavljat", 0},
-    {"stavljat", "stavljat", 0},
-    {"stavljate", "stavljat", 0},
-    {"stavljati", "stavljat", 0},
-    {"stavljaš", "stavljat", 0},
-    {"ste", "bit", 1},
-    {"stigao", "stić", 0},
-    {"stigla", "stić", 0},
-    {"stigle", "stić", 0},
-    {"stigli", "stić", 0},
-    {"stiglo", "stić", 0},
-    {"stigne", "stić", 0},
-    {"stignem", "stić", 0},
-    {"stignemo", "stić", 0},
-    {"stignete", "stić", 0},
-    {"stigneš", "stić", 0},
-    {"stignu", "stić", 0},
-    {"stići", "stić", 0},
-    {"stoje", "stajat", 0},
-    {"stojeći", "stajat", 0},
-    {"stoji", "stajat", 0},
-    {"stojim", "stajat", 0},
-    {"stojimo", "stajat", 0},
-    {"stojite", "stajat", 0},
-    {"stojiš", "stajat", 0},
-    {"stvore", "stvorit", 0},
-    {"stvori", "stvorit", 0},
-    {"stvorila", "stvorit", 0},
-    {"stvorile", "stvorit", 0},
-    {"stvorili", "stvorit", 0},
-    {"stvorilo", "stvorit", 0},
-    {"stvorim", "stvorit", 0},
-    {"stvorimo", "stvorit", 0},
-    {"stvorio", "stvorit", 0},
-    {"stvorit", "stvorit", 0},
-    {"stvorite", "stvorit", 0},
-    {"stvoriti", "stvorit", 0},
-    {"stvoriš", "stvorit", 0},
-    {"su", "bit", 1},
-    {"sumnja", "sumnjat", 0},
-    {"sumnjaju", "sumnjat", 0},
-    {"sumnjala", "sumnjat", 0},
-    {"sumnjale", "sumnjat", 0},
-    {"sumnjali", "sumnjat", 0},
-    {"sumnjalo", "sumnjat", 0},
-    {"sumnjam", "sumnjat", 0},
-    {"sumnjamo", "sumnjat", 0},
-    {"sumnjao", "sumnjat", 0},
-    {"sumnjat", "sumnjat", 0},
-    {"sumnjate", "sumnjat", 0},
-    {"sumnjati", "sumnjat", 0},
-    {"sumnjaš", "sumnjat", 0},
-    {"suša", "suh", 0},
-    {"suše", "suh", 0},
-    {"sušeg", "suh", 0},
-    {"sušega", "suh", 0},
-    {"sušem", "suh", 0},
-    {"sušemu", "suh", 0},
-    {"suši", "suh", 0},
-    {"suših", "suh", 0},
-    {"sušim", "suh", 0},
-    {"sušima", "suh", 0},
-    {"sušoj", "suh", 0},
-    {"sušom", "suh", 0},
-    {"sušu", "suh", 0},
-    {"svira", "svirat", 0},
-    {"sviraju", "svirat", 0},
-    {"svirala", "svirat", 0},
-    {"svirale", "svirat", 0},
-    {"svirali", "svirat", 0},
-    {"sviralo", "svirat", 0},
-    {"sviram", "svirat", 0},
-    {"sviramo", "svirat", 0},
-    {"svirao", "svirat", 0},
-    {"svirat", "svirat", 0},
-    {"svirate", "svirat", 0},
-    {"svirati", "svirat", 0},
-    {"sviraš", "svirat", 0},
-    {"svjetovala", "svjetovat", 0},
-    {"svjetovale", "svjetovat", 0},
-    {"svjetovali", "svjetovat", 0},
-    {"svjetovalo", "svjetovat", 0},
-    {"svjetovao", "svjetovat", 0},
-    {"svjetovat", "svjetovat", 0},
-    {"svjetovati", "svjetovat", 0},
-    {"svjetuje", "svjetovat", 0},
-    {"svjetujem", "svjetovat", 0},
-    {"svjetujemo", "svjetovat", 0},
-    {"svjetujete", "svjetovat", 0},
-    {"svjetuješ", "svjetovat", 0},
-    {"svjetuju", "svjetovat", 0},
-    {"tanak", "tank", 0},
-    {"teža", "tešk", 0},
-    {"težak", "tešk", 0},
-    {"teže", "tešk", 0},
-    {"težeg", "tešk", 0},
-    {"težega", "tešk", 0},
-    {"težem", "tešk", 0},
-    {"težemu", "tešk", 0},
-    {"teži", "tešk", 0},
-    {"težih", "tešk", 0},
-    {"težim", "tešk", 0},
-    {"težima", "tešk", 0},
-    {"težoj", "tešk", 0},
-    {"težom", "tešk", 0},
-    {"težu", "tešk", 0},
-    {"tiša", "tih", 0},
-    {"tiše", "tih", 0},
-    {"tišeg", "tih", 0},
-    {"tišega", "tih", 0},
-    {"tišem", "tih", 0},
-    {"tišemu", "tih", 0},
-    {"tiši", "tih", 0},
-    {"tiših", "tih", 0},
-    {"tišim", "tih", 0},
-    {"tišima", "tih", 0},
-    {"tišoj", "tih", 0},
-    {"tišom", "tih", 0},
-    {"tišu", "tih", 0},
-    {"traže", "tražit", 0},
-    {"tražeći", "tražit", 0},
-    {"traži", "tražit", 0},
-    {"tražila", "tražit", 0},
-    {"tražile", "tražit", 0},
-    {"tražili", "tražit", 0},
-    {"tražilo", "tražit", 0},
-    {"tražim", "tražit", 0},
-    {"tražimo", "tražit", 0},
-    {"tražio", "tražit", 0},
-    {"tražit", "tražit", 0},
-    {"tražite", "tražit", 0},
-    {"tražiti", "tražit", 0},
-    {"tražiš", "tražit", 0},
-    {"treba", "treb", 1},
-    {"trebaju", "treb", 1},
-    {"trebam", "treb", 1},
-    {"trebamo", "treb", 1},
-    {"trebate", "treb", 1},
-    {"trebaš", "treb", 1},
-    {"troše", "trošit", 0},
-    {"troši", "trošit", 0},
-    {"trošila", "trošit", 0},
-    {"trošile", "trošit", 0},
-    {"trošili", "trošit", 0},
-    {"trošilo", "trošit", 0},
-    {"trošim", "trošit", 0},
-    {"trošimo", "trošit", 0},
-    {"trošio", "trošit", 0},
-    {"trošit", "trošit", 0},
-    {"trošite", "trošit", 0},
-    {"trošiti", "trošit", 0},
-    {"trošiš", "trošit", 0},
-    {"trpe", "trpjet", 0},
-    {"trpi", "trpjet", 0},
-    {"trpim", "trpjet", 0},
-    {"trpimo", "trpjet", 0},
-    {"trpio", "trpjet", 0},
-    {"trpite", "trpjet", 0},
-    {"trpiš", "trpjet", 0},
-    {"trpjela", "trpjet", 0},
-    {"trpjele", "trpjet", 0},
-    {"trpjeli", "trpjet", 0},
-    {"trpjelo", "trpjet", 0},
-    {"trpjet", "trpjet", 0},
-    {"trpjeti", "trpjet", 0},
-    {"trčala", "trčat", 0},
-    {"trčale", "trčat", 0},
-    {"trčali", "trčat", 0},
-    {"trčalo", "trčat", 0},
-    {"trčao", "trčat", 0},
-    {"trčat", "trčat", 0},
-    {"trčati", "trčat", 0},
-    {"trče", "trčat", 0},
-    {"trči", "trčat", 0},
-    {"trčim", "trčat", 0},
-    {"trčimo", "trčat", 0},
-    {"trčite", "trčat", 0},
-    {"trčiš", "trčat", 0},
-    {"ubije", "ubit", 0},
-    {"ubijem", "ubit", 0},
-    {"ubijemo", "ubit", 0},
-    {"ubijete", "ubit", 0},
-    {"ubiješ", "ubit", 0},
-    {"ubiju", "ubit", 0},
-    {"ubila", "ubit", 0},
-    {"ubile", "ubit", 0},
-    {"ubili", "ubit", 0},
-    {"ubilo", "ubit", 0},
-    {"ubio", "ubit", 0},
-    {"ubit", "ubit", 0},
-    {"ubiti", "ubit", 0},
-    {"uključe", "uključit", 0},
-    {"uključi", "uključit", 0},
-    {"uključila", "uključit", 0},
-    {"uključile", "uključit", 0},
-    {"uključili", "uključit", 0},
-    {"uključilo", "uključit", 0},
-    {"uključim", "uključit", 0},
-    {"uključimo", "uključit", 0},
-    {"uključio", "uključit", 0},
-    {"uključit", "uključit", 0},
-    {"uključite", "uključit", 0},
-    {"uključiti", "uključit", 0},
-    {"uključivala", "uključivat", 0},
-    {"uključivale", "uključivat", 0},
-    {"uključivali", "uključivat", 0},
-    {"uključivalo", "uključivat", 0},
-    {"uključivao", "uključivat", 0},
-    {"uključivat", "uključivat", 0},
-    {"uključivati", "uključivat", 0},
-    {"uključiš", "uključit", 0},
-    {"uključuje", "uključivat", 0},
-    {"uključujem", "uključivat", 0},
-    {"uključujemo", "uključivat", 0},
-    {"uključujete", "uključivat", 0},
-    {"uključuješ", "uključivat", 0},
-    {"uključuju", "uključivat", 0},
-    {"ulaze", "ulazit", 0},
-    {"ulazi", "ulazit", 0},
-    {"ulazila", "ulazit", 0},
-    {"ulazile", "ulazit", 0},
-    {"ulazili", "ulazit", 0},
-    {"ulazilo", "ulazit", 0},
-    {"ulazim", "ulazit", 0},
-    {"ulazimo", "ulazit", 0},
-    {"ulazio", "ulazit", 0},
-    {"ulazit", "ulazit", 0},
-    {"ulazite", "ulazit", 0},
-    {"ulaziti", "ulazit", 0},
-    {"ulaziš", "ulazit", 0},
-    {"umre", "umrijet", 0},
-    {"umrem", "umrijet", 0},
-    {"umremo", "umrijet", 0},
-    {"umrete", "umrijet", 0},
-    {"umreš", "umrijet", 0},
-    {"umrijet", "umrijet", 0},
-    {"umrijeti", "umrijet", 0},
-    {"umrla", "umrijet", 0},
-    {"umrle", "umrijet", 0},
-    {"umrli", "umrijet", 0},
-    {"umrlo", "umrijet", 0},
-    {"umro", "umrijet", 0},
-    {"umru", "umrijet", 0},
-    {"upozna", "upoznat", 0},
-    {"upoznaje", "upoznavat", 0},
-    {"upoznajem", "upoznavat", 0},
-    {"upoznajemo", "upoznavat", 0},
-    {"upoznajete", "upoznavat", 0},
-    {"upoznaješ", "upoznavat", 0},
-    {"upoznaju", "upoznavat", 0},
-    {"upoznala", "upoznat", 0},
-    {"upoznale", "upoznat", 0},
-    {"upoznali", "upoznat", 0},
-    {"upoznalo", "upoznat", 0},
-    {"upoznam", "upoznat", 0},
-    {"upoznamo", "upoznat", 0},
-    {"upoznao", "upoznat", 0},
-    {"upoznat", "upoznat", 0},
-    {"upoznate", "upoznat", 0},
-    {"upoznati", "upoznat", 0},
-    {"upoznavala", "upoznavat", 0},
-    {"upoznavale", "upoznavat", 0},
-    {"upoznavali", "upoznavat", 0},
-    {"upoznavalo", "upoznavat", 0},
-    {"upoznavao", "upoznavat", 0},
-    {"upoznavat", "upoznavat", 0},
-    {"upoznavati", "upoznavat", 0},
-    {"upoznaš", "upoznat", 0},
-    {"upravlja", "upravljat", 0},
-    {"upravljaju", "upravljat", 0},
-    {"upravljala", "upravljat", 0},
-    {"upravljale", "upravljat", 0},
-    {"upravljali", "upravljat", 0},
-    {"upravljalo", "upravljat", 0},
-    {"upravljam", "upravljat", 0},
-    {"upravljamo", "upravljat", 0},
-    {"upravljao", "upravljat", 0},
-    {"upravljat", "upravljat", 0},
-    {"upravljate", "upravljat", 0},
-    {"upravljati", "upravljat", 0},
-    {"upravljaš", "upravljat", 0},
-    {"uspije", "uspjet", 0},
-    {"uspijem", "uspjet", 0},
-    {"uspijemo", "uspjet", 0},
-    {"uspijete", "uspjet", 0},
-    {"uspiješ", "uspjet", 0},
-    {"uspiju", "uspjet", 0},
-    {"uspio", "uspjet", 0},
-    {"uspjela", "uspjet", 0},
-    {"uspjele", "uspjet", 0},
-    {"uspjeli", "uspjet", 0},
-    {"uspjelo", "uspjet", 0},
-    {"uspjet", "uspjet", 0},
-    {"uspjeti", "uspjet", 0},
-    {"ustala", "ustat", 0},
-    {"ustale", "ustat", 0},
-    {"ustali", "ustat", 0},
-    {"ustalo", "ustat", 0},
-    {"ustane", "ustat", 0},
-    {"ustanem", "ustat", 0},
-    {"ustanemo", "ustat", 0},
-    {"ustanete", "ustat", 0},
-    {"ustaneš", "ustat", 0},
-    {"ustanu", "ustat", 0},
-    {"ustao", "ustat", 0},
-    {"ustat", "ustat", 0},
-    {"ustati", "ustat", 0},
-    {"uzak", "usk", 0},
-    {"uzela", "uzet", 0},
-    {"uzele", "uzet", 0},
-    {"uzeli", "uzet", 0},
-    {"uzelo", "uzet", 0},
-    {"uzeo", "uzet", 0},
-    {"uzet", "uzet", 0},
-    {"uzeti", "uzet", 0},
-    {"uzme", "uzet", 0},
-    {"uzmem", "uzet", 0},
-    {"uzmemo", "uzet", 0},
-    {"uzmete", "uzet", 0},
-    {"uzmeš", "uzet", 0},
-    {"uzmu", "uzet", 0},
-    {"ući", "uć", 0},
-    {"uče", "učit", 0},
-    {"učeći", "učit", 0},
-    {"uči", "učit", 0},
-    {"učila", "učit", 0},
-    {"učile", "učit", 0},
-    {"učili", "učit", 0},
-    {"učilo", "učit", 0},
-    {"učim", "učit", 0},
-    {"učimo", "učit", 0},
-    {"učine", "učinit", 0},
-    {"učini", "učinit", 0},
-    {"učinila", "učinit", 0},
-    {"učinile", "učinit", 0},
-    {"učinili", "učinit", 0},
-    {"učinilo", "učinit", 0},
-    {"učinim", "učinit", 0},
-    {"učinimo", "učinit", 0},
-    {"učinio", "učinit", 0},
-    {"učinit", "učinit", 0},
-    {"učinite", "učinit", 0},
-    {"učiniti", "učinit", 0},
-    {"učiniš", "učinit", 0},
-    {"učio", "učit", 0},
-    {"učit", "učit", 0},
-    {"učite", "učit", 0},
-    {"učiti", "učit", 0},
-    {"učiš", "učit", 0},
-    {"uđe", "uć", 0},
-    {"uđem", "uć", 0},
-    {"uđemo", "uć", 0},
-    {"uđete", "uć", 0},
-    {"uđeš", "uć", 0},
-    {"uđu", "uć", 0},
-    {"ušao", "uć", 0},
-    {"ušla", "uć", 0},
-    {"ušle", "uć", 0},
-    {"ušli", "uć", 0},
-    {"ušlo", "uć", 0},
-    {"uža", "usk", 0},
-    {"uže", "usk", 0},
-    {"užeg", "usk", 0},
-    {"užega", "usk", 0},
-    {"užem", "usk", 0},
-    {"užemu", "usk", 0},
-    {"uži", "usk", 0},
-    {"užih", "usk", 0},
-    {"užim", "usk", 0},
-    {"užima", "usk", 0},
-    {"užoj", "usk", 0},
-    {"užom", "usk", 0},
-    {"užu", "usk", 0},
-    {"vedar", "vedr", 0},
-    {"vide", "vidjet", 0},
-    {"videći", "vidjet", 0},
-    {"vidi", "vidjet", 0},
-    {"vidim", "vidjet", 0},
-    {"vidimo", "vidjet", 0},
-    {"vidio", "vidjet", 0},
-    {"vidite", "vidjet", 0},
-    {"vidiš", "vidjet", 0},
-    {"vidjela", "vidjet", 0},
-    {"vidjele", "vidjet", 0},
-    {"vidjeli", "vidjet", 0},
-    {"vidjelo", "vidjet", 0},
-    {"vidjet", "vidjet", 0},
-    {"vidjeti", "vidjet", 0},
-    {"vidjevsi", "vidjet", 0},
-    {"vidjevši", "vidjet", 0},
-    {"vikala", "vikat", 0},
-    {"vikale", "vikat", 0},
-    {"vikali", "vikat", 0},
-    {"vikalo", "vikat", 0},
-    {"vikao", "vikat", 0},
-    {"vikat", "vikat", 0},
-    {"vikati", "vikat", 0},
-    {"vikne", "viknut", 0},
-    {"viknem", "viknut", 0},
-    {"viknemo", "viknut", 0},
-    {"viknete", "viknut", 0},
-    {"vikneš", "viknut", 0},
-    {"viknu", "viknut", 0},
-    {"viknula", "viknut", 0},
-    {"viknule", "viknut", 0},
-    {"viknuli", "viknut", 0},
-    {"viknulo", "viknut", 0},
-    {"viknuo", "viknut", 0},
-    {"viknut", "viknut", 0},
-    {"viknuti", "viknut", 0},
-    {"viče", "vikat", 0},
-    {"vičem", "vikat", 0},
-    {"vičemo", "vikat", 0},
-    {"vičete", "vikat", 0},
-    {"vičeš", "vikat", 0},
-    {"viču", "vikat", 0},
-    {"viša", "visok", 0},
-    {"više", "visok", 0},
-    {"višeg", "visok", 0},
-    {"višega", "visok", 0},
-    {"višem", "visok", 0},
-    {"višemu", "visok", 0},
-    {"viši", "visok", 0},
-    {"viših", "visok", 0},
-    {"višim", "visok", 0},
-    {"višima", "visok", 0},
-    {"višoj", "visok", 0},
-    {"višom", "visok", 0},
-    {"višu", "visok", 0},
-    {"vjerovala", "vjerovat", 0},
-    {"vjerovale", "vjerovat", 0},
-    {"vjerovali", "vjerovat", 0},
-    {"vjerovalo", "vjerovat", 0},
-    {"vjerovao", "vjerovat", 0},
-    {"vjerovat", "vjerovat", 0},
-    {"vjerovati", "vjerovat", 0},
-    {"vjeruje", "vjerovat", 0},
-    {"vjerujem", "vjerovat", 0},
-    {"vjerujemo", "vjerovat", 0},
-    {"vjerujete", "vjerovat", 0},
-    {"vjeruješ", "vjerovat", 0},
-    {"vjeruju", "vjerovat", 0},
-    {"vjerujući", "vjerovat", 0},
-    {"vlada", "vladat", 0},
-    {"vladaju", "vladat", 0},
-    {"vladala", "vladat", 0},
-    {"vladale", "vladat", 0},
-    {"vladali", "vladat", 0},
-    {"vladalo", "vladat", 0},
-    {"vladam", "vladat", 0},
-    {"vladamo", "vladat", 0},
-    {"vladao", "vladat", 0},
-    {"vladat", "vladat", 0},
-    {"vladate", "vladat", 0},
-    {"vladati", "vladat", 0},
-    {"vladaš", "vladat", 0},
-    {"vode", "vodit", 0},
-    {"vodeći", "vodit", 0},
-    {"vodi", "vodit", 0},
-    {"vodila", "vodit", 0},
-    {"vodile", "vodit", 0},
-    {"vodili", "vodit", 0},
-    {"vodilo", "vodit", 0},
-    {"vodim", "vodit", 0},
-    {"vodimo", "vodit", 0},
-    {"vodio", "vodit", 0},
-    {"vodit", "vodit", 0},
-    {"vodite", "vodit", 0},
-    {"voditi", "vodit", 0},
-    {"vodiš", "vodit", 0},
-    {"vole", "voljet", 0},
-    {"voleći", "voljet", 0},
-    {"voli", "voljet", 0},
-    {"volim", "voljet", 0},
-    {"volimo", "voljet", 0},
-    {"volio", "voljet", 0},
-    {"volite", "voljet", 0},
-    {"voliš", "voljet", 0},
-    {"voljela", "voljet", 0},
-    {"voljele", "voljet", 0},
-    {"voljeli", "voljet", 0},
-    {"voljelo", "voljet", 0},
-    {"voljet", "voljet", 0},
-    {"voljeti", "voljet", 0},
-    {"voze", "vozit", 0},
-    {"vozeći", "vozit", 0},
-    {"vozi", "vozit", 0},
-    {"vozila", "vozit", 0},
-    {"vozile", "vozit", 0},
-    {"vozili", "vozit", 0},
-    {"vozilo", "vozit", 0},
-    {"vozim", "vozit", 0},
-    {"vozimo", "vozit", 0},
-    {"vozio", "vozit", 0},
-    {"vozit", "vozit", 0},
-    {"vozite", "vozit", 0},
-    {"voziti", "vozit", 0},
-    {"voziš", "vozit", 0},
-    {"vrate", "vratit", 0},
-    {"vrati", "vratit", 0},
-    {"vratila", "vratit", 0},
-    {"vratile", "vratit", 0},
-    {"vratili", "vratit", 0},
-    {"vratilo", "vratit", 0},
-    {"vratim", "vratit", 0},
-    {"vratimo", "vratit", 0},
-    {"vratio", "vratit", 0},
-    {"vratit", "vratit", 0},
-    {"vratite", "vratit", 0},
-    {"vratiti", "vratit", 0},
-    {"vratiš", "vratit", 0},
-    {"vraća", "vraćat", 0},
-    {"vraćaju", "vraćat", 0},
-    {"vraćala", "vraćat", 0},
-    {"vraćale", "vraćat", 0},
-    {"vraćali", "vraćat", 0},
-    {"vraćalo", "vraćat", 0},
-    {"vraćam", "vraćat", 0},
-    {"vraćamo", "vraćat", 0},
-    {"vraćao", "vraćat", 0},
-    {"vraćat", "vraćat", 0},
-    {"vraćate", "vraćat", 0},
-    {"vraćati", "vraćat", 0},
-    {"vraćaš", "vraćat", 0},
-    {"zaborave", "zaboravit", 0},
-    {"zaboravi", "zaboravit", 0},
-    {"zaboravila", "zaboravit", 0},
-    {"zaboravile", "zaboravit", 0},
-    {"zaboravili", "zaboravit", 0},
-    {"zaboravilo", "zaboravit", 0},
-    {"zaboravim", "zaboravit", 0},
-    {"zaboravimo", "zaboravit", 0},
-    {"zaboravio", "zaboravit", 0},
-    {"zaboravit", "zaboravit", 0},
-    {"zaboravite", "zaboravit", 0},
-    {"zaboraviti", "zaboravit", 0},
-    {"zaboraviš", "zaboravit", 0},
-    {"zahtijeva", "zahtijevat", 0},
-    {"zahtijevaju", "zahtijevat", 0},
-    {"zahtijevala", "zahtijevat", 0},
-    {"zahtijevale", "zahtijevat", 0},
-    {"zahtijevali", "zahtijevat", 0},
-    {"zahtijevalo", "zahtijevat", 0},
-    {"zahtijevam", "zahtijevat", 0},
-    {"zahtijevamo", "zahtijevat", 0},
-    {"zahtijevao", "zahtijevat", 0},
-    {"zahtijevat", "zahtijevat", 0},
-    {"zahtijevate", "zahtijevat", 0},
-    {"zahtijevati", "zahtijevat", 0},
-    {"zahtijevaš", "zahtijevat", 0},
-    {"zahvale", "zahvalit", 0},
-    {"zahvali", "zahvalit", 0},
-    {"zahvalila", "zahvalit", 0},
-    {"zahvalile", "zahvalit", 0},
-    {"zahvalili", "zahvalit", 0},
-    {"zahvalilo", "zahvalit", 0},
-    {"zahvalim", "zahvalit", 0},
-    {"zahvalimo", "zahvalit", 0},
-    {"zahvalio", "zahvalit", 0},
-    {"zahvalit", "zahvalit", 0},
-    {"zahvalite", "zahvalit", 0},
-    {"zahvaliti", "zahvalit", 0},
-    {"zahvališ", "zahvalit", 0},
-    {"zamisle", "zamislit", 0},
-    {"zamisli", "zamislit", 0},
-    {"zamislila", "zamislit", 0},
-    {"zamislile", "zamislit", 0},
-    {"zamislili", "zamislit", 0},
-    {"zamislilo", "zamislit", 0},
-    {"zamislim", "zamislit", 0},
-    {"zamislimo", "zamislit", 0},
-    {"zamislio", "zamislit", 0},
-    {"zamislit", "zamislit", 0},
-    {"zamislite", "zamislit", 0},
-    {"zamisliti", "zamislit", 0},
-    {"zamisliš", "zamislit", 0},
-    {"zaposle", "zaposlit", 0},
-    {"zaposli", "zaposlit", 0},
-    {"zaposlila", "zaposlit", 0},
-    {"zaposlile", "zaposlit", 0},
-    {"zaposlili", "zaposlit", 0},
-    {"zaposlilo", "zaposlit", 0},
-    {"zaposlim", "zaposlit", 0},
-    {"zaposlimo", "zaposlit", 0},
-    {"zaposlio", "zaposlit", 0},
-    {"zaposlit", "zaposlit", 0},
-    {"zaposlite", "zaposlit", 0},
-    {"zaposliti", "zaposlit", 0},
-    {"zaposliš", "zaposlit", 0},
-    {"započela", "započet", 0},
-    {"započele", "započet", 0},
-    {"započeli", "započet", 0},
-    {"započelo", "započet", 0},
-    {"započeo", "započet", 0},
-    {"započet", "započet", 0},
-    {"započeti", "započet", 0},
-    {"započne", "započet", 0},
-    {"započnem", "započet", 0},
-    {"započnemo", "započet", 0},
-    {"započnete", "započet", 0},
-    {"započneš", "započet", 0},
-    {"započnu", "započet", 0},
-    {"zatvore", "zatvorit", 0},
-    {"zatvori", "zatvorit", 0},
-    {"zatvorila", "zatvorit", 0},
-    {"zatvorile", "zatvorit", 0},
-    {"zatvorili", "zatvorit", 0},
-    {"zatvorilo", "zatvorit", 0},
-    {"zatvorim", "zatvorit", 0},
-    {"zatvorimo", "zatvorit", 0},
-    {"zatvorio", "zatvorit", 0},
-    {"zatvorit", "zatvorit", 0},
-    {"zatvorite", "zatvorit", 0},
-    {"zatvoriti", "zatvorit", 0},
-    {"zatvoriš", "zatvorit", 0},
-    {"zaustave", "zaustavit", 0},
-    {"zaustavi", "zaustavit", 0},
-    {"zaustavila", "zaustavit", 0},
-    {"zaustavile", "zaustavit", 0},
-    {"zaustavili", "zaustavit", 0},
-    {"zaustavilo", "zaustavit", 0},
-    {"zaustavim", "zaustavit", 0},
-    {"zaustavimo", "zaustavit", 0},
-    {"zaustavio", "zaustavit", 0},
-    {"zaustavit", "zaustavit", 0},
-    {"zaustavite", "zaustavit", 0},
-    {"zaustaviti", "zaustavit", 0},
-    {"zaustaviš", "zaustavit", 0},
-    {"zavole", "zavoljet", 0},
-    {"zavoli", "zavoljet", 0},
-    {"zavolim", "zavoljet", 0},
-    {"zavolimo", "zavoljet", 0},
-    {"zavolio", "zavoljet", 0},
-    {"zavolite", "zavoljet", 0},
-    {"zavoliš", "zavoljet", 0},
-    {"zavoljela", "zavoljet", 0},
-    {"zavoljele", "zavoljet", 0},
-    {"zavoljeli", "zavoljet", 0},
-    {"zavoljelo", "zavoljet", 0},
-    {"zavoljet", "zavoljet", 0},
-    {"zavoljeti", "zavoljet", 0},
-    {"završava", "završavat", 0},
-    {"završavaju", "završavat", 0},
-    {"završavala", "završavat", 0},
-    {"završavale", "završavat", 0},
-    {"završavali", "završavat", 0},
-    {"završavalo", "završavat", 0},
-    {"završavam", "završavat", 0},
-    {"završavamo", "završavat", 0},
-    {"završavao", "završavat", 0},
-    {"završavat", "završavat", 0},
-    {"završavate", "završavat", 0},
-    {"završavati", "završavat", 0},
-    {"završavaš", "završavat", 0},
-    {"završe", "završit", 0},
-    {"završi", "završit", 0},
-    {"završila", "završit", 0},
-    {"završile", "završit", 0},
-    {"završili", "završit", 0},
-    {"završilo", "završit", 0},
-    {"završim", "završit", 0},
-    {"završimo", "završit", 0},
-    {"završio", "završit", 0},
-    {"završit", "završit", 0},
-    {"završite", "završit", 0},
-    {"završiti", "završit", 0},
-    {"završiš", "završit", 0},
-    {"zelenim", "zelen", 0},
-    {"zelenima", "zelen", 0},
-    {"zelenimi", "zelen", 0},
-    {"zna", "znat", 0},
-    {"znaju", "znat", 0},
-    {"znajući", "znat", 0},
-    {"znala", "znat", 0},
-    {"znale", "znat", 0},
-    {"znali", "znat", 0},
-    {"znalo", "znat", 0},
-    {"znam", "znat", 0},
-    {"znamo", "znat", 0},
-    {"znao", "znat", 0},
-    {"znat", "znat", 0},
-    {"znate", "znat", 0},
-    {"znati", "znat", 0},
-    {"znaš", "znat", 0},
-    {"zove", "zvat", 0},
-    {"zovem", "zvat", 0},
-    {"zovemo", "zvat", 0},
-    {"zovete", "zvat", 0},
-    {"zoveš", "zvat", 0},
-    {"zovu", "zvat", 0},
-    {"zvala", "zvat", 0},
-    {"zvale", "zvat", 0},
-    {"zvali", "zvat", 0},
-    {"zvalo", "zvat", 0},
-    {"zvao", "zvat", 0},
-    {"zvat", "zvat", 0},
-    {"zvati", "zvat", 0},
-    {"će", "ht", 1},
-    {"ćemo", "ht", 1},
-    {"ćete", "ht", 1},
-    {"ćeš", "ht", 1},
-    {"ću", "ht", 1},
-    {"čeka", "čekat", 0},
-    {"čekaju", "čekat", 0},
-    {"čekala", "čekat", 0},
-    {"čekale", "čekat", 0},
-    {"čekali", "čekat", 0},
-    {"čekalo", "čekat", 0},
-    {"čekam", "čekat", 0},
-    {"čekamo", "čekat", 0},
-    {"čekao", "čekat", 0},
-    {"čekat", "čekat", 0},
-    {"čekate", "čekat", 0},
-    {"čekati", "čekat", 0},
-    {"čekaš", "čekat", 0},
-    {"čine", "činit", 0},
-    {"čineći", "činit", 0},
-    {"čini", "činit", 0},
-    {"činila", "činit", 0},
-    {"činile", "činit", 0},
-    {"činili", "činit", 0},
-    {"činilo", "činit", 0},
-    {"činim", "činit", 0},
-    {"činimo", "činit", 0},
-    {"činio", "činit", 0},
-    {"činit", "činit", 0},
-    {"činite", "činit", 0},
-    {"činiti", "činit", 0},
-    {"činiš", "činit", 0},
-    {"čita", "čitat", 0},
-    {"čitaju", "čitat", 0},
-    {"čitajući", "čitat", 0},
-    {"čitala", "čitat", 0},
-    {"čitale", "čitat", 0},
-    {"čitali", "čitat", 0},
-    {"čitalo", "čitat", 0},
-    {"čitam", "čitat", 0},
-    {"čitamo", "čitat", 0},
-    {"čitao", "čitat", 0},
-    {"čitat", "čitat", 0},
-    {"čitate", "čitat", 0},
-    {"čitati", "čitat", 0},
-    {"čitaš", "čitat", 0},
-    {"čuje", "čut", 0},
-    {"čujem", "čut", 0},
-    {"čujemo", "čut", 0},
-    {"čujete", "čut", 0},
-    {"čuješ", "čut", 0},
-    {"čuju", "čut", 0},
-    {"čula", "čut", 0},
-    {"čule", "čut", 0},
-    {"čuli", "čut", 0},
-    {"čulo", "čut", 0},
-    {"čuo", "čut", 0},
-    {"čut", "čut", 0},
-    {"čuti", "čut", 0},
-    {"čuva", "čuvat", 0},
-    {"čuvaju", "čuvat", 0},
-    {"čuvala", "čuvat", 0},
-    {"čuvale", "čuvat", 0},
-    {"čuvali", "čuvat", 0},
-    {"čuvalo", "čuvat", 0},
-    {"čuvam", "čuvat", 0},
-    {"čuvamo", "čuvat", 0},
-    {"čuvao", "čuvat", 0},
-    {"čuvat", "čuvat", 0},
-    {"čuvate", "čuvat", 0},
-    {"čuvati", "čuvat", 0},
-    {"čuvaš", "čuvat", 0},
-    {"čuvši", "čut", 0},
-    {"šeta", "šetat", 0},
-    {"šetaju", "šetat", 0},
-    {"šetala", "šetat", 0},
-    {"šetale", "šetat", 0},
-    {"šetali", "šetat", 0},
-    {"šetalo", "šetat", 0},
-    {"šetam", "šetat", 0},
-    {"šetamo", "šetat", 0},
-    {"šetao", "šetat", 0},
-    {"šetat", "šetat", 0},
-    {"šetate", "šetat", 0},
-    {"šetati", "šetat", 0},
-    {"šetaš", "šetat", 0},
-    {"šute", "šutjet", 0},
-    {"šuteći", "šutjet", 0},
-    {"šuti", "šutjet", 0},
-    {"šutim", "šutjet", 0},
-    {"šutimo", "šutjet", 0},
-    {"šutio", "šutjet", 0},
-    {"šutite", "šutjet", 0},
-    {"šutiš", "šutjet", 0},
-    {"šutjela", "šutjet", 0},
-    {"šutjele", "šutjet", 0},
-    {"šutjeli", "šutjet", 0},
-    {"šutjelo", "šutjet", 0},
-    {"šutjet", "šutjet", 0},
-    {"šutjeti", "šutjet", 0},
-    {"žele", "želj", 1},
-    {"želi", "želj", 1},
-    {"želim", "želj", 1},
-    {"želimo", "želj", 1},
-    {"želite", "želj", 1},
-    {"želiš", "želj", 1},
-    {"žive", "živjet", 0},
-    {"živeći", "živjet", 0},
-    {"živi", "živjet", 0},
-    {"živim", "živjet", 0},
-    {"živimo", "živjet", 0},
-    {"živio", "živjet", 0},
-    {"živite", "živjet", 0},
-    {"živiš", "živjet", 0},
-    {"živjela", "živjet", 0},
-    {"živjele", "živjet", 0},
-    {"živjeli", "živjet", 0},
-    {"živjelo", "živjet", 0},
-    {"živjet", "živjet", 0},
-    {"živjeti", "živjet", 0},
-    {"žuća", "žut", 0},
-    {"žuće", "žut", 0},
-    {"žućeg", "žut", 0},
-    {"žućega", "žut", 0},
-    {"žućem", "žut", 0},
-    {"žućemu", "žut", 0},
-    {"žući", "žut", 0},
-    {"žućih", "žut", 0},
-    {"žućim", "žut", 0},
-    {"žućima", "žut", 0},
-    {"žućoj", "žut", 0},
-    {"žućom", "žut", 0},
-    {"žuću", "žut", 0},
+#define N_STOP_WORDS 67
+static const char *const stop_words[] = {
+    "bi",
+    "bih",
+    "bijah",
+    "bijahu",
+    "bijasmo",
+    "bijaste",
+    "bijaše",
+    "bila",
+    "bile",
+    "bili",
+    "bilo",
+    "bio",
+    "bismo",
+    "biste",
+    "biti",
+    "biše",
+    "bje",
+    "bjeh",
+    "bjehu",
+    "bjesmo",
+    "bjeste",
+    "bješe",
+    "budem",
+    "budemo",
+    "budete",
+    "budeš",
+    "budimo",
+    "budite",
+    "budu",
+    "jesam",
+    "jesi",
+    "jesmo",
+    "jeste",
+    "jesu",
+    "mogu",
+    "mora",
+    "moraju",
+    "moram",
+    "moramo",
+    "morate",
+    "moraš",
+    "može",
+    "možemo",
+    "možete",
+    "možeš",
+    "sam",
+    "si",
+    "smo",
+    "ste",
+    "su",
+    "treba",
+    "trebaju",
+    "trebam",
+    "trebamo",
+    "trebate",
+    "trebaš",
+    "će",
+    "ćemo",
+    "ćete",
+    "ćeš",
+    "ću",
+    "žele",
+    "želi",
+    "želim",
+    "želimo",
+    "želite",
+    "želiš",
 };
 
-#define N_TRANSFORMS 132
+#define N_TRANSFORMS 159
 typedef struct { const char *from; int from_len; const char *to; } Transform;
 static const Transform transforms[] = {
     {"teticima", 8, "tetika"},
@@ -3874,6 +114,18 @@ static const Transform transforms[] = {
     {"centar", 6, "centra"},
     {"istara", 6, "istra"},
     {"voljan", 6, "voljni"},
+    {"rstava", 6, "rstva"},
+    {"jstava", 6, "jstva"},
+    {"mstava", 6, "mstva"},
+    {"dstava", 6, "dstva"},
+    {"tstava", 6, "tstva"},
+    {"lstava", 6, "lstva"},
+    {"vstava", 6, "vstva"},
+    {"kstava", 6, "kstva"},
+    {"pstava", 6, "pstva"},
+    {"bstava", 6, "bstva"},
+    {"gstava", 6, "gstva"},
+    {"uštava", 7, "uštva"},
     {"pjesi", 5, "pjeh"},
     {"vojci", 5, "vojka"},
     {"bojci", 5, "bojka"},
@@ -3918,6 +170,14 @@ static const Transform transforms[] = {
     {"njaca", 5, "njca"},
     {"ekata", 5, "ekta"},
     {"izama", 5, "izma"},
+    {"acima", 5, "ak"},
+    {"icima", 5, "ik"},
+    {"ocima", 5, "ok"},
+    {"ucima", 5, "uk"},
+    {"ecite", 5, "ek"},
+    {"ecimo", 5, "ek"},
+    {"ucite", 5, "uk"},
+    {"ucimo", 5, "uk"},
     {"lozi", 4, "loga"},
     {"jaci", 4, "jak"},
     {"ajac", 4, "ajca"},
@@ -3963,6 +223,9 @@ static const Transform transforms[] = {
     {"jebe", 4, "jebi"},
     {"baci", 4, "baci"},
     {"ašan", 5, "ašni"},
+    {"ošao", 5, "ođe"},
+    {"išao", 5, "iđe"},
+    {"ašao", 5, "ađe"},
     {"šac", 4, "šca"},
     {"čci", 4, "čka"},
     {"mac", 3, "mca"},
@@ -3970,9 +233,24 @@ static const Transform transforms[] = {
     {"vac", 3, "vca"},
     {"sac", 3, "sca"},
     {"rac", 3, "rca"},
+    {"aci", 3, "ak"},
+    {"oci", 3, "ok"},
+    {"uci", 3, "uk"},
+    {"eo", 2, "ela"},
 };
 
-#define N_RULES 75
+#define N_RULES 81
+
+/*
+ * Stem endings are codepoint atoms: a literal letter or a one-codepoint
+ * class `[...]`/`[^...]`. The head (the stem before its ending) is
+ * HEAD_ANY: any codepoints, at least min_extra of them (`.+`, `.*`);
+ * HEAD_ALL: one or more, every one in head_class (`[cls]+`);
+ * HEAD_SOME: at least one codepoint in head_class (`.*[cls].*`).
+ */
+#define HEAD_ANY 0
+#define HEAD_ALL 1
+#define HEAD_SOME 2
 
 /* Rule 0: .+(s|š)k */
 static const char *const rule_0_stem_ends[] = {
@@ -4008,6 +286,10 @@ static const char *const rule_0_suffixes[] = {
     "ijemu",
 };
 #define RULE_0_N_SUFFIXES 25
+#define RULE_0_MIN_EXTRA 1
+#define RULE_0_HEAD_MODE HEAD_ANY
+#define RULE_0_HEAD_CLASS NULL
+#define RULE_0_LAZY 0
 
 /* Rule 1: .+(s|š)tv */
 static const char *const rule_1_stem_ends[] = {
@@ -4023,6 +305,10 @@ static const char *const rule_1_suffixes[] = {
     "ima",
 };
 #define RULE_1_N_SUFFIXES 5
+#define RULE_1_MIN_EXTRA 1
+#define RULE_1_HEAD_MODE HEAD_ANY
+#define RULE_1_HEAD_CLASS NULL
+#define RULE_1_LAZY 0
 
 /* Rule 2: .+(t|m|p|r|g)anij */
 static const char *const rule_2_stem_ends[] = {
@@ -4044,6 +330,10 @@ static const char *const rule_2_suffixes[] = {
     "ima",
 };
 #define RULE_2_N_SUFFIXES 8
+#define RULE_2_MIN_EXTRA 1
+#define RULE_2_HEAD_MODE HEAD_ANY
+#define RULE_2_HEAD_CLASS NULL
+#define RULE_2_LAZY 0
 
 /* Rule 3: .+an */
 static const char *const rule_3_stem_ends[] = {
@@ -4065,6 +355,10 @@ static const char *const rule_3_suffixes[] = {
     "inom",
 };
 #define RULE_3_N_SUFFIXES 12
+#define RULE_3_MIN_EXTRA 1
+#define RULE_3_HEAD_MODE HEAD_ANY
+#define RULE_3_HEAD_CLASS NULL
+#define RULE_3_LAZY 0
 
 /* Rule 4: .+in */
 static const char *const rule_4_stem_ends[] = {
@@ -4083,6 +377,10 @@ static const char *const rule_4_suffixes[] = {
     "ama",
 };
 #define RULE_4_N_SUFFIXES 9
+#define RULE_4_MIN_EXTRA 1
+#define RULE_4_HEAD_MODE HEAD_ANY
+#define RULE_4_HEAD_CLASS NULL
+#define RULE_4_LAZY 0
 
 /* Rule 5: .+on */
 static const char *const rule_5_stem_ends[] = {
@@ -4103,6 +401,10 @@ static const char *const rule_5_suffixes[] = {
     "ovima",
 };
 #define RULE_5_N_SUFFIXES 11
+#define RULE_5_MIN_EXTRA 1
+#define RULE_5_HEAD_MODE HEAD_ANY
+#define RULE_5_HEAD_CLASS NULL
+#define RULE_5_LAZY 0
 
 /* Rule 6: .+n */
 static const char *const rule_6_stem_ends[] = {
@@ -4139,6 +441,10 @@ static const char *const rule_6_suffixes[] = {
     "ijemu",
 };
 #define RULE_6_N_SUFFIXES 27
+#define RULE_6_MIN_EXTRA 1
+#define RULE_6_HEAD_MODE HEAD_ANY
+#define RULE_6_HEAD_CLASS NULL
+#define RULE_6_LAZY 0
 
 /* Rule 7: .+(a|e|u)ć */
 static const char *const rule_7_stem_ends[] = {
@@ -4166,6 +472,10 @@ static const char *const rule_7_suffixes[] = {
     "ima",
 };
 #define RULE_7_N_SUFFIXES 16
+#define RULE_7_MIN_EXTRA 1
+#define RULE_7_HEAD_MODE HEAD_ANY
+#define RULE_7_HEAD_CLASS NULL
+#define RULE_7_LAZY 0
 
 /* Rule 8: .+ugov */
 static const char *const rule_8_stem_ends[] = {
@@ -4179,6 +489,10 @@ static const char *const rule_8_suffixes[] = {
     "ima",
 };
 #define RULE_8_N_SUFFIXES 4
+#define RULE_8_MIN_EXTRA 1
+#define RULE_8_HEAD_MODE HEAD_ANY
+#define RULE_8_HEAD_CLASS NULL
+#define RULE_8_LAZY 0
 
 /* Rule 9: .+ug */
 static const char *const rule_9_stem_ends[] = {
@@ -4195,12 +509,17 @@ static const char *const rule_9_suffixes[] = {
     "ama",
 };
 #define RULE_9_N_SUFFIXES 7
+#define RULE_9_MIN_EXTRA 1
+#define RULE_9_HEAD_MODE HEAD_ANY
+#define RULE_9_HEAD_CLASS NULL
+#define RULE_9_LAZY 0
 
-/* Rule 10: .+log */
+/* Rule 10: .*([aiou]|[bdz])log */
 static const char *const rule_10_stem_ends[] = {
-    "log",
+    "[aiou]log",
+    "[bdz]log",
 };
-#define RULE_10_N_STEM_ENDS 1
+#define RULE_10_N_STEM_ENDS 2
 static const char *const rule_10_suffixes[] = {
     "",
     "a",
@@ -4210,36 +529,16 @@ static const char *const rule_10_suffixes[] = {
     "ama",
 };
 #define RULE_10_N_SUFFIXES 6
+#define RULE_10_MIN_EXTRA 0
+#define RULE_10_HEAD_MODE HEAD_ANY
+#define RULE_10_HEAD_CLASS NULL
+#define RULE_10_LAZY 0
 
 /* Rule 11: .+[^eo]g */
 static const char *const rule_11_stem_ends[] = {
-    "ag",
-    "bg",
-    "cg",
-    "dg",
-    "fg",
-    "gg",
-    "hg",
-    "ig",
-    "jg",
-    "kg",
-    "lg",
-    "mg",
-    "ng",
-    "pg",
-    "rg",
-    "sg",
-    "tg",
-    "ug",
-    "vg",
-    "zg",
-    "ćg",
-    "čg",
-    "đg",
-    "šg",
-    "žg",
+    "[^eo]g",
 };
-#define RULE_11_N_STEM_ENDS 25
+#define RULE_11_N_STEM_ENDS 1
 static const char *const rule_11_suffixes[] = {
     "",
     "a",
@@ -4255,6 +554,10 @@ static const char *const rule_11_suffixes[] = {
     "ovima",
 };
 #define RULE_11_N_SUFFIXES 12
+#define RULE_11_MIN_EXTRA 1
+#define RULE_11_HEAD_MODE HEAD_ANY
+#define RULE_11_HEAD_CLASS NULL
+#define RULE_11_LAZY 0
 
 /* Rule 12: .+(rrar|ott|ss|ll)i */
 static const char *const rule_12_stem_ends[] = {
@@ -4272,6 +575,10 @@ static const char *const rule_12_suffixes[] = {
     "jem",
 };
 #define RULE_12_N_SUFFIXES 5
+#define RULE_12_MIN_EXTRA 1
+#define RULE_12_HEAD_MODE HEAD_ANY
+#define RULE_12_HEAD_CLASS NULL
+#define RULE_12_LAZY 0
 
 /* Rule 13: .+uj */
 static const char *const rule_13_stem_ends[] = {
@@ -4283,16 +590,52 @@ static const char *const rule_13_suffixes[] = {
     "e",
     "u",
     "mo",
+    "te",
     "em",
     "emo",
     "ete",
     "eš",
     "ući",
 };
-#define RULE_13_N_SUFFIXES 9
+#define RULE_13_N_SUFFIXES 10
+#define RULE_13_MIN_EXTRA 1
+#define RULE_13_HEAD_MODE HEAD_ANY
+#define RULE_13_HEAD_CLASS NULL
+#define RULE_13_LAZY 0
 
-/* Rule 14: .+(c|č|ć|đ|l|r)aj */
+/* Rule 14: .+(c|č|ž|đ)aj */
 static const char *const rule_14_stem_ends[] = {
+    "caj",
+    "čaj",
+    "đaj",
+    "žaj",
+};
+#define RULE_14_N_STEM_ENDS 4
+static const char *const rule_14_suffixes[] = {
+    "u",
+};
+#define RULE_14_N_SUFFIXES 1
+#define RULE_14_MIN_EXTRA 1
+#define RULE_14_HEAD_MODE HEAD_ANY
+#define RULE_14_HEAD_CLASS NULL
+#define RULE_14_LAZY 0
+
+/* Rule 15: [^aeiou]+raj */
+static const char *const rule_15_stem_ends[] = {
+    "raj",
+};
+#define RULE_15_N_STEM_ENDS 1
+static const char *const rule_15_suffixes[] = {
+    "u",
+};
+#define RULE_15_N_SUFFIXES 1
+#define RULE_15_MIN_EXTRA 1
+#define RULE_15_HEAD_MODE HEAD_ALL
+#define RULE_15_HEAD_CLASS "[^aeiou]"
+#define RULE_15_LAZY 0
+
+/* Rule 16: .+(c|č|ć|đ|l|r)aj */
+static const char *const rule_16_stem_ends[] = {
     "caj",
     "laj",
     "raj",
@@ -4300,13 +643,12 @@ static const char *const rule_14_stem_ends[] = {
     "čaj",
     "đaj",
 };
-#define RULE_14_N_STEM_ENDS 6
-static const char *const rule_14_suffixes[] = {
+#define RULE_16_N_STEM_ENDS 6
+static const char *const rule_16_suffixes[] = {
     "",
     "a",
     "e",
     "i",
-    "u",
     "em",
     "evi",
     "eva",
@@ -4315,10 +657,14 @@ static const char *const rule_14_suffixes[] = {
     "ima",
     "evima",
 };
-#define RULE_14_N_SUFFIXES 12
+#define RULE_16_N_SUFFIXES 11
+#define RULE_16_MIN_EXTRA 1
+#define RULE_16_HEAD_MODE HEAD_ANY
+#define RULE_16_HEAD_CLASS NULL
+#define RULE_16_LAZY 0
 
-/* Rule 15: .+(b|c|d|l|n|m|ž|g|f|p|r|s|t|z)ij */
-static const char *const rule_15_stem_ends[] = {
+/* Rule 17: .+(b|c|d|l|n|m|ž|g|f|p|r|s|t|z)ij */
+static const char *const rule_17_stem_ends[] = {
     "bij",
     "cij",
     "dij",
@@ -4334,68 +680,7 @@ static const char *const rule_15_stem_ends[] = {
     "zij",
     "žij",
 };
-#define RULE_15_N_STEM_ENDS 14
-static const char *const rule_15_suffixes[] = {
-    "",
-    "a",
-    "e",
-    "i",
-    "u",
-    "o",
-    "om",
-    "ima",
-    "ama",
-};
-#define RULE_15_N_SUFFIXES 9
-
-/* Rule 16: .+[^z]nal */
-static const char *const rule_16_stem_ends[] = {
-    "anal",
-    "bnal",
-    "cnal",
-    "dnal",
-    "enal",
-    "fnal",
-    "gnal",
-    "hnal",
-    "inal",
-    "jnal",
-    "knal",
-    "lnal",
-    "mnal",
-    "nnal",
-    "onal",
-    "pnal",
-    "rnal",
-    "snal",
-    "tnal",
-    "unal",
-    "vnal",
-    "ćnal",
-    "čnal",
-    "đnal",
-    "šnal",
-    "žnal",
-};
-#define RULE_16_N_STEM_ENDS 26
-static const char *const rule_16_suffixes[] = {
-    "",
-    "a",
-    "e",
-    "i",
-    "u",
-    "o",
-    "om",
-    "ima",
-    "ama",
-};
-#define RULE_16_N_SUFFIXES 9
-
-/* Rule 17: .+ijal */
-static const char *const rule_17_stem_ends[] = {
-    "ijal",
-};
-#define RULE_17_N_STEM_ENDS 1
+#define RULE_17_N_STEM_ENDS 14
 static const char *const rule_17_suffixes[] = {
     "",
     "a",
@@ -4408,58 +693,120 @@ static const char *const rule_17_suffixes[] = {
     "ama",
 };
 #define RULE_17_N_SUFFIXES 9
+#define RULE_17_MIN_EXTRA 1
+#define RULE_17_HEAD_MODE HEAD_ANY
+#define RULE_17_HEAD_CLASS NULL
+#define RULE_17_LAZY 0
 
-/* Rule 18: .+ozil */
+/* Rule 18: .+[^z]nal */
 static const char *const rule_18_stem_ends[] = {
-    "ozil",
+    "[^z]nal",
 };
 #define RULE_18_N_STEM_ENDS 1
 static const char *const rule_18_suffixes[] = {
     "",
     "a",
     "e",
-    "u",
     "i",
+    "u",
+    "o",
     "om",
     "ima",
+    "ama",
 };
-#define RULE_18_N_SUFFIXES 7
+#define RULE_18_N_SUFFIXES 9
+#define RULE_18_MIN_EXTRA 1
+#define RULE_18_HEAD_MODE HEAD_ANY
+#define RULE_18_HEAD_CLASS NULL
+#define RULE_18_LAZY 0
 
-/* Rule 19: .+olov */
+/* Rule 19: .+(c|[aeiou]r)ijal */
 static const char *const rule_19_stem_ends[] = {
-    "olov",
+    "[aeiou]rijal",
+    "cijal",
 };
-#define RULE_19_N_STEM_ENDS 1
+#define RULE_19_N_STEM_ENDS 2
 static const char *const rule_19_suffixes[] = {
-    "i",
+    "",
     "a",
     "e",
+    "i",
+    "u",
+    "o",
+    "om",
     "ima",
+    "ama",
 };
-#define RULE_19_N_SUFFIXES 4
+#define RULE_19_N_SUFFIXES 9
+#define RULE_19_MIN_EXTRA 1
+#define RULE_19_HEAD_MODE HEAD_ANY
+#define RULE_19_HEAD_CLASS NULL
+#define RULE_19_LAZY 0
 
-/* Rule 20: .+ol */
+/* Rule 20: .+ozil */
 static const char *const rule_20_stem_ends[] = {
-    "ol",
+    "ozil",
 };
 #define RULE_20_N_STEM_ENDS 1
 static const char *const rule_20_suffixes[] = {
     "",
     "a",
+    "e",
+    "u",
+    "i",
+    "o",
+    "om",
+    "ima",
+};
+#define RULE_20_N_SUFFIXES 8
+#define RULE_20_MIN_EXTRA 1
+#define RULE_20_HEAD_MODE HEAD_ANY
+#define RULE_20_HEAD_CLASS NULL
+#define RULE_20_LAZY 0
+
+/* Rule 21: .+olov */
+static const char *const rule_21_stem_ends[] = {
+    "olov",
+};
+#define RULE_21_N_STEM_ENDS 1
+static const char *const rule_21_suffixes[] = {
+    "i",
+    "a",
+    "e",
+    "ima",
+};
+#define RULE_21_N_SUFFIXES 4
+#define RULE_21_MIN_EXTRA 1
+#define RULE_21_HEAD_MODE HEAD_ANY
+#define RULE_21_HEAD_CLASS NULL
+#define RULE_21_LAZY 0
+
+/* Rule 22: .+ol */
+static const char *const rule_22_stem_ends[] = {
+    "ol",
+};
+#define RULE_22_N_STEM_ENDS 1
+static const char *const rule_22_suffixes[] = {
+    "",
+    "a",
     "u",
     "e",
     "i",
     "om",
     "ima",
 };
-#define RULE_20_N_SUFFIXES 7
+#define RULE_22_N_SUFFIXES 7
+#define RULE_22_MIN_EXTRA 1
+#define RULE_22_HEAD_MODE HEAD_ANY
+#define RULE_22_HEAD_CLASS NULL
+#define RULE_22_LAZY 0
 
-/* Rule 21: .+lem */
-static const char *const rule_21_stem_ends[] = {
+/* Rule 23: .+lem */
+static const char *const rule_23_stem_ends[] = {
     "lem",
 };
-#define RULE_21_N_STEM_ENDS 1
-static const char *const rule_21_suffixes[] = {
+#define RULE_23_N_STEM_ENDS 1
+static const char *const rule_23_suffixes[] = {
     "",
     "a",
     "e",
@@ -4470,33 +817,43 @@ static const char *const rule_21_suffixes[] = {
     "ama",
     "ima",
 };
-#define RULE_21_N_SUFFIXES 9
+#define RULE_23_N_SUFFIXES 9
+#define RULE_23_MIN_EXTRA 1
+#define RULE_23_HEAD_MODE HEAD_ANY
+#define RULE_23_HEAD_CLASS NULL
+#define RULE_23_LAZY 0
 
-/* Rule 22: .+ram */
-static const char *const rule_22_stem_ends[] = {
-    "ram",
+/* Rule 24: .*(g|h|s)ram */
+static const char *const rule_24_stem_ends[] = {
+    "gram",
+    "hram",
+    "sram",
 };
-#define RULE_22_N_STEM_ENDS 1
-static const char *const rule_22_suffixes[] = {
+#define RULE_24_N_STEM_ENDS 3
+static const char *const rule_24_suffixes[] = {
+    "",
     "a",
     "e",
     "i",
     "u",
-    "o",
     "om",
     "ama",
 };
-#define RULE_22_N_SUFFIXES 7
+#define RULE_24_N_SUFFIXES 7
+#define RULE_24_MIN_EXTRA 0
+#define RULE_24_HEAD_MODE HEAD_ANY
+#define RULE_24_HEAD_CLASS NULL
+#define RULE_24_LAZY 0
 
-/* Rule 23: .+(a|d|e|o)r */
-static const char *const rule_23_stem_ends[] = {
+/* Rule 25: .+(a|d|e|o)r */
+static const char *const rule_25_stem_ends[] = {
     "ar",
     "dr",
     "er",
     "or",
 };
-#define RULE_23_N_STEM_ENDS 4
-static const char *const rule_23_suffixes[] = {
+#define RULE_25_N_STEM_ENDS 4
+static const char *const rule_25_suffixes[] = {
     "",
     "u",
     "a",
@@ -4506,25 +863,33 @@ static const char *const rule_23_suffixes[] = {
     "ama",
     "ima",
 };
-#define RULE_23_N_SUFFIXES 8
+#define RULE_25_N_SUFFIXES 8
+#define RULE_25_MIN_EXTRA 1
+#define RULE_25_HEAD_MODE HEAD_ANY
+#define RULE_25_HEAD_CLASS NULL
+#define RULE_25_LAZY 0
 
-/* Rule 24: .+(e|i)s */
-static const char *const rule_24_stem_ends[] = {
+/* Rule 26: .+(e|i)s */
+static const char *const rule_26_stem_ends[] = {
     "es",
     "is",
 };
-#define RULE_24_N_STEM_ENDS 2
-static const char *const rule_24_suffixes[] = {
+#define RULE_26_N_STEM_ENDS 2
+static const char *const rule_26_suffixes[] = {
     "e",
     "a",
     "u",
     "om",
     "ima",
 };
-#define RULE_24_N_SUFFIXES 5
+#define RULE_26_N_SUFFIXES 5
+#define RULE_26_MIN_EXTRA 1
+#define RULE_26_HEAD_MODE HEAD_ANY
+#define RULE_26_HEAD_CLASS NULL
+#define RULE_26_LAZY 0
 
-/* Rule 25: .+(t|n|j|k|j|t|b|g|v)aš */
-static const char *const rule_25_stem_ends[] = {
+/* Rule 27: .+(t|n|j|k|j|t|b|g|v)aš */
+static const char *const rule_27_stem_ends[] = {
     "baš",
     "gaš",
     "jaš",
@@ -4533,61 +898,51 @@ static const char *const rule_25_stem_ends[] = {
     "taš",
     "vaš",
 };
-#define RULE_25_N_STEM_ENDS 7
-static const char *const rule_25_suffixes[] = {
-    "",
-    "a",
-    "u",
-    "i",
-    "e",
-    "om",
-    "em",
-    "ama",
-    "ima",
-};
-#define RULE_25_N_SUFFIXES 9
-
-/* Rule 26: .+(e|i)š */
-static const char *const rule_26_stem_ends[] = {
-    "eš",
-    "iš",
-};
-#define RULE_26_N_STEM_ENDS 2
-static const char *const rule_26_suffixes[] = {
-    "i",
-    "e",
-    "a",
-    "u",
-    "om",
-    "em",
-    "ima",
-    "ama",
-};
-#define RULE_26_N_SUFFIXES 8
-
-/* Rule 27: .+ikat */
-static const char *const rule_27_stem_ends[] = {
-    "ikat",
-};
-#define RULE_27_N_STEM_ENDS 1
+#define RULE_27_N_STEM_ENDS 7
 static const char *const rule_27_suffixes[] = {
-    "",
     "a",
-    "e",
-    "i",
     "u",
-    "o",
+    "i",
+    "e",
     "om",
+    "em",
+    "ama",
     "ima",
 };
 #define RULE_27_N_SUFFIXES 8
+#define RULE_27_MIN_EXTRA 1
+#define RULE_27_HEAD_MODE HEAD_ANY
+#define RULE_27_HEAD_CLASS NULL
+#define RULE_27_LAZY 0
 
-/* Rule 28: .+lat */
+/* Rule 28: .+(e|i)š */
 static const char *const rule_28_stem_ends[] = {
-    "lat",
+    "eš",
+    "iš",
 };
-#define RULE_28_N_STEM_ENDS 1
+#define RULE_28_N_STEM_ENDS 2
 static const char *const rule_28_suffixes[] = {
+    "i",
+    "e",
+    "a",
+    "u",
+    "om",
+    "em",
+    "ima",
+    "ama",
+};
+#define RULE_28_N_SUFFIXES 8
+#define RULE_28_MIN_EXTRA 1
+#define RULE_28_HEAD_MODE HEAD_ANY
+#define RULE_28_HEAD_CLASS NULL
+#define RULE_28_LAZY 0
+
+/* Rule 29: .+ikat */
+static const char *const rule_29_stem_ends[] = {
+    "ikat",
+};
+#define RULE_29_N_STEM_ENDS 1
+static const char *const rule_29_suffixes[] = {
     "",
     "a",
     "e",
@@ -4597,26 +952,15 @@ static const char *const rule_28_suffixes[] = {
     "om",
     "ima",
 };
-#define RULE_28_N_SUFFIXES 8
+#define RULE_29_N_SUFFIXES 8
+#define RULE_29_MIN_EXTRA 1
+#define RULE_29_HEAD_MODE HEAD_ANY
+#define RULE_29_HEAD_CLASS NULL
+#define RULE_29_LAZY 0
 
-/* Rule 29: .+ed */
-static const char *const rule_29_stem_ends[] = {
-    "ed",
-};
-#define RULE_29_N_STEM_ENDS 1
-static const char *const rule_29_suffixes[] = {
-    "e",
-    "u",
-    "em",
-    "ete",
-    "emo",
-    "eš",
-};
-#define RULE_29_N_SUFFIXES 6
-
-/* Rule 30: .+et */
+/* Rule 30: .+lat */
 static const char *const rule_30_stem_ends[] = {
-    "et",
+    "lat",
 };
 #define RULE_30_N_STEM_ENDS 1
 static const char *const rule_30_suffixes[] = {
@@ -4627,20 +971,82 @@ static const char *const rule_30_suffixes[] = {
     "u",
     "o",
     "om",
+    "ima",
+};
+#define RULE_30_N_SUFFIXES 8
+#define RULE_30_MIN_EXTRA 1
+#define RULE_30_HEAD_MODE HEAD_ANY
+#define RULE_30_HEAD_CLASS NULL
+#define RULE_30_LAZY 0
+
+/* Rule 31: .+ed */
+static const char *const rule_31_stem_ends[] = {
+    "ed",
+};
+#define RULE_31_N_STEM_ENDS 1
+static const char *const rule_31_suffixes[] = {
+    "e",
+    "u",
+    "em",
+    "ete",
+    "emo",
+    "eš",
+};
+#define RULE_31_N_SUFFIXES 6
+#define RULE_31_MIN_EXTRA 1
+#define RULE_31_HEAD_MODE HEAD_ANY
+#define RULE_31_HEAD_CLASS NULL
+#define RULE_31_LAZY 0
+
+/* Rule 32: .+(č|ć|đ|š|ž) */
+static const char *const rule_32_stem_ends[] = {
+    "ć",
+    "č",
+    "đ",
+    "š",
+    "ž",
+};
+#define RULE_32_N_STEM_ENDS 5
+static const char *const rule_32_suffixes[] = {
+    "ete",
+    "eš",
+};
+#define RULE_32_N_SUFFIXES 2
+#define RULE_32_MIN_EXTRA 1
+#define RULE_32_HEAD_MODE HEAD_ANY
+#define RULE_32_HEAD_CLASS NULL
+#define RULE_32_LAZY 0
+
+/* Rule 33: .+et */
+static const char *const rule_33_stem_ends[] = {
+    "et",
+};
+#define RULE_33_N_STEM_ENDS 1
+static const char *const rule_33_suffixes[] = {
+    "",
+    "a",
+    "i",
+    "u",
+    "o",
+    "om",
     "ama",
     "ima",
 };
-#define RULE_30_N_SUFFIXES 9
+#define RULE_33_N_SUFFIXES 8
+#define RULE_33_MIN_EXTRA 1
+#define RULE_33_HEAD_MODE HEAD_ANY
+#define RULE_33_HEAD_CLASS NULL
+#define RULE_33_LAZY 0
 
-/* Rule 31: .+(e|i|k|o)st */
-static const char *const rule_31_stem_ends[] = {
+/* Rule 34: .+(e|i|k|o)st */
+static const char *const rule_34_stem_ends[] = {
     "est",
     "ist",
     "kst",
     "ost",
 };
-#define RULE_31_N_STEM_ENDS 4
-static const char *const rule_31_suffixes[] = {
+#define RULE_34_N_STEM_ENDS 4
+static const char *const rule_34_suffixes[] = {
     "",
     "a",
     "e",
@@ -4651,28 +1057,36 @@ static const char *const rule_31_suffixes[] = {
     "ima",
     "ama",
 };
-#define RULE_31_N_SUFFIXES 9
+#define RULE_34_N_SUFFIXES 9
+#define RULE_34_MIN_EXTRA 1
+#define RULE_34_HEAD_MODE HEAD_ANY
+#define RULE_34_HEAD_CLASS NULL
+#define RULE_34_LAZY 0
 
-/* Rule 32: .+išt */
-static const char *const rule_32_stem_ends[] = {
+/* Rule 35: .+išt */
+static const char *const rule_35_stem_ends[] = {
     "išt",
 };
-#define RULE_32_N_STEM_ENDS 1
-static const char *const rule_32_suffixes[] = {
+#define RULE_35_N_STEM_ENDS 1
+static const char *const rule_35_suffixes[] = {
     "a",
     "e",
     "u",
     "em",
     "ima",
 };
-#define RULE_32_N_SUFFIXES 5
+#define RULE_35_N_SUFFIXES 5
+#define RULE_35_MIN_EXTRA 1
+#define RULE_35_HEAD_MODE HEAD_ANY
+#define RULE_35_HEAD_CLASS NULL
+#define RULE_35_LAZY 0
 
-/* Rule 33: .+ova */
-static const char *const rule_33_stem_ends[] = {
+/* Rule 36: .+ova */
+static const char *const rule_36_stem_ends[] = {
     "ova",
 };
-#define RULE_33_N_STEM_ENDS 1
-static const char *const rule_33_suffixes[] = {
+#define RULE_36_N_STEM_ENDS 1
+static const char *const rule_36_suffixes[] = {
     "t",
     "h",
     "o",
@@ -4686,127 +1100,19 @@ static const char *const rule_33_suffixes[] = {
     "ste",
     "še",
 };
-#define RULE_33_N_SUFFIXES 12
+#define RULE_36_N_SUFFIXES 12
+#define RULE_36_MIN_EXTRA 1
+#define RULE_36_HEAD_MODE HEAD_ANY
+#define RULE_36_HEAD_CLASS NULL
+#define RULE_36_LAZY 0
 
-/* Rule 34: .+(a|e|i)v */
-static const char *const rule_34_stem_ends[] = {
+/* Rule 37: .+(a|e|i)v */
+static const char *const rule_37_stem_ends[] = {
     "av",
     "ev",
     "iv",
 };
-#define RULE_34_N_STEM_ENDS 3
-static const char *const rule_34_suffixes[] = {
-    "",
-    "i",
-    "a",
-    "u",
-    "e",
-    "o",
-    "im",
-    "ih",
-    "oj",
-    "om",
-    "og",
-    "oga",
-    "ome",
-    "omu",
-    "ima",
-    "ama",
-    "iji",
-    "ije",
-    "ija",
-    "iju",
-    "ijeg",
-    "ijem",
-    "ijim",
-    "ijih",
-    "ijoj",
-    "ijemu",
-    "ijima",
-    "ijega",
-};
-#define RULE_34_N_SUFFIXES 28
-
-/* Rule 35: .+[^dkml]ov */
-static const char *const rule_35_stem_ends[] = {
-    "aov",
-    "bov",
-    "cov",
-    "eov",
-    "fov",
-    "gov",
-    "hov",
-    "iov",
-    "jov",
-    "nov",
-    "oov",
-    "pov",
-    "rov",
-    "sov",
-    "tov",
-    "uov",
-    "vov",
-    "zov",
-    "ćov",
-    "čov",
-    "đov",
-    "šov",
-    "žov",
-};
-#define RULE_35_N_STEM_ENDS 23
-static const char *const rule_35_suffixes[] = {
-    "",
-    "i",
-    "a",
-    "u",
-    "e",
-    "o",
-    "im",
-    "ih",
-    "oj",
-    "om",
-    "og",
-    "oga",
-    "ome",
-    "omu",
-    "ima",
-    "iji",
-    "ije",
-    "ija",
-    "iju",
-    "ijeg",
-    "ijem",
-    "ijim",
-    "ijih",
-    "ijoj",
-    "ijemu",
-    "ijima",
-    "ijega",
-};
-#define RULE_35_N_SUFFIXES 27
-
-/* Rule 36: .+(m|l)ov */
-static const char *const rule_36_stem_ends[] = {
-    "lov",
-    "mov",
-};
-#define RULE_36_N_STEM_ENDS 2
-static const char *const rule_36_suffixes[] = {
-    "",
-    "a",
-    "u",
-    "e",
-    "i",
-    "om",
-    "ima",
-};
-#define RULE_36_N_SUFFIXES 7
-
-/* Rule 37: .+el */
-static const char *const rule_37_stem_ends[] = {
-    "el",
-};
-#define RULE_37_N_STEM_ENDS 1
+#define RULE_37_N_STEM_ENDS 3
 static const char *const rule_37_suffixes[] = {
     "",
     "i",
@@ -4823,6 +1129,7 @@ static const char *const rule_37_suffixes[] = {
     "ome",
     "omu",
     "ima",
+    "ama",
     "iji",
     "ije",
     "ija",
@@ -4836,16 +1143,121 @@ static const char *const rule_37_suffixes[] = {
     "ijima",
     "ijega",
 };
-#define RULE_37_N_SUFFIXES 27
+#define RULE_37_N_SUFFIXES 28
+#define RULE_37_MIN_EXTRA 1
+#define RULE_37_HEAD_MODE HEAD_ANY
+#define RULE_37_HEAD_CLASS NULL
+#define RULE_37_LAZY 0
 
-/* Rule 38: .+(a|e|š)nj */
+/* Rule 38: .+[^dkml]ov */
 static const char *const rule_38_stem_ends[] = {
+    "[^dkml]ov",
+};
+#define RULE_38_N_STEM_ENDS 1
+static const char *const rule_38_suffixes[] = {
+    "",
+    "i",
+    "a",
+    "u",
+    "e",
+    "o",
+    "im",
+    "ih",
+    "oj",
+    "om",
+    "og",
+    "oga",
+    "ome",
+    "omu",
+    "ima",
+    "iji",
+    "ije",
+    "ija",
+    "iju",
+    "ijeg",
+    "ijem",
+    "ijim",
+    "ijih",
+    "ijoj",
+    "ijemu",
+    "ijima",
+    "ijega",
+};
+#define RULE_38_N_SUFFIXES 27
+#define RULE_38_MIN_EXTRA 1
+#define RULE_38_HEAD_MODE HEAD_ANY
+#define RULE_38_HEAD_CLASS NULL
+#define RULE_38_LAZY 0
+
+/* Rule 39: .+(m|l)ov */
+static const char *const rule_39_stem_ends[] = {
+    "lov",
+    "mov",
+};
+#define RULE_39_N_STEM_ENDS 2
+static const char *const rule_39_suffixes[] = {
+    "",
+    "a",
+    "u",
+    "e",
+    "i",
+    "om",
+    "ima",
+};
+#define RULE_39_N_SUFFIXES 7
+#define RULE_39_MIN_EXTRA 1
+#define RULE_39_HEAD_MODE HEAD_ANY
+#define RULE_39_HEAD_CLASS NULL
+#define RULE_39_LAZY 0
+
+/* Rule 40: .+el */
+static const char *const rule_40_stem_ends[] = {
+    "el",
+};
+#define RULE_40_N_STEM_ENDS 1
+static const char *const rule_40_suffixes[] = {
+    "",
+    "i",
+    "a",
+    "u",
+    "e",
+    "o",
+    "im",
+    "ih",
+    "oj",
+    "om",
+    "og",
+    "oga",
+    "ome",
+    "omu",
+    "ima",
+    "iji",
+    "ije",
+    "ija",
+    "iju",
+    "ijeg",
+    "ijem",
+    "ijim",
+    "ijih",
+    "ijoj",
+    "ijemu",
+    "ijima",
+    "ijega",
+};
+#define RULE_40_N_SUFFIXES 27
+#define RULE_40_MIN_EXTRA 1
+#define RULE_40_HEAD_MODE HEAD_ANY
+#define RULE_40_HEAD_CLASS NULL
+#define RULE_40_LAZY 0
+
+/* Rule 41: .+(a|e|š)nj */
+static const char *const rule_41_stem_ends[] = {
     "anj",
     "enj",
     "šnj",
 };
-#define RULE_38_N_STEM_ENDS 3
-static const char *const rule_38_suffixes[] = {
+#define RULE_41_N_STEM_ENDS 3
+static const char *const rule_41_suffixes[] = {
     "a",
     "e",
     "i",
@@ -4877,14 +1289,18 @@ static const char *const rule_38_suffixes[] = {
     "ijima",
     "ijega",
 };
-#define RULE_38_N_SUFFIXES 30
+#define RULE_41_N_SUFFIXES 30
+#define RULE_41_MIN_EXTRA 1
+#define RULE_41_HEAD_MODE HEAD_ANY
+#define RULE_41_HEAD_CLASS NULL
+#define RULE_41_LAZY 0
 
-/* Rule 39: .+čin */
-static const char *const rule_39_stem_ends[] = {
+/* Rule 42: .+čin */
+static const char *const rule_42_stem_ends[] = {
     "čin",
 };
-#define RULE_39_N_STEM_ENDS 1
-static const char *const rule_39_suffixes[] = {
+#define RULE_42_N_STEM_ENDS 1
+static const char *const rule_42_suffixes[] = {
     "",
     "a",
     "u",
@@ -4902,14 +1318,18 @@ static const char *const rule_39_suffixes[] = {
     "oga",
     "ima",
 };
-#define RULE_39_N_SUFFIXES 16
+#define RULE_42_N_SUFFIXES 16
+#define RULE_42_MIN_EXTRA 1
+#define RULE_42_HEAD_MODE HEAD_ANY
+#define RULE_42_HEAD_CLASS NULL
+#define RULE_42_LAZY 0
 
-/* Rule 40: .+roši */
-static const char *const rule_40_stem_ends[] = {
+/* Rule 43: .+roši */
+static const char *const rule_43_stem_ends[] = {
     "roši",
 };
-#define RULE_40_N_STEM_ENDS 1
-static const char *const rule_40_suffixes[] = {
+#define RULE_43_N_STEM_ENDS 1
+static const char *const rule_43_suffixes[] = {
     "m",
     "t",
     "h",
@@ -4927,117 +1347,15 @@ static const char *const rule_40_suffixes[] = {
     "še",
     "vši",
 };
-#define RULE_40_N_SUFFIXES 16
+#define RULE_43_N_SUFFIXES 16
+#define RULE_43_MIN_EXTRA 1
+#define RULE_43_HEAD_MODE HEAD_ANY
+#define RULE_43_HEAD_CLASS NULL
+#define RULE_43_LAZY 0
 
-/* Rule 41: .+oš */
-static const char *const rule_41_stem_ends[] = {
-    "oš",
-};
-#define RULE_41_N_STEM_ENDS 1
-static const char *const rule_41_suffixes[] = {
-    "",
-    "i",
-    "a",
-    "u",
-    "e",
-    "im",
-    "ih",
-    "oj",
-    "om",
-    "og",
-    "oga",
-    "ome",
-    "omu",
-    "ima",
-    "iji",
-    "ije",
-    "ija",
-    "iju",
-    "ijeg",
-    "ijem",
-    "ijim",
-    "ijih",
-    "ijoj",
-    "ijemu",
-    "ijima",
-    "ijega",
-};
-#define RULE_41_N_SUFFIXES 26
-
-/* Rule 42: .+(e|o)vit */
-static const char *const rule_42_stem_ends[] = {
-    "evit",
-    "ovit",
-};
-#define RULE_42_N_STEM_ENDS 2
-static const char *const rule_42_suffixes[] = {
-    "",
-    "i",
-    "e",
-    "o",
-    "a",
-    "u",
-    "og",
-    "om",
-    "im",
-    "ih",
-    "oj",
-    "iji",
-    "ije",
-    "ija",
-    "oga",
-    "ome",
-    "omu",
-    "ima",
-    "ijem",
-    "ijim",
-    "ijih",
-    "ijoj",
-    "ijeg",
-    "ijima",
-    "ijega",
-    "ijemu",
-};
-#define RULE_42_N_SUFFIXES 26
-
-/* Rule 43: .+ast */
-static const char *const rule_43_stem_ends[] = {
-    "ast",
-};
-#define RULE_43_N_STEM_ENDS 1
-static const char *const rule_43_suffixes[] = {
-    "",
-    "i",
-    "e",
-    "o",
-    "a",
-    "u",
-    "og",
-    "om",
-    "im",
-    "ih",
-    "oj",
-    "iji",
-    "ije",
-    "ija",
-    "oga",
-    "ome",
-    "omu",
-    "ima",
-    "ijem",
-    "ijim",
-    "ijih",
-    "ijoj",
-    "ijeg",
-    "ijima",
-    "ijega",
-    "ijemu",
-};
-#define RULE_43_N_SUFFIXES 26
-
-/* Rule 44: .+k */
+/* Rule 44: .+oš */
 static const char *const rule_44_stem_ends[] = {
-    "k",
+    "oš",
 };
 #define RULE_44_N_STEM_ENDS 1
 static const char *const rule_44_suffixes[] = {
@@ -5046,6 +1364,124 @@ static const char *const rule_44_suffixes[] = {
     "a",
     "u",
     "e",
+    "im",
+    "ih",
+    "oj",
+    "om",
+    "og",
+    "oga",
+    "ome",
+    "omu",
+    "ima",
+    "iji",
+    "ije",
+    "ija",
+    "iju",
+    "ijeg",
+    "ijem",
+    "ijim",
+    "ijih",
+    "ijoj",
+    "ijemu",
+    "ijima",
+    "ijega",
+};
+#define RULE_44_N_SUFFIXES 26
+#define RULE_44_MIN_EXTRA 1
+#define RULE_44_HEAD_MODE HEAD_ANY
+#define RULE_44_HEAD_CLASS NULL
+#define RULE_44_LAZY 0
+
+/* Rule 45: .+(e|o)vit */
+static const char *const rule_45_stem_ends[] = {
+    "evit",
+    "ovit",
+};
+#define RULE_45_N_STEM_ENDS 2
+static const char *const rule_45_suffixes[] = {
+    "",
+    "i",
+    "e",
+    "o",
+    "a",
+    "u",
+    "og",
+    "om",
+    "im",
+    "ih",
+    "oj",
+    "iji",
+    "ije",
+    "ija",
+    "oga",
+    "ome",
+    "omu",
+    "ima",
+    "ijem",
+    "ijim",
+    "ijih",
+    "ijoj",
+    "ijeg",
+    "ijima",
+    "ijega",
+    "ijemu",
+};
+#define RULE_45_N_SUFFIXES 26
+#define RULE_45_MIN_EXTRA 1
+#define RULE_45_HEAD_MODE HEAD_ANY
+#define RULE_45_HEAD_CLASS NULL
+#define RULE_45_LAZY 0
+
+/* Rule 46: .+ast */
+static const char *const rule_46_stem_ends[] = {
+    "ast",
+};
+#define RULE_46_N_STEM_ENDS 1
+static const char *const rule_46_suffixes[] = {
+    "",
+    "i",
+    "e",
+    "o",
+    "a",
+    "u",
+    "og",
+    "om",
+    "im",
+    "ih",
+    "oj",
+    "iji",
+    "ije",
+    "ija",
+    "oga",
+    "ome",
+    "omu",
+    "ima",
+    "ijem",
+    "ijim",
+    "ijih",
+    "ijoj",
+    "ijeg",
+    "ijima",
+    "ijega",
+    "ijemu",
+};
+#define RULE_46_N_SUFFIXES 26
+#define RULE_46_MIN_EXTRA 1
+#define RULE_46_HEAD_MODE HEAD_ANY
+#define RULE_46_HEAD_CLASS NULL
+#define RULE_46_LAZY 0
+
+/* Rule 47: .+k */
+static const char *const rule_47_stem_ends[] = {
+    "k",
+};
+#define RULE_47_N_STEM_ENDS 1
+static const char *const rule_47_suffixes[] = {
+    "",
+    "i",
+    "a",
+    "u",
+    "e",
     "o",
     "im",
     "ih",
@@ -5069,17 +1505,21 @@ static const char *const rule_44_suffixes[] = {
     "ijima",
     "ijega",
 };
-#define RULE_44_N_SUFFIXES 27
+#define RULE_47_N_SUFFIXES 27
+#define RULE_47_MIN_EXTRA 1
+#define RULE_47_HEAD_MODE HEAD_ANY
+#define RULE_47_HEAD_CLASS NULL
+#define RULE_47_LAZY 0
 
-/* Rule 45: .+(e|a|i|u)va */
-static const char *const rule_45_stem_ends[] = {
+/* Rule 48: .+(e|a|i|u)va */
+static const char *const rule_48_stem_ends[] = {
     "ava",
     "eva",
     "iva",
     "uva",
 };
-#define RULE_45_N_STEM_ENDS 4
-static const char *const rule_45_suffixes[] = {
+#define RULE_48_N_STEM_ENDS 4
+static const char *const rule_48_suffixes[] = {
     "",
     "h",
     "j",
@@ -5109,14 +1549,18 @@ static const char *const rule_45_suffixes[] = {
     "še",
     "jući",
 };
-#define RULE_45_N_SUFFIXES 28
+#define RULE_48_N_SUFFIXES 28
+#define RULE_48_MIN_EXTRA 1
+#define RULE_48_HEAD_MODE HEAD_ANY
+#define RULE_48_HEAD_CLASS NULL
+#define RULE_48_LAZY 0
 
-/* Rule 46: .+ir */
-static const char *const rule_46_stem_ends[] = {
+/* Rule 49: .+ir */
+static const char *const rule_49_stem_ends[] = {
     "ir",
 };
-#define RULE_46_N_STEM_ENDS 1
-static const char *const rule_46_suffixes[] = {
+#define RULE_49_N_STEM_ENDS 1
+static const char *const rule_49_suffixes[] = {
     "uj",
     "al",
     "an",
@@ -5150,14 +1594,18 @@ static const char *const rule_46_suffixes[] = {
     "ujući",
     "ajući",
 };
-#define RULE_46_N_SUFFIXES 32
+#define RULE_49_N_SUFFIXES 32
+#define RULE_49_MIN_EXTRA 1
+#define RULE_49_HEAD_MODE HEAD_ANY
+#define RULE_49_HEAD_CLASS NULL
+#define RULE_49_LAZY 0
 
-/* Rule 47: .+ač */
-static const char *const rule_47_stem_ends[] = {
+/* Rule 50: .+ač */
+static const char *const rule_50_stem_ends[] = {
     "ač",
 };
-#define RULE_47_N_STEM_ENDS 1
-static const char *const rule_47_suffixes[] = {
+#define RULE_50_N_STEM_ENDS 1
+static const char *const rule_50_suffixes[] = {
     "i",
     "e",
     "io",
@@ -5182,14 +1630,18 @@ static const char *const rule_47_suffixes[] = {
     "iše",
     "eći",
 };
-#define RULE_47_N_SUFFIXES 23
+#define RULE_50_N_SUFFIXES 23
+#define RULE_50_MIN_EXTRA 1
+#define RULE_50_HEAD_MODE HEAD_ANY
+#define RULE_50_HEAD_CLASS NULL
+#define RULE_50_LAZY 0
 
-/* Rule 48: .+ača */
-static const char *const rule_48_stem_ends[] = {
+/* Rule 51: .+ača */
+static const char *const rule_51_stem_ends[] = {
     "ača",
 };
-#define RULE_48_N_STEM_ENDS 1
-static const char *const rule_48_suffixes[] = {
+#define RULE_51_N_STEM_ENDS 1
+static const char *const rule_51_suffixes[] = {
     "o",
     "m",
     "t",
@@ -5216,14 +1668,18 @@ static const char *const rule_48_suffixes[] = {
     "še",
     "vši",
 };
-#define RULE_48_N_SUFFIXES 25
+#define RULE_51_N_SUFFIXES 25
+#define RULE_51_MIN_EXTRA 1
+#define RULE_51_HEAD_MODE HEAD_ANY
+#define RULE_51_HEAD_CLASS NULL
+#define RULE_51_LAZY 0
 
-/* Rule 49: .+n */
-static const char *const rule_49_stem_ends[] = {
+/* Rule 52: .+n */
+static const char *const rule_52_stem_ends[] = {
     "n",
 };
-#define RULE_49_N_STEM_ENDS 1
-static const char *const rule_49_suffixes[] = {
+#define RULE_52_N_STEM_ENDS 1
+static const char *const rule_52_suffixes[] = {
     "e",
     "u",
     "i",
@@ -5241,20 +1697,32 @@ static const char *const rule_49_suffixes[] = {
     "uto",
     "uti",
     "uta",
+    "ute",
+    "utu",
     "eš",
     "usmo",
     "uste",
+    "utih",
+    "utim",
+    "utog",
+    "utom",
+    "utoj",
     "ući",
+    "utima",
     "uvši",
 };
-#define RULE_49_N_SUFFIXES 22
+#define RULE_52_N_SUFFIXES 30
+#define RULE_52_MIN_EXTRA 1
+#define RULE_52_HEAD_MODE HEAD_ANY
+#define RULE_52_HEAD_CLASS NULL
+#define RULE_52_LAZY 0
 
-/* Rule 50: .+ni */
-static const char *const rule_50_stem_ends[] = {
+/* Rule 53: .+ni */
+static const char *const rule_53_stem_ends[] = {
     "ni",
 };
-#define RULE_50_N_STEM_ENDS 1
-static const char *const rule_50_suffixes[] = {
+#define RULE_53_N_STEM_ENDS 1
+static const char *const rule_53_suffixes[] = {
     "m",
     "o",
     "ti",
@@ -5271,66 +1739,45 @@ static const char *const rule_50_suffixes[] = {
     "ste",
     "vši",
 };
-#define RULE_50_N_SUFFIXES 15
+#define RULE_53_N_SUFFIXES 15
+#define RULE_53_MIN_EXTRA 1
+#define RULE_53_HEAD_MODE HEAD_ANY
+#define RULE_53_HEAD_CLASS NULL
+#define RULE_53_LAZY 0
 
-/* Rule 51: .+((a|r|i|p|e|u)st|[^o]g|ik|uc|oj|aj|lj|ak|ck|čk|šk|uk|nj|im|ar|at|et|št|it|ot|ut|zn|zv)a */
-static const char *const rule_51_stem_ends[] = {
-    "aga",
+/* Rule 54: .+((a|r|i|p|e|u)st|[^o]g|ik|uc|oj|aj|lj|ak|ck|čk|šk|uk|nj|im|ar|at|et|št|it|ot|ut|zn|zv)a */
+static const char *const rule_54_stem_ends[] = {
+    "[^o]ga",
     "aja",
     "aka",
     "ara",
     "asta",
     "ata",
-    "bga",
-    "cga",
     "cka",
-    "dga",
-    "ega",
     "esta",
     "eta",
-    "fga",
-    "gga",
-    "hga",
-    "iga",
     "ika",
     "ima",
     "ista",
     "ita",
-    "jga",
-    "kga",
-    "lga",
     "lja",
-    "mga",
-    "nga",
     "nja",
     "oja",
     "ota",
-    "pga",
     "psta",
-    "rga",
     "rsta",
-    "sga",
-    "tga",
     "uca",
-    "uga",
     "uka",
     "usta",
     "uta",
-    "vga",
-    "zga",
     "zna",
     "zva",
-    "ćga",
-    "čga",
     "čka",
-    "đga",
-    "šga",
     "ška",
     "šta",
-    "žga",
 };
-#define RULE_51_N_STEM_ENDS 53
-static const char *const rule_51_suffixes[] = {
+#define RULE_54_N_STEM_ENDS 28
+static const char *const rule_54_suffixes[] = {
     "t",
     "h",
     "o",
@@ -5361,14 +1808,18 @@ static const char *const rule_51_suffixes[] = {
     "vši",
     "jući",
 };
-#define RULE_51_N_SUFFIXES 29
+#define RULE_54_N_SUFFIXES 29
+#define RULE_54_MIN_EXTRA 1
+#define RULE_54_HEAD_MODE HEAD_ANY
+#define RULE_54_HEAD_CLASS NULL
+#define RULE_54_LAZY 0
 
-/* Rule 52: .+ur */
-static const char *const rule_52_stem_ends[] = {
+/* Rule 55: .+ur */
+static const char *const rule_55_stem_ends[] = {
     "ur",
 };
-#define RULE_52_N_STEM_ENDS 1
-static const char *const rule_52_suffixes[] = {
+#define RULE_55_N_STEM_ENDS 1
+static const char *const rule_55_suffixes[] = {
     "al",
     "at",
     "ah",
@@ -5397,16 +1848,20 @@ static const char *const rule_52_suffixes[] = {
     "aše",
     "ajući",
 };
-#define RULE_52_N_SUFFIXES 27
+#define RULE_55_N_SUFFIXES 27
+#define RULE_55_MIN_EXTRA 1
+#define RULE_55_HEAD_MODE HEAD_ANY
+#define RULE_55_HEAD_CLASS NULL
+#define RULE_55_LAZY 0
 
-/* Rule 53: .+(a|i|o)staj */
-static const char *const rule_53_stem_ends[] = {
+/* Rule 56: .+(a|i|o)staj */
+static const char *const rule_56_stem_ends[] = {
     "astaj",
     "istaj",
     "ostaj",
 };
-#define RULE_53_N_STEM_ENDS 3
-static const char *const rule_53_suffixes[] = {
+#define RULE_56_N_STEM_ENDS 3
+static const char *const rule_56_suffixes[] = {
     "",
     "e",
     "u",
@@ -5430,10 +1885,14 @@ static const char *const rule_53_suffixes[] = {
     "aše",
     "ući",
 };
-#define RULE_53_N_SUFFIXES 22
+#define RULE_56_N_SUFFIXES 22
+#define RULE_56_MIN_EXTRA 1
+#define RULE_56_HEAD_MODE HEAD_ANY
+#define RULE_56_HEAD_CLASS NULL
+#define RULE_56_LAZY 0
 
-/* Rule 54: .+(b|c|č|ć|d|e|f|g|j|k|n|r|t|u|v)a */
-static const char *const rule_54_stem_ends[] = {
+/* Rule 57: .+(b|c|č|ć|d|e|f|g|j|k|n|r|t|u|v)a */
+static const char *const rule_57_stem_ends[] = {
     "ba",
     "ca",
     "da",
@@ -5450,35 +1909,45 @@ static const char *const rule_54_stem_ends[] = {
     "ća",
     "ča",
 };
-#define RULE_54_N_STEM_ENDS 15
-static const char *const rule_54_suffixes[] = {
+#define RULE_57_N_STEM_ENDS 15
+static const char *const rule_57_suffixes[] = {
     "l",
     "lu",
     "li",
     "la",
     "le",
     "lo",
+    "lih",
+    "lim",
+    "log",
+    "loj",
     "lom",
     "lama",
     "lima",
+    "loga",
+    "lome",
+    "lomu",
 };
-#define RULE_54_N_SUFFIXES 9
+#define RULE_57_N_SUFFIXES 16
+#define RULE_57_MIN_EXTRA 1
+#define RULE_57_HEAD_MODE HEAD_ANY
+#define RULE_57_HEAD_CLASS NULL
+#define RULE_57_LAZY 0
 
-/* Rule 55: .+(t|č|j|ž|š)aj */
-static const char *const rule_55_stem_ends[] = {
+/* Rule 58: .+(t|č|j|ž|š)aj */
+static const char *const rule_58_stem_ends[] = {
     "jaj",
     "taj",
     "čaj",
     "šaj",
     "žaj",
 };
-#define RULE_55_N_STEM_ENDS 5
-static const char *const rule_55_suffixes[] = {
+#define RULE_58_N_STEM_ENDS 5
+static const char *const rule_58_suffixes[] = {
     "",
     "a",
     "e",
     "i",
-    "u",
     "em",
     "evi",
     "eva",
@@ -5487,59 +1956,38 @@ static const char *const rule_55_suffixes[] = {
     "ima",
     "evima",
 };
-#define RULE_55_N_SUFFIXES 12
+#define RULE_58_N_SUFFIXES 11
+#define RULE_58_MIN_EXTRA 1
+#define RULE_58_HEAD_MODE HEAD_ANY
+#define RULE_58_HEAD_CLASS NULL
+#define RULE_58_LAZY 0
 
-/* Rule 56: .+([^o]m|ič|nč|uč|b|c|ć|d|đ|h|j|k|l|n|p|r|s|š|v|z|ž)a */
-static const char *const rule_56_stem_ends[] = {
-    "ama",
+/* Rule 59: .+([^o]m|ič|nč|uč|b|c|ć|d|đ|h|j|k|l|n|p|r|s|š|v|z|ž)a */
+static const char *const rule_59_stem_ends[] = {
+    "[^o]ma",
     "ba",
-    "bma",
     "ca",
-    "cma",
     "da",
-    "dma",
-    "ema",
-    "fma",
-    "gma",
     "ha",
-    "hma",
-    "ima",
     "iča",
     "ja",
-    "jma",
     "ka",
-    "kma",
     "la",
-    "lma",
-    "mma",
     "na",
-    "nma",
     "nča",
     "pa",
-    "pma",
     "ra",
-    "rma",
     "sa",
-    "sma",
-    "tma",
-    "uma",
     "uča",
     "va",
-    "vma",
     "za",
-    "zma",
     "ća",
-    "ćma",
-    "čma",
     "đa",
-    "đma",
     "ša",
-    "šma",
     "ža",
-    "žma",
 };
-#define RULE_56_N_STEM_ENDS 46
-static const char *const rule_56_suffixes[] = {
+#define RULE_59_N_STEM_ENDS 21
+static const char *const rule_59_suffixes[] = {
     "t",
     "h",
     "o",
@@ -5568,16 +2016,20 @@ static const char *const rule_56_suffixes[] = {
     "vši",
     "jući",
 };
-#define RULE_56_N_SUFFIXES 27
+#define RULE_59_N_SUFFIXES 27
+#define RULE_59_MIN_EXTRA 1
+#define RULE_59_HEAD_MODE HEAD_ANY
+#define RULE_59_HEAD_CLASS NULL
+#define RULE_59_LAZY 0
 
-/* Rule 57: .+(a|i|o)sta */
-static const char *const rule_57_stem_ends[] = {
+/* Rule 60: .+(a|i|o)sta */
+static const char *const rule_60_stem_ends[] = {
     "asta",
     "ista",
     "osta",
 };
-#define RULE_57_N_STEM_ENDS 3
-static const char *const rule_57_suffixes[] = {
+#define RULE_60_N_STEM_ENDS 3
+static const char *const rule_60_suffixes[] = {
     "t",
     "o",
     "de",
@@ -5606,14 +2058,18 @@ static const char *const rule_57_suffixes[] = {
     "doste",
     "doše",
 };
-#define RULE_57_N_SUFFIXES 27
+#define RULE_60_N_SUFFIXES 27
+#define RULE_60_MIN_EXTRA 1
+#define RULE_60_HEAD_MODE HEAD_ANY
+#define RULE_60_HEAD_CLASS NULL
+#define RULE_60_LAZY 0
 
-/* Rule 58: .+ta */
-static const char *const rule_58_stem_ends[] = {
+/* Rule 61: .+ta */
+static const char *const rule_61_stem_ends[] = {
     "ta",
 };
-#define RULE_58_N_STEM_ENDS 1
-static const char *const rule_58_suffixes[] = {
+#define RULE_61_N_STEM_ENDS 1
+static const char *const rule_61_suffixes[] = {
     "n",
     "j",
     "o",
@@ -5640,14 +2096,18 @@ static const char *const rule_58_suffixes[] = {
     "še",
     "vši",
 };
-#define RULE_58_N_SUFFIXES 25
+#define RULE_61_N_SUFFIXES 25
+#define RULE_61_MIN_EXTRA 1
+#define RULE_61_HEAD_MODE HEAD_ANY
+#define RULE_61_HEAD_CLASS NULL
+#define RULE_61_LAZY 0
 
-/* Rule 59: .+inj */
-static const char *const rule_59_stem_ends[] = {
+/* Rule 62: .+inj */
+static const char *const rule_62_stem_ends[] = {
     "inj",
 };
-#define RULE_59_N_STEM_ENDS 1
-static const char *const rule_59_suffixes[] = {
+#define RULE_62_N_STEM_ENDS 1
+static const char *const rule_62_suffixes[] = {
     "em",
     "at",
     "ah",
@@ -5665,14 +2125,18 @@ static const char *const rule_59_suffixes[] = {
     "aste",
     "aše",
 };
-#define RULE_59_N_SUFFIXES 16
+#define RULE_62_N_SUFFIXES 16
+#define RULE_62_MIN_EXTRA 1
+#define RULE_62_HEAD_MODE HEAD_ANY
+#define RULE_62_HEAD_CLASS NULL
+#define RULE_62_LAZY 0
 
-/* Rule 60: .+as */
-static const char *const rule_60_stem_ends[] = {
+/* Rule 63: .+as */
+static const char *const rule_63_stem_ends[] = {
     "as",
 };
-#define RULE_60_N_STEM_ENDS 1
-static const char *const rule_60_suffixes[] = {
+#define RULE_63_N_STEM_ENDS 1
+static const char *const rule_63_suffixes[] = {
     "te",
     "li",
     "ti",
@@ -5688,10 +2152,14 @@ static const char *const rule_60_suffixes[] = {
     "teš",
     "tući",
 };
-#define RULE_60_N_SUFFIXES 14
+#define RULE_63_N_SUFFIXES 14
+#define RULE_63_MIN_EXTRA 1
+#define RULE_63_HEAD_MODE HEAD_ANY
+#define RULE_63_HEAD_CLASS NULL
+#define RULE_63_LAZY 0
 
-/* Rule 61: .+(elj|ulj|tit|ac|ič|od|oj|et|av|ov)i */
-static const char *const rule_61_stem_ends[] = {
+/* Rule 64: .+(elj|ulj|tit|ac|ič|od|oj|et|av|ov)i */
+static const char *const rule_64_stem_ends[] = {
     "aci",
     "avi",
     "elji",
@@ -5703,8 +2171,8 @@ static const char *const rule_61_stem_ends[] = {
     "titi",
     "ulji",
 };
-#define RULE_61_N_STEM_ENDS 10
-static const char *const rule_61_suffixes[] = {
+#define RULE_64_N_STEM_ENDS 10
+static const char *const rule_64_suffixes[] = {
     "m",
     "t",
     "h",
@@ -5723,10 +2191,14 @@ static const char *const rule_61_suffixes[] = {
     "vši",
     "eći",
 };
-#define RULE_61_N_SUFFIXES 17
+#define RULE_64_N_SUFFIXES 17
+#define RULE_64_MIN_EXTRA 1
+#define RULE_64_HEAD_MODE HEAD_ANY
+#define RULE_64_HEAD_CLASS NULL
+#define RULE_64_LAZY 0
 
-/* Rule 62: .+(tit|jeb|ar|ed|uš|ič)i */
-static const char *const rule_62_stem_ends[] = {
+/* Rule 65: .+(tit|jeb|ar|ed|uš|ič)i */
+static const char *const rule_65_stem_ends[] = {
     "ari",
     "edi",
     "iči",
@@ -5734,8 +2206,8 @@ static const char *const rule_62_stem_ends[] = {
     "titi",
     "uši",
 };
-#define RULE_62_N_STEM_ENDS 6
-static const char *const rule_62_suffixes[] = {
+#define RULE_65_N_STEM_ENDS 6
+static const char *const rule_65_suffixes[] = {
     "t",
     "m",
     "h",
@@ -5762,23 +2234,38 @@ static const char *const rule_62_suffixes[] = {
     "ješ",
     "vši",
 };
-#define RULE_62_N_SUFFIXES 25
+#define RULE_65_N_SUFFIXES 25
+#define RULE_65_MIN_EXTRA 1
+#define RULE_65_HEAD_MODE HEAD_ANY
+#define RULE_65_HEAD_CLASS NULL
+#define RULE_65_LAZY 0
 
-/* Rule 63: .+(b|č|d|l|m|p|r|s|š|ž)i */
-static const char *const rule_63_stem_ends[] = {
+/* Rule 66: .+(b|c|č|ć|d|đ|g|h|j|k|l|m|n|p|r|s|š|t|v|z|ž)i */
+static const char *const rule_66_stem_ends[] = {
     "bi",
+    "ci",
     "di",
+    "gi",
+    "hi",
+    "ji",
+    "ki",
     "li",
     "mi",
+    "ni",
     "pi",
     "ri",
     "si",
+    "ti",
+    "vi",
+    "zi",
+    "ći",
     "či",
+    "đi",
     "ši",
     "ži",
 };
-#define RULE_63_N_STEM_ENDS 10
-static const char *const rule_63_suffixes[] = {
+#define RULE_66_N_STEM_ENDS 21
+static const char *const rule_66_suffixes[] = {
     "t",
     "m",
     "h",
@@ -5806,14 +2293,18 @@ static const char *const rule_63_suffixes[] = {
     "ješ",
     "vši",
 };
-#define RULE_63_N_SUFFIXES 26
+#define RULE_66_N_SUFFIXES 26
+#define RULE_66_MIN_EXTRA 1
+#define RULE_66_HEAD_MODE HEAD_ANY
+#define RULE_66_HEAD_CLASS NULL
+#define RULE_66_LAZY 0
 
-/* Rule 64: .+luč */
-static const char *const rule_64_stem_ends[] = {
+/* Rule 67: .+luč */
+static const char *const rule_67_stem_ends[] = {
     "luč",
 };
-#define RULE_64_N_STEM_ENDS 1
-static const char *const rule_64_suffixes[] = {
+#define RULE_67_N_STEM_ENDS 1
+static const char *const rule_67_suffixes[] = {
     "e",
     "i",
     "uj",
@@ -5847,14 +2338,18 @@ static const char *const rule_64_suffixes[] = {
     "uješ",
     "ujući",
 };
-#define RULE_64_N_SUFFIXES 32
+#define RULE_67_N_SUFFIXES 32
+#define RULE_67_MIN_EXTRA 1
+#define RULE_67_HEAD_MODE HEAD_ANY
+#define RULE_67_HEAD_CLASS NULL
+#define RULE_67_LAZY 0
 
-/* Rule 65: .+jeti */
-static const char *const rule_65_stem_ends[] = {
+/* Rule 68: .+jeti */
+static const char *const rule_68_stem_ends[] = {
     "jeti",
 };
-#define RULE_65_N_STEM_ENDS 1
-static const char *const rule_65_suffixes[] = {
+#define RULE_68_N_STEM_ENDS 1
+static const char *const rule_68_suffixes[] = {
     "m",
     "t",
     "h",
@@ -5871,14 +2366,18 @@ static const char *const rule_65_suffixes[] = {
     "ste",
     "še",
 };
-#define RULE_65_N_SUFFIXES 15
+#define RULE_68_N_SUFFIXES 15
+#define RULE_68_MIN_EXTRA 1
+#define RULE_68_HEAD_MODE HEAD_ANY
+#define RULE_68_HEAD_CLASS NULL
+#define RULE_68_LAZY 0
 
-/* Rule 66: .+e */
-static const char *const rule_66_stem_ends[] = {
+/* Rule 69: .+e */
+static const char *const rule_69_stem_ends[] = {
     "e",
 };
-#define RULE_66_N_STEM_ENDS 1
-static const char *const rule_66_suffixes[] = {
+#define RULE_69_N_STEM_ENDS 1
+static const char *const rule_69_suffixes[] = {
     "l",
     "lu",
     "li",
@@ -5889,14 +2388,18 @@ static const char *const rule_66_suffixes[] = {
     "lama",
     "lima",
 };
-#define RULE_66_N_SUFFIXES 9
+#define RULE_69_N_SUFFIXES 9
+#define RULE_69_MIN_EXTRA 1
+#define RULE_69_HEAD_MODE HEAD_ANY
+#define RULE_69_HEAD_CLASS NULL
+#define RULE_69_LAZY 0
 
-/* Rule 67: .+i */
-static const char *const rule_67_stem_ends[] = {
+/* Rule 70: .+i */
+static const char *const rule_70_stem_ends[] = {
     "i",
 };
-#define RULE_67_N_STEM_ENDS 1
-static const char *const rule_67_suffixes[] = {
+#define RULE_70_N_STEM_ENDS 1
+static const char *const rule_70_suffixes[] = {
     "l",
     "lu",
     "li",
@@ -5907,14 +2410,18 @@ static const char *const rule_67_suffixes[] = {
     "lama",
     "lima",
 };
-#define RULE_67_N_SUFFIXES 9
+#define RULE_70_N_SUFFIXES 9
+#define RULE_70_MIN_EXTRA 1
+#define RULE_70_HEAD_MODE HEAD_ANY
+#define RULE_70_HEAD_CLASS NULL
+#define RULE_70_LAZY 0
 
-/* Rule 68: .+at */
-static const char *const rule_68_stem_ends[] = {
+/* Rule 71: .+at */
+static const char *const rule_71_stem_ends[] = {
     "at",
 };
-#define RULE_68_N_STEM_ENDS 1
-static const char *const rule_68_suffixes[] = {
+#define RULE_71_N_STEM_ENDS 1
+static const char *const rule_71_suffixes[] = {
     "",
     "a",
     "u",
@@ -5942,14 +2449,18 @@ static const char *const rule_68_suffixes[] = {
     "ijemu",
     "ijima",
 };
-#define RULE_68_N_SUFFIXES 26
+#define RULE_71_N_SUFFIXES 26
+#define RULE_71_MIN_EXTRA 1
+#define RULE_71_HEAD_MODE HEAD_ANY
+#define RULE_71_HEAD_CLASS NULL
+#define RULE_71_LAZY 0
 
-/* Rule 69: .+et */
-static const char *const rule_69_stem_ends[] = {
+/* Rule 72: .+et */
+static const char *const rule_72_stem_ends[] = {
     "et",
 };
-#define RULE_69_N_STEM_ENDS 1
-static const char *const rule_69_suffixes[] = {
+#define RULE_72_N_STEM_ENDS 1
+static const char *const rule_72_suffixes[] = {
     "e",
     "u",
     "i",
@@ -5960,28 +2471,16 @@ static const char *const rule_69_suffixes[] = {
     "ući",
     "avši",
 };
-#define RULE_69_N_SUFFIXES 9
+#define RULE_72_N_SUFFIXES 9
+#define RULE_72_MIN_EXTRA 1
+#define RULE_72_HEAD_MODE HEAD_ANY
+#define RULE_72_HEAD_CLASS NULL
+#define RULE_72_LAZY 0
 
-/* Rule 70: .+(lj|nj|š|č|ć|ž|đ) */
-static const char *const rule_70_stem_ends[] = {
-    "lj",
-    "nj",
-    "ć",
-    "č",
-    "đ",
-    "š",
-    "ž",
-};
-#define RULE_70_N_STEM_ENDS 7
-static const char *const rule_70_suffixes[] = {
-    "eg",
-};
-#define RULE_70_N_SUFFIXES 1
-
-/* Rule 71: .+? */
-static const char *const rule_71_stem_ends[] = { NULL };
-#define RULE_71_N_STEM_ENDS 0
-static const char *const rule_71_suffixes[] = {
+/* Rule 73: .+? */
+static const char *const rule_73_stem_ends[] = { NULL };
+#define RULE_73_N_STEM_ENDS 0
+static const char *const rule_73_suffixes[] = {
     "ajući",
     "alima",
     "avši",
@@ -6013,12 +2512,16 @@ static const char *const rule_71_suffixes[] = {
     "aj",
     "an",
 };
-#define RULE_71_N_SUFFIXES 30
+#define RULE_73_N_SUFFIXES 30
+#define RULE_73_MIN_EXTRA 1
+#define RULE_73_HEAD_MODE HEAD_ANY
+#define RULE_73_HEAD_CLASS NULL
+#define RULE_73_LAZY 1
 
-/* Rule 72: .+? */
-static const char *const rule_72_stem_ends[] = { NULL };
-#define RULE_72_N_STEM_ENDS 0
-static const char *const rule_72_suffixes[] = {
+/* Rule 74: .+? */
+static const char *const rule_74_stem_ends[] = { NULL };
+#define RULE_74_N_STEM_ENDS 0
+static const char *const rule_74_suffixes[] = {
     "anje",
     "enje",
     "anja",
@@ -6044,12 +2547,16 @@ static const char *const rule_72_suffixes[] = {
     "ena",
     "ama",
 };
-#define RULE_72_N_SUFFIXES 24
+#define RULE_74_N_SUFFIXES 24
+#define RULE_74_MIN_EXTRA 1
+#define RULE_74_HEAD_MODE HEAD_ANY
+#define RULE_74_HEAD_CLASS NULL
+#define RULE_74_LAZY 1
 
-/* Rule 73: .+? */
-static const char *const rule_73_stem_ends[] = { NULL };
-#define RULE_73_N_STEM_ENDS 0
-static const char *const rule_73_suffixes[] = {
+/* Rule 75: .+? */
+static const char *const rule_75_stem_ends[] = { NULL };
+#define RULE_75_N_STEM_ENDS 0
+static const char *const rule_75_suffixes[] = {
     "nijega",
     "nijemu",
     "nijima",
@@ -6074,18 +2581,94 @@ static const char *const rule_73_suffixes[] = {
     "ne",
     "no",
 };
-#define RULE_73_N_SUFFIXES 23
+#define RULE_75_N_SUFFIXES 23
+#define RULE_75_MIN_EXTRA 1
+#define RULE_75_HEAD_MODE HEAD_ANY
+#define RULE_75_HEAD_CLASS NULL
+#define RULE_75_LAZY 1
 
-/* Rule 74: .+? */
-static const char *const rule_74_stem_ends[] = { NULL };
-#define RULE_74_N_STEM_ENDS 0
-static const char *const rule_74_suffixes[] = {
+/* Rule 76: .+(č|ć|đ|j|š|ž) */
+static const char *const rule_76_stem_ends[] = {
+    "j",
+    "ć",
+    "č",
+    "đ",
+    "š",
+    "ž",
+};
+#define RULE_76_N_STEM_ENDS 6
+static const char *const rule_76_suffixes[] = {
+    "emu",
+};
+#define RULE_76_N_SUFFIXES 1
+#define RULE_76_MIN_EXTRA 1
+#define RULE_76_HEAD_MODE HEAD_ANY
+#define RULE_76_HEAD_CLASS NULL
+#define RULE_76_LAZY 0
+
+/* Rule 77: .+(k|n|v) */
+static const char *const rule_77_stem_ends[] = {
+    "k",
+    "n",
+    "v",
+};
+#define RULE_77_N_STEM_ENDS 3
+static const char *const rule_77_suffixes[] = {
+    "ome",
+    "omu",
+};
+#define RULE_77_N_SUFFIXES 2
+#define RULE_77_MIN_EXTRA 1
+#define RULE_77_HEAD_MODE HEAD_ANY
+#define RULE_77_HEAD_CLASS NULL
+#define RULE_77_LAZY 0
+
+/* Rule 78: .+(č|ć|đ|š|ž|[^i]j) */
+static const char *const rule_78_stem_ends[] = {
+    "[^i]j",
+    "ć",
+    "č",
+    "đ",
+    "š",
+    "ž",
+};
+#define RULE_78_N_STEM_ENDS 6
+static const char *const rule_78_suffixes[] = {
+    "eg",
+    "ega",
+};
+#define RULE_78_N_SUFFIXES 2
+#define RULE_78_MIN_EXTRA 1
+#define RULE_78_HEAD_MODE HEAD_ANY
+#define RULE_78_HEAD_CLASS NULL
+#define RULE_78_LAZY 0
+
+/* Rule 79: .*[aeiou].*ij */
+static const char *const rule_79_stem_ends[] = {
+    "ij",
+};
+#define RULE_79_N_STEM_ENDS 1
+static const char *const rule_79_suffixes[] = {
+    "eg",
+    "ega",
+};
+#define RULE_79_N_SUFFIXES 2
+#define RULE_79_MIN_EXTRA 1
+#define RULE_79_HEAD_MODE HEAD_SOME
+#define RULE_79_HEAD_CLASS "[aeiou]"
+#define RULE_79_LAZY 0
+
+/* Rule 80: .+? */
+static const char *const rule_80_stem_ends[] = { NULL };
+#define RULE_80_N_STEM_ENDS 0
+static const char *const rule_80_suffixes[] = {
     "emo",
     "ete",
     "amo",
     "ate",
     "imo",
     "ite",
+    "eš",
     "om",
     "og",
     "im",
@@ -6093,98 +2676,111 @@ static const char *const rule_74_suffixes[] = {
     "em",
     "oj",
     "an",
-    "ju",
     "u",
     "o",
     "i",
     "e",
     "a",
 };
-#define RULE_74_N_SUFFIXES 19
+#define RULE_80_N_SUFFIXES 19
+#define RULE_80_MIN_EXTRA 1
+#define RULE_80_HEAD_MODE HEAD_ANY
+#define RULE_80_HEAD_CLASS NULL
+#define RULE_80_LAZY 1
 
 typedef struct {
     const char *const *stem_ends;
     int n_stem_ends;  /* 0 = any stem */
     const char *const *suffixes;
     int n_suffixes;
+    int min_extra;    /* codepoints required before the stem ending */
+    int head_mode;    /* HEAD_ANY / HEAD_ALL / HEAD_SOME, see below */
+    const char *head_class; /* class the head is checked against */
+    int lazy;         /* 1 = non-greedy `.+?` catch-all rule */
 } StemRule;
 
 static const StemRule rules[N_RULES] = {
-    { rule_0_stem_ends, RULE_0_N_STEM_ENDS, rule_0_suffixes, RULE_0_N_SUFFIXES },
-    { rule_1_stem_ends, RULE_1_N_STEM_ENDS, rule_1_suffixes, RULE_1_N_SUFFIXES },
-    { rule_2_stem_ends, RULE_2_N_STEM_ENDS, rule_2_suffixes, RULE_2_N_SUFFIXES },
-    { rule_3_stem_ends, RULE_3_N_STEM_ENDS, rule_3_suffixes, RULE_3_N_SUFFIXES },
-    { rule_4_stem_ends, RULE_4_N_STEM_ENDS, rule_4_suffixes, RULE_4_N_SUFFIXES },
-    { rule_5_stem_ends, RULE_5_N_STEM_ENDS, rule_5_suffixes, RULE_5_N_SUFFIXES },
-    { rule_6_stem_ends, RULE_6_N_STEM_ENDS, rule_6_suffixes, RULE_6_N_SUFFIXES },
-    { rule_7_stem_ends, RULE_7_N_STEM_ENDS, rule_7_suffixes, RULE_7_N_SUFFIXES },
-    { rule_8_stem_ends, RULE_8_N_STEM_ENDS, rule_8_suffixes, RULE_8_N_SUFFIXES },
-    { rule_9_stem_ends, RULE_9_N_STEM_ENDS, rule_9_suffixes, RULE_9_N_SUFFIXES },
-    { rule_10_stem_ends, RULE_10_N_STEM_ENDS, rule_10_suffixes, RULE_10_N_SUFFIXES },
-    { rule_11_stem_ends, RULE_11_N_STEM_ENDS, rule_11_suffixes, RULE_11_N_SUFFIXES },
-    { rule_12_stem_ends, RULE_12_N_STEM_ENDS, rule_12_suffixes, RULE_12_N_SUFFIXES },
-    { rule_13_stem_ends, RULE_13_N_STEM_ENDS, rule_13_suffixes, RULE_13_N_SUFFIXES },
-    { rule_14_stem_ends, RULE_14_N_STEM_ENDS, rule_14_suffixes, RULE_14_N_SUFFIXES },
-    { rule_15_stem_ends, RULE_15_N_STEM_ENDS, rule_15_suffixes, RULE_15_N_SUFFIXES },
-    { rule_16_stem_ends, RULE_16_N_STEM_ENDS, rule_16_suffixes, RULE_16_N_SUFFIXES },
-    { rule_17_stem_ends, RULE_17_N_STEM_ENDS, rule_17_suffixes, RULE_17_N_SUFFIXES },
-    { rule_18_stem_ends, RULE_18_N_STEM_ENDS, rule_18_suffixes, RULE_18_N_SUFFIXES },
-    { rule_19_stem_ends, RULE_19_N_STEM_ENDS, rule_19_suffixes, RULE_19_N_SUFFIXES },
-    { rule_20_stem_ends, RULE_20_N_STEM_ENDS, rule_20_suffixes, RULE_20_N_SUFFIXES },
-    { rule_21_stem_ends, RULE_21_N_STEM_ENDS, rule_21_suffixes, RULE_21_N_SUFFIXES },
-    { rule_22_stem_ends, RULE_22_N_STEM_ENDS, rule_22_suffixes, RULE_22_N_SUFFIXES },
-    { rule_23_stem_ends, RULE_23_N_STEM_ENDS, rule_23_suffixes, RULE_23_N_SUFFIXES },
-    { rule_24_stem_ends, RULE_24_N_STEM_ENDS, rule_24_suffixes, RULE_24_N_SUFFIXES },
-    { rule_25_stem_ends, RULE_25_N_STEM_ENDS, rule_25_suffixes, RULE_25_N_SUFFIXES },
-    { rule_26_stem_ends, RULE_26_N_STEM_ENDS, rule_26_suffixes, RULE_26_N_SUFFIXES },
-    { rule_27_stem_ends, RULE_27_N_STEM_ENDS, rule_27_suffixes, RULE_27_N_SUFFIXES },
-    { rule_28_stem_ends, RULE_28_N_STEM_ENDS, rule_28_suffixes, RULE_28_N_SUFFIXES },
-    { rule_29_stem_ends, RULE_29_N_STEM_ENDS, rule_29_suffixes, RULE_29_N_SUFFIXES },
-    { rule_30_stem_ends, RULE_30_N_STEM_ENDS, rule_30_suffixes, RULE_30_N_SUFFIXES },
-    { rule_31_stem_ends, RULE_31_N_STEM_ENDS, rule_31_suffixes, RULE_31_N_SUFFIXES },
-    { rule_32_stem_ends, RULE_32_N_STEM_ENDS, rule_32_suffixes, RULE_32_N_SUFFIXES },
-    { rule_33_stem_ends, RULE_33_N_STEM_ENDS, rule_33_suffixes, RULE_33_N_SUFFIXES },
-    { rule_34_stem_ends, RULE_34_N_STEM_ENDS, rule_34_suffixes, RULE_34_N_SUFFIXES },
-    { rule_35_stem_ends, RULE_35_N_STEM_ENDS, rule_35_suffixes, RULE_35_N_SUFFIXES },
-    { rule_36_stem_ends, RULE_36_N_STEM_ENDS, rule_36_suffixes, RULE_36_N_SUFFIXES },
-    { rule_37_stem_ends, RULE_37_N_STEM_ENDS, rule_37_suffixes, RULE_37_N_SUFFIXES },
-    { rule_38_stem_ends, RULE_38_N_STEM_ENDS, rule_38_suffixes, RULE_38_N_SUFFIXES },
-    { rule_39_stem_ends, RULE_39_N_STEM_ENDS, rule_39_suffixes, RULE_39_N_SUFFIXES },
-    { rule_40_stem_ends, RULE_40_N_STEM_ENDS, rule_40_suffixes, RULE_40_N_SUFFIXES },
-    { rule_41_stem_ends, RULE_41_N_STEM_ENDS, rule_41_suffixes, RULE_41_N_SUFFIXES },
-    { rule_42_stem_ends, RULE_42_N_STEM_ENDS, rule_42_suffixes, RULE_42_N_SUFFIXES },
-    { rule_43_stem_ends, RULE_43_N_STEM_ENDS, rule_43_suffixes, RULE_43_N_SUFFIXES },
-    { rule_44_stem_ends, RULE_44_N_STEM_ENDS, rule_44_suffixes, RULE_44_N_SUFFIXES },
-    { rule_45_stem_ends, RULE_45_N_STEM_ENDS, rule_45_suffixes, RULE_45_N_SUFFIXES },
-    { rule_46_stem_ends, RULE_46_N_STEM_ENDS, rule_46_suffixes, RULE_46_N_SUFFIXES },
-    { rule_47_stem_ends, RULE_47_N_STEM_ENDS, rule_47_suffixes, RULE_47_N_SUFFIXES },
-    { rule_48_stem_ends, RULE_48_N_STEM_ENDS, rule_48_suffixes, RULE_48_N_SUFFIXES },
-    { rule_49_stem_ends, RULE_49_N_STEM_ENDS, rule_49_suffixes, RULE_49_N_SUFFIXES },
-    { rule_50_stem_ends, RULE_50_N_STEM_ENDS, rule_50_suffixes, RULE_50_N_SUFFIXES },
-    { rule_51_stem_ends, RULE_51_N_STEM_ENDS, rule_51_suffixes, RULE_51_N_SUFFIXES },
-    { rule_52_stem_ends, RULE_52_N_STEM_ENDS, rule_52_suffixes, RULE_52_N_SUFFIXES },
-    { rule_53_stem_ends, RULE_53_N_STEM_ENDS, rule_53_suffixes, RULE_53_N_SUFFIXES },
-    { rule_54_stem_ends, RULE_54_N_STEM_ENDS, rule_54_suffixes, RULE_54_N_SUFFIXES },
-    { rule_55_stem_ends, RULE_55_N_STEM_ENDS, rule_55_suffixes, RULE_55_N_SUFFIXES },
-    { rule_56_stem_ends, RULE_56_N_STEM_ENDS, rule_56_suffixes, RULE_56_N_SUFFIXES },
-    { rule_57_stem_ends, RULE_57_N_STEM_ENDS, rule_57_suffixes, RULE_57_N_SUFFIXES },
-    { rule_58_stem_ends, RULE_58_N_STEM_ENDS, rule_58_suffixes, RULE_58_N_SUFFIXES },
-    { rule_59_stem_ends, RULE_59_N_STEM_ENDS, rule_59_suffixes, RULE_59_N_SUFFIXES },
-    { rule_60_stem_ends, RULE_60_N_STEM_ENDS, rule_60_suffixes, RULE_60_N_SUFFIXES },
-    { rule_61_stem_ends, RULE_61_N_STEM_ENDS, rule_61_suffixes, RULE_61_N_SUFFIXES },
-    { rule_62_stem_ends, RULE_62_N_STEM_ENDS, rule_62_suffixes, RULE_62_N_SUFFIXES },
-    { rule_63_stem_ends, RULE_63_N_STEM_ENDS, rule_63_suffixes, RULE_63_N_SUFFIXES },
-    { rule_64_stem_ends, RULE_64_N_STEM_ENDS, rule_64_suffixes, RULE_64_N_SUFFIXES },
-    { rule_65_stem_ends, RULE_65_N_STEM_ENDS, rule_65_suffixes, RULE_65_N_SUFFIXES },
-    { rule_66_stem_ends, RULE_66_N_STEM_ENDS, rule_66_suffixes, RULE_66_N_SUFFIXES },
-    { rule_67_stem_ends, RULE_67_N_STEM_ENDS, rule_67_suffixes, RULE_67_N_SUFFIXES },
-    { rule_68_stem_ends, RULE_68_N_STEM_ENDS, rule_68_suffixes, RULE_68_N_SUFFIXES },
-    { rule_69_stem_ends, RULE_69_N_STEM_ENDS, rule_69_suffixes, RULE_69_N_SUFFIXES },
-    { rule_70_stem_ends, RULE_70_N_STEM_ENDS, rule_70_suffixes, RULE_70_N_SUFFIXES },
-    { rule_71_stem_ends, RULE_71_N_STEM_ENDS, rule_71_suffixes, RULE_71_N_SUFFIXES },
-    { rule_72_stem_ends, RULE_72_N_STEM_ENDS, rule_72_suffixes, RULE_72_N_SUFFIXES },
-    { rule_73_stem_ends, RULE_73_N_STEM_ENDS, rule_73_suffixes, RULE_73_N_SUFFIXES },
-    { rule_74_stem_ends, RULE_74_N_STEM_ENDS, rule_74_suffixes, RULE_74_N_SUFFIXES },
+    { rule_0_stem_ends, RULE_0_N_STEM_ENDS, rule_0_suffixes, RULE_0_N_SUFFIXES, RULE_0_MIN_EXTRA, RULE_0_HEAD_MODE, RULE_0_HEAD_CLASS, RULE_0_LAZY },
+    { rule_1_stem_ends, RULE_1_N_STEM_ENDS, rule_1_suffixes, RULE_1_N_SUFFIXES, RULE_1_MIN_EXTRA, RULE_1_HEAD_MODE, RULE_1_HEAD_CLASS, RULE_1_LAZY },
+    { rule_2_stem_ends, RULE_2_N_STEM_ENDS, rule_2_suffixes, RULE_2_N_SUFFIXES, RULE_2_MIN_EXTRA, RULE_2_HEAD_MODE, RULE_2_HEAD_CLASS, RULE_2_LAZY },
+    { rule_3_stem_ends, RULE_3_N_STEM_ENDS, rule_3_suffixes, RULE_3_N_SUFFIXES, RULE_3_MIN_EXTRA, RULE_3_HEAD_MODE, RULE_3_HEAD_CLASS, RULE_3_LAZY },
+    { rule_4_stem_ends, RULE_4_N_STEM_ENDS, rule_4_suffixes, RULE_4_N_SUFFIXES, RULE_4_MIN_EXTRA, RULE_4_HEAD_MODE, RULE_4_HEAD_CLASS, RULE_4_LAZY },
+    { rule_5_stem_ends, RULE_5_N_STEM_ENDS, rule_5_suffixes, RULE_5_N_SUFFIXES, RULE_5_MIN_EXTRA, RULE_5_HEAD_MODE, RULE_5_HEAD_CLASS, RULE_5_LAZY },
+    { rule_6_stem_ends, RULE_6_N_STEM_ENDS, rule_6_suffixes, RULE_6_N_SUFFIXES, RULE_6_MIN_EXTRA, RULE_6_HEAD_MODE, RULE_6_HEAD_CLASS, RULE_6_LAZY },
+    { rule_7_stem_ends, RULE_7_N_STEM_ENDS, rule_7_suffixes, RULE_7_N_SUFFIXES, RULE_7_MIN_EXTRA, RULE_7_HEAD_MODE, RULE_7_HEAD_CLASS, RULE_7_LAZY },
+    { rule_8_stem_ends, RULE_8_N_STEM_ENDS, rule_8_suffixes, RULE_8_N_SUFFIXES, RULE_8_MIN_EXTRA, RULE_8_HEAD_MODE, RULE_8_HEAD_CLASS, RULE_8_LAZY },
+    { rule_9_stem_ends, RULE_9_N_STEM_ENDS, rule_9_suffixes, RULE_9_N_SUFFIXES, RULE_9_MIN_EXTRA, RULE_9_HEAD_MODE, RULE_9_HEAD_CLASS, RULE_9_LAZY },
+    { rule_10_stem_ends, RULE_10_N_STEM_ENDS, rule_10_suffixes, RULE_10_N_SUFFIXES, RULE_10_MIN_EXTRA, RULE_10_HEAD_MODE, RULE_10_HEAD_CLASS, RULE_10_LAZY },
+    { rule_11_stem_ends, RULE_11_N_STEM_ENDS, rule_11_suffixes, RULE_11_N_SUFFIXES, RULE_11_MIN_EXTRA, RULE_11_HEAD_MODE, RULE_11_HEAD_CLASS, RULE_11_LAZY },
+    { rule_12_stem_ends, RULE_12_N_STEM_ENDS, rule_12_suffixes, RULE_12_N_SUFFIXES, RULE_12_MIN_EXTRA, RULE_12_HEAD_MODE, RULE_12_HEAD_CLASS, RULE_12_LAZY },
+    { rule_13_stem_ends, RULE_13_N_STEM_ENDS, rule_13_suffixes, RULE_13_N_SUFFIXES, RULE_13_MIN_EXTRA, RULE_13_HEAD_MODE, RULE_13_HEAD_CLASS, RULE_13_LAZY },
+    { rule_14_stem_ends, RULE_14_N_STEM_ENDS, rule_14_suffixes, RULE_14_N_SUFFIXES, RULE_14_MIN_EXTRA, RULE_14_HEAD_MODE, RULE_14_HEAD_CLASS, RULE_14_LAZY },
+    { rule_15_stem_ends, RULE_15_N_STEM_ENDS, rule_15_suffixes, RULE_15_N_SUFFIXES, RULE_15_MIN_EXTRA, RULE_15_HEAD_MODE, RULE_15_HEAD_CLASS, RULE_15_LAZY },
+    { rule_16_stem_ends, RULE_16_N_STEM_ENDS, rule_16_suffixes, RULE_16_N_SUFFIXES, RULE_16_MIN_EXTRA, RULE_16_HEAD_MODE, RULE_16_HEAD_CLASS, RULE_16_LAZY },
+    { rule_17_stem_ends, RULE_17_N_STEM_ENDS, rule_17_suffixes, RULE_17_N_SUFFIXES, RULE_17_MIN_EXTRA, RULE_17_HEAD_MODE, RULE_17_HEAD_CLASS, RULE_17_LAZY },
+    { rule_18_stem_ends, RULE_18_N_STEM_ENDS, rule_18_suffixes, RULE_18_N_SUFFIXES, RULE_18_MIN_EXTRA, RULE_18_HEAD_MODE, RULE_18_HEAD_CLASS, RULE_18_LAZY },
+    { rule_19_stem_ends, RULE_19_N_STEM_ENDS, rule_19_suffixes, RULE_19_N_SUFFIXES, RULE_19_MIN_EXTRA, RULE_19_HEAD_MODE, RULE_19_HEAD_CLASS, RULE_19_LAZY },
+    { rule_20_stem_ends, RULE_20_N_STEM_ENDS, rule_20_suffixes, RULE_20_N_SUFFIXES, RULE_20_MIN_EXTRA, RULE_20_HEAD_MODE, RULE_20_HEAD_CLASS, RULE_20_LAZY },
+    { rule_21_stem_ends, RULE_21_N_STEM_ENDS, rule_21_suffixes, RULE_21_N_SUFFIXES, RULE_21_MIN_EXTRA, RULE_21_HEAD_MODE, RULE_21_HEAD_CLASS, RULE_21_LAZY },
+    { rule_22_stem_ends, RULE_22_N_STEM_ENDS, rule_22_suffixes, RULE_22_N_SUFFIXES, RULE_22_MIN_EXTRA, RULE_22_HEAD_MODE, RULE_22_HEAD_CLASS, RULE_22_LAZY },
+    { rule_23_stem_ends, RULE_23_N_STEM_ENDS, rule_23_suffixes, RULE_23_N_SUFFIXES, RULE_23_MIN_EXTRA, RULE_23_HEAD_MODE, RULE_23_HEAD_CLASS, RULE_23_LAZY },
+    { rule_24_stem_ends, RULE_24_N_STEM_ENDS, rule_24_suffixes, RULE_24_N_SUFFIXES, RULE_24_MIN_EXTRA, RULE_24_HEAD_MODE, RULE_24_HEAD_CLASS, RULE_24_LAZY },
+    { rule_25_stem_ends, RULE_25_N_STEM_ENDS, rule_25_suffixes, RULE_25_N_SUFFIXES, RULE_25_MIN_EXTRA, RULE_25_HEAD_MODE, RULE_25_HEAD_CLASS, RULE_25_LAZY },
+    { rule_26_stem_ends, RULE_26_N_STEM_ENDS, rule_26_suffixes, RULE_26_N_SUFFIXES, RULE_26_MIN_EXTRA, RULE_26_HEAD_MODE, RULE_26_HEAD_CLASS, RULE_26_LAZY },
+    { rule_27_stem_ends, RULE_27_N_STEM_ENDS, rule_27_suffixes, RULE_27_N_SUFFIXES, RULE_27_MIN_EXTRA, RULE_27_HEAD_MODE, RULE_27_HEAD_CLASS, RULE_27_LAZY },
+    { rule_28_stem_ends, RULE_28_N_STEM_ENDS, rule_28_suffixes, RULE_28_N_SUFFIXES, RULE_28_MIN_EXTRA, RULE_28_HEAD_MODE, RULE_28_HEAD_CLASS, RULE_28_LAZY },
+    { rule_29_stem_ends, RULE_29_N_STEM_ENDS, rule_29_suffixes, RULE_29_N_SUFFIXES, RULE_29_MIN_EXTRA, RULE_29_HEAD_MODE, RULE_29_HEAD_CLASS, RULE_29_LAZY },
+    { rule_30_stem_ends, RULE_30_N_STEM_ENDS, rule_30_suffixes, RULE_30_N_SUFFIXES, RULE_30_MIN_EXTRA, RULE_30_HEAD_MODE, RULE_30_HEAD_CLASS, RULE_30_LAZY },
+    { rule_31_stem_ends, RULE_31_N_STEM_ENDS, rule_31_suffixes, RULE_31_N_SUFFIXES, RULE_31_MIN_EXTRA, RULE_31_HEAD_MODE, RULE_31_HEAD_CLASS, RULE_31_LAZY },
+    { rule_32_stem_ends, RULE_32_N_STEM_ENDS, rule_32_suffixes, RULE_32_N_SUFFIXES, RULE_32_MIN_EXTRA, RULE_32_HEAD_MODE, RULE_32_HEAD_CLASS, RULE_32_LAZY },
+    { rule_33_stem_ends, RULE_33_N_STEM_ENDS, rule_33_suffixes, RULE_33_N_SUFFIXES, RULE_33_MIN_EXTRA, RULE_33_HEAD_MODE, RULE_33_HEAD_CLASS, RULE_33_LAZY },
+    { rule_34_stem_ends, RULE_34_N_STEM_ENDS, rule_34_suffixes, RULE_34_N_SUFFIXES, RULE_34_MIN_EXTRA, RULE_34_HEAD_MODE, RULE_34_HEAD_CLASS, RULE_34_LAZY },
+    { rule_35_stem_ends, RULE_35_N_STEM_ENDS, rule_35_suffixes, RULE_35_N_SUFFIXES, RULE_35_MIN_EXTRA, RULE_35_HEAD_MODE, RULE_35_HEAD_CLASS, RULE_35_LAZY },
+    { rule_36_stem_ends, RULE_36_N_STEM_ENDS, rule_36_suffixes, RULE_36_N_SUFFIXES, RULE_36_MIN_EXTRA, RULE_36_HEAD_MODE, RULE_36_HEAD_CLASS, RULE_36_LAZY },
+    { rule_37_stem_ends, RULE_37_N_STEM_ENDS, rule_37_suffixes, RULE_37_N_SUFFIXES, RULE_37_MIN_EXTRA, RULE_37_HEAD_MODE, RULE_37_HEAD_CLASS, RULE_37_LAZY },
+    { rule_38_stem_ends, RULE_38_N_STEM_ENDS, rule_38_suffixes, RULE_38_N_SUFFIXES, RULE_38_MIN_EXTRA, RULE_38_HEAD_MODE, RULE_38_HEAD_CLASS, RULE_38_LAZY },
+    { rule_39_stem_ends, RULE_39_N_STEM_ENDS, rule_39_suffixes, RULE_39_N_SUFFIXES, RULE_39_MIN_EXTRA, RULE_39_HEAD_MODE, RULE_39_HEAD_CLASS, RULE_39_LAZY },
+    { rule_40_stem_ends, RULE_40_N_STEM_ENDS, rule_40_suffixes, RULE_40_N_SUFFIXES, RULE_40_MIN_EXTRA, RULE_40_HEAD_MODE, RULE_40_HEAD_CLASS, RULE_40_LAZY },
+    { rule_41_stem_ends, RULE_41_N_STEM_ENDS, rule_41_suffixes, RULE_41_N_SUFFIXES, RULE_41_MIN_EXTRA, RULE_41_HEAD_MODE, RULE_41_HEAD_CLASS, RULE_41_LAZY },
+    { rule_42_stem_ends, RULE_42_N_STEM_ENDS, rule_42_suffixes, RULE_42_N_SUFFIXES, RULE_42_MIN_EXTRA, RULE_42_HEAD_MODE, RULE_42_HEAD_CLASS, RULE_42_LAZY },
+    { rule_43_stem_ends, RULE_43_N_STEM_ENDS, rule_43_suffixes, RULE_43_N_SUFFIXES, RULE_43_MIN_EXTRA, RULE_43_HEAD_MODE, RULE_43_HEAD_CLASS, RULE_43_LAZY },
+    { rule_44_stem_ends, RULE_44_N_STEM_ENDS, rule_44_suffixes, RULE_44_N_SUFFIXES, RULE_44_MIN_EXTRA, RULE_44_HEAD_MODE, RULE_44_HEAD_CLASS, RULE_44_LAZY },
+    { rule_45_stem_ends, RULE_45_N_STEM_ENDS, rule_45_suffixes, RULE_45_N_SUFFIXES, RULE_45_MIN_EXTRA, RULE_45_HEAD_MODE, RULE_45_HEAD_CLASS, RULE_45_LAZY },
+    { rule_46_stem_ends, RULE_46_N_STEM_ENDS, rule_46_suffixes, RULE_46_N_SUFFIXES, RULE_46_MIN_EXTRA, RULE_46_HEAD_MODE, RULE_46_HEAD_CLASS, RULE_46_LAZY },
+    { rule_47_stem_ends, RULE_47_N_STEM_ENDS, rule_47_suffixes, RULE_47_N_SUFFIXES, RULE_47_MIN_EXTRA, RULE_47_HEAD_MODE, RULE_47_HEAD_CLASS, RULE_47_LAZY },
+    { rule_48_stem_ends, RULE_48_N_STEM_ENDS, rule_48_suffixes, RULE_48_N_SUFFIXES, RULE_48_MIN_EXTRA, RULE_48_HEAD_MODE, RULE_48_HEAD_CLASS, RULE_48_LAZY },
+    { rule_49_stem_ends, RULE_49_N_STEM_ENDS, rule_49_suffixes, RULE_49_N_SUFFIXES, RULE_49_MIN_EXTRA, RULE_49_HEAD_MODE, RULE_49_HEAD_CLASS, RULE_49_LAZY },
+    { rule_50_stem_ends, RULE_50_N_STEM_ENDS, rule_50_suffixes, RULE_50_N_SUFFIXES, RULE_50_MIN_EXTRA, RULE_50_HEAD_MODE, RULE_50_HEAD_CLASS, RULE_50_LAZY },
+    { rule_51_stem_ends, RULE_51_N_STEM_ENDS, rule_51_suffixes, RULE_51_N_SUFFIXES, RULE_51_MIN_EXTRA, RULE_51_HEAD_MODE, RULE_51_HEAD_CLASS, RULE_51_LAZY },
+    { rule_52_stem_ends, RULE_52_N_STEM_ENDS, rule_52_suffixes, RULE_52_N_SUFFIXES, RULE_52_MIN_EXTRA, RULE_52_HEAD_MODE, RULE_52_HEAD_CLASS, RULE_52_LAZY },
+    { rule_53_stem_ends, RULE_53_N_STEM_ENDS, rule_53_suffixes, RULE_53_N_SUFFIXES, RULE_53_MIN_EXTRA, RULE_53_HEAD_MODE, RULE_53_HEAD_CLASS, RULE_53_LAZY },
+    { rule_54_stem_ends, RULE_54_N_STEM_ENDS, rule_54_suffixes, RULE_54_N_SUFFIXES, RULE_54_MIN_EXTRA, RULE_54_HEAD_MODE, RULE_54_HEAD_CLASS, RULE_54_LAZY },
+    { rule_55_stem_ends, RULE_55_N_STEM_ENDS, rule_55_suffixes, RULE_55_N_SUFFIXES, RULE_55_MIN_EXTRA, RULE_55_HEAD_MODE, RULE_55_HEAD_CLASS, RULE_55_LAZY },
+    { rule_56_stem_ends, RULE_56_N_STEM_ENDS, rule_56_suffixes, RULE_56_N_SUFFIXES, RULE_56_MIN_EXTRA, RULE_56_HEAD_MODE, RULE_56_HEAD_CLASS, RULE_56_LAZY },
+    { rule_57_stem_ends, RULE_57_N_STEM_ENDS, rule_57_suffixes, RULE_57_N_SUFFIXES, RULE_57_MIN_EXTRA, RULE_57_HEAD_MODE, RULE_57_HEAD_CLASS, RULE_57_LAZY },
+    { rule_58_stem_ends, RULE_58_N_STEM_ENDS, rule_58_suffixes, RULE_58_N_SUFFIXES, RULE_58_MIN_EXTRA, RULE_58_HEAD_MODE, RULE_58_HEAD_CLASS, RULE_58_LAZY },
+    { rule_59_stem_ends, RULE_59_N_STEM_ENDS, rule_59_suffixes, RULE_59_N_SUFFIXES, RULE_59_MIN_EXTRA, RULE_59_HEAD_MODE, RULE_59_HEAD_CLASS, RULE_59_LAZY },
+    { rule_60_stem_ends, RULE_60_N_STEM_ENDS, rule_60_suffixes, RULE_60_N_SUFFIXES, RULE_60_MIN_EXTRA, RULE_60_HEAD_MODE, RULE_60_HEAD_CLASS, RULE_60_LAZY },
+    { rule_61_stem_ends, RULE_61_N_STEM_ENDS, rule_61_suffixes, RULE_61_N_SUFFIXES, RULE_61_MIN_EXTRA, RULE_61_HEAD_MODE, RULE_61_HEAD_CLASS, RULE_61_LAZY },
+    { rule_62_stem_ends, RULE_62_N_STEM_ENDS, rule_62_suffixes, RULE_62_N_SUFFIXES, RULE_62_MIN_EXTRA, RULE_62_HEAD_MODE, RULE_62_HEAD_CLASS, RULE_62_LAZY },
+    { rule_63_stem_ends, RULE_63_N_STEM_ENDS, rule_63_suffixes, RULE_63_N_SUFFIXES, RULE_63_MIN_EXTRA, RULE_63_HEAD_MODE, RULE_63_HEAD_CLASS, RULE_63_LAZY },
+    { rule_64_stem_ends, RULE_64_N_STEM_ENDS, rule_64_suffixes, RULE_64_N_SUFFIXES, RULE_64_MIN_EXTRA, RULE_64_HEAD_MODE, RULE_64_HEAD_CLASS, RULE_64_LAZY },
+    { rule_65_stem_ends, RULE_65_N_STEM_ENDS, rule_65_suffixes, RULE_65_N_SUFFIXES, RULE_65_MIN_EXTRA, RULE_65_HEAD_MODE, RULE_65_HEAD_CLASS, RULE_65_LAZY },
+    { rule_66_stem_ends, RULE_66_N_STEM_ENDS, rule_66_suffixes, RULE_66_N_SUFFIXES, RULE_66_MIN_EXTRA, RULE_66_HEAD_MODE, RULE_66_HEAD_CLASS, RULE_66_LAZY },
+    { rule_67_stem_ends, RULE_67_N_STEM_ENDS, rule_67_suffixes, RULE_67_N_SUFFIXES, RULE_67_MIN_EXTRA, RULE_67_HEAD_MODE, RULE_67_HEAD_CLASS, RULE_67_LAZY },
+    { rule_68_stem_ends, RULE_68_N_STEM_ENDS, rule_68_suffixes, RULE_68_N_SUFFIXES, RULE_68_MIN_EXTRA, RULE_68_HEAD_MODE, RULE_68_HEAD_CLASS, RULE_68_LAZY },
+    { rule_69_stem_ends, RULE_69_N_STEM_ENDS, rule_69_suffixes, RULE_69_N_SUFFIXES, RULE_69_MIN_EXTRA, RULE_69_HEAD_MODE, RULE_69_HEAD_CLASS, RULE_69_LAZY },
+    { rule_70_stem_ends, RULE_70_N_STEM_ENDS, rule_70_suffixes, RULE_70_N_SUFFIXES, RULE_70_MIN_EXTRA, RULE_70_HEAD_MODE, RULE_70_HEAD_CLASS, RULE_70_LAZY },
+    { rule_71_stem_ends, RULE_71_N_STEM_ENDS, rule_71_suffixes, RULE_71_N_SUFFIXES, RULE_71_MIN_EXTRA, RULE_71_HEAD_MODE, RULE_71_HEAD_CLASS, RULE_71_LAZY },
+    { rule_72_stem_ends, RULE_72_N_STEM_ENDS, rule_72_suffixes, RULE_72_N_SUFFIXES, RULE_72_MIN_EXTRA, RULE_72_HEAD_MODE, RULE_72_HEAD_CLASS, RULE_72_LAZY },
+    { rule_73_stem_ends, RULE_73_N_STEM_ENDS, rule_73_suffixes, RULE_73_N_SUFFIXES, RULE_73_MIN_EXTRA, RULE_73_HEAD_MODE, RULE_73_HEAD_CLASS, RULE_73_LAZY },
+    { rule_74_stem_ends, RULE_74_N_STEM_ENDS, rule_74_suffixes, RULE_74_N_SUFFIXES, RULE_74_MIN_EXTRA, RULE_74_HEAD_MODE, RULE_74_HEAD_CLASS, RULE_74_LAZY },
+    { rule_75_stem_ends, RULE_75_N_STEM_ENDS, rule_75_suffixes, RULE_75_N_SUFFIXES, RULE_75_MIN_EXTRA, RULE_75_HEAD_MODE, RULE_75_HEAD_CLASS, RULE_75_LAZY },
+    { rule_76_stem_ends, RULE_76_N_STEM_ENDS, rule_76_suffixes, RULE_76_N_SUFFIXES, RULE_76_MIN_EXTRA, RULE_76_HEAD_MODE, RULE_76_HEAD_CLASS, RULE_76_LAZY },
+    { rule_77_stem_ends, RULE_77_N_STEM_ENDS, rule_77_suffixes, RULE_77_N_SUFFIXES, RULE_77_MIN_EXTRA, RULE_77_HEAD_MODE, RULE_77_HEAD_CLASS, RULE_77_LAZY },
+    { rule_78_stem_ends, RULE_78_N_STEM_ENDS, rule_78_suffixes, RULE_78_N_SUFFIXES, RULE_78_MIN_EXTRA, RULE_78_HEAD_MODE, RULE_78_HEAD_CLASS, RULE_78_LAZY },
+    { rule_79_stem_ends, RULE_79_N_STEM_ENDS, rule_79_suffixes, RULE_79_N_SUFFIXES, RULE_79_MIN_EXTRA, RULE_79_HEAD_MODE, RULE_79_HEAD_CLASS, RULE_79_LAZY },
+    { rule_80_stem_ends, RULE_80_N_STEM_ENDS, rule_80_suffixes, RULE_80_N_SUFFIXES, RULE_80_MIN_EXTRA, RULE_80_HEAD_MODE, RULE_80_HEAD_CLASS, RULE_80_LAZY },
 };
 
 #endif /* CROATIAN_STEMMER_RULES_H */

@@ -213,7 +213,7 @@ def test_both_evaluators_accept_export_without_hr500k(tmp_path, annotation, caps
 
 def test_human_metrics_do_not_change_legacy_autoresearch_score(tmp_path, annotation, capsys, monkeypatch):
     scorer = module("evaluate_score")
-    monkeypatch.setattr(scorer, "load_corpus", lambda: [("kuća", "kuća", "NOUN"), ("kuće", "kuća", "NOUN")])
+    monkeypatch.setattr(scorer, "load_corpus", lambda *_: [("kuća", "kuća", "NOUN"), ("kuće", "kuća", "NOUN")])
     scorer.main([])
     baseline = json.loads(capsys.readouterr().out)
     path = tmp_path / "labels.tsv"

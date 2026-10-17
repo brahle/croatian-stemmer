@@ -11,19 +11,38 @@ Maximize the composite score:
 score = 0.6 * form_consistency + 0.3 * (1 - over_stemming) + 0.1 * verb_consistency
 ```
 
-**Secondary goal**: drive `over_stemming` below **8%** (currently ~10.5%, with a
+The v0.1 stop words are excluded from every metric (`EXCLUDED_FORMS` in
+`evaluate_score.py`). `form_consistency_weighted` (each form weighted by its
+token count) is reported alongside; it is not part of the score, but a change
+that raises the score while lowering it deserves a second look.
+
+**Secondary goal**: drive `over_stemming` below **8%** (currently ~10.4%, with a
 12% guardrail). Prefer experiments that reduce conflation, and treat changes
 that raise over-stemming with extra scrutiny even if they pass the guardrail.
 
 ## Allowed Modifications
 
 You may ONLY modify these files:
-- `src/croatian_stemmer/rules.py` — LEXICON, TRANSFORMATIONS, `_RULES`
+- `src/croatian_stemmer/rules.py` — TRANSFORMATIONS, `_RULES`
 - `src/croatian_stemmer/stemmer.py` — algorithm logic
 - `tests/test_stemmer.py` — ONLY to update expected values when a change
   demonstrably improves the evaluation score (see step 5 protocol)
 
 **DO NOT** modify: `evaluate.py`, `evaluate_score.py`, or any other file.
+
+**No word lists.** Do not add per-word entries (a lexicon, exception table or
+form-to-stem map) or grow STOP_WORDS. Iterations 29-84 did this, picking
+words from hr500k failures: +8pp verb consistency on hr500k, +0.3pp on the
+held-out ParlaMint-HR corpus. They were reverted. Changes must be general
+rules or algorithm logic.
+
+**Do not evaluate on ParlaMint-HR.** It is the held-out corpus; the owner
+runs it between loops.
+
+**Licensing.** The project is LGPL-3.0-or-later. Rules and tables may be
+copied only from the original v0.1 tarball (LGPL). Other stemmers, notably
+SCStemmers (GPL), are for ideas only: write the rule from the Croatian
+morphology, never copy their tables.
 
 ## Iteration Protocol
 
@@ -79,8 +98,9 @@ Record the commit SHA — you'll need it for results.tsv.
 
 ### 6. Run Tests
 ```bash
-python -m pytest tests/ -x -q
+python -m pytest tests/ -x -q --ignore=tests/web --ignore=tests/test_c_parity.py
 ```
+(The C port is regenerated and checked after the loop, not per iteration.)
 If tests fail, check whether the failure is because the test encodes OLD
 (suboptimal) behavior that your change intentionally improves:
 
@@ -89,7 +109,7 @@ If tests fail, check whether the failure is because the test encodes OLD
 2. If score > best AND guardrails pass: the change is genuinely better.
 3. Update ONLY the expected values in `tests/test_stemmer.py` to match
    the new (better) behavior. Do NOT delete tests or change test logic.
-4. Re-run `python -m pytest tests/ -x -q` to confirm tests pass.
+4. Re-run the test command above to confirm tests pass.
 5. Amend the commit: `git add tests/ && git commit --amend --no-edit`
 6. Proceed to step 8 (Record & Decide) with status KEEP.
 
@@ -165,35 +185,28 @@ Look for:
 
 ## Research Agenda (ordered by expected impact)
 
-### High impact — algorithmic changes
-1. **Verb conjugation overhaul** — Still the biggest weakness (~25% consistency).
-   Study how SCStemmers handles verb morphology. Consider adding verb-class-aware
-   rules, or a separate verb-detection + stemming phase.
+Verbs are about 60% of the forms that miss their lemma's majority stem; nouns
+and adjectives each lose under 5%.
 
-2. **Multi-pass stemming** — Currently we do transform → strip → post-process.
-   Consider: what if we did a second pass of stripping on the result? Or
-   transformed after stripping? Other stemmers may do this differently.
-
-3. **Prefix handling beyond naj-** — Croatian has productive prefixes: ne-, pre-,
-   pri-, pro-, raz-, iz-, u-, na-, za-, do-, po-, pod-, nad-, od-, s-/sa-.
-   Some of these cause the same lemma to split into different stems.
-
-### Medium impact — rule improvements
-4. **Systematic transformation audit** — Fetch the SCStemmers and mfolnovic
-   transformation tables. Diff them against ours. Add missing patterns.
-
-5. **Catch-all rule refinement** — Rules 138-145 (the `.+?` rules) are very
-   broad. Study whether splitting them by consonant class helps.
-
-6. **Rule reordering** — The order matters (first match wins). Study whether
-   reordering improves accuracy, especially for ambiguous suffixes.
-
-### Lower impact — targeted fixes
-7. **Expand stop words** — Pronouns, determiners, prepositions.
-   (Note: iteration #1 showed stop words don't help much because the evaluation
-   still counts them. But worth revisiting if the approach changes.)
-
-8. **Short-stem protection** — Increase minimum stem length for catch-all rules.
+1. **Thematic vowel.** Verb stems keep or drop the thematic vowel
+   inconsistently: dolazi/dolaz, vidi/vidjel, nalazio→nalazi vs nalaz. Strip
+   -a-/-i-/-je- consistently after the ending across infinitive, present and
+   l-participle (-o/-la/-li/-lo/-le). Expect verb/noun merges (raditi/rad);
+   watch over_stemming.
+2. **-ovati/-ivati ↔ -uj-.** pokazuje→pokazuj vs pokazivati→pokaziva,
+   djeluje→djeluj vs djelovati→djelova. One systematic alternation; reduce
+   iva/ova/uj to a shared stem.
+3. **Present-tense consonant alternations.** piše/pisati (s→š), kaže/kazati
+   (z→ž), reče/reći (k→č), ističe/isticati (c→č). Transformations limited to
+   verb endings (-šem/-šeš/-še/-šemo/-šete/-šu, …) so nouns are untouched.
+4. **-kao/-gao/-šao participles.** rekao/rekla, došao/doći: fleeting a in the
+   l-participle.
+5. **Short-stem over-stemming.** The largest conflations are 2-3 letter stems
+   (rad 12 lemmas, pr, mi, je, im, on, od). Try length-based limits (e.g. a
+   minimum stem length for catch-all rules, or not stripping words of three
+   letters or fewer). No word lists.
+6. **Prefix handling beyond naj-.** Only where a prefix splits one lemma's
+   forms; verbal prefixes form different lemmas and should stay.
 
 ## Anti-Patterns
 
@@ -201,6 +214,7 @@ Look for:
   (but that idea can involve multiple coordinated file changes)
 - Do NOT add overly broad rules that strip common suffixes indiscriminately
 - Do NOT try to handle suppletive forms (dobar/bolji) — suffix stripping can't fix these
+- Do NOT add per-word entries or grow STOP_WORDS (see "No word lists")
 - Do NOT "improve" the score by breaking existing good behavior
 
 ## NEVER STOP

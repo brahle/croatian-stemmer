@@ -2,7 +2,7 @@
 
 A rule-based stemmer for Croatian, available as a Python library and as a PostgreSQL text search dictionary. Both implementations produce identical stems.
 
-It starts from the Ljubešić–Pandžić stemmer ("Simple stemmer for Croatian v0.1", 2012), which refines the algorithm from Ljubešić, Boras & Kubelka (2007). On top of that it adds extra suffix rules, post-processing for comparatives, jotation and fleeting *a*, and a lexicon of about 3,800 inflected forms that maps irregular paradigms to one stem per lemma. These additions were tuned against the hr500k corpus; see [Evaluation](#evaluation) for what that means for the numbers.
+It starts from the Ljubešić–Pandžić stemmer ("Simple stemmer for Croatian v0.1", 2012), which refines the algorithm from Ljubešić, Boras & Kubelka (2007). On top of that it adds extra suffix rules and post-processing for comparatives, jotation and fleeting *a*. These additions were tuned against the hr500k corpus and checked on a separate held-out corpus; see [Evaluation](#evaluation).
 
 ## Python
 
@@ -20,16 +20,15 @@ stem("kuće")        # "kuć"
 stem("lijepog")     # "lijep"
 stem("metara")      # "metr"   (fleeting a)
 stem("najvećih")    # "već"    (superlative prefix)
-stem("saznali")     # "saznat" (lexicon: every form of saznati)
 
 stem_text("Veliki grad ima lijepe kuće")
-# ["velik", "grad", "imat", "lijep", "kuć"]
+# ["velik", "grad", "im", "lijep", "kuć"]
 
 stem_text("Ja sam bio u gradu")
 # ["ja", "u", "grad"]   (stop words "sam" and "bio" are dropped)
 ```
 
-`stem()` stems any single word. `stem_text()` tokenizes, lowercases and stems running text, dropping the 67 stop words: forms of the auxiliaries and modals *biti*, *htjeti*, *željeti*, *morati*, *trebati* and *moći*. Passing a stop word to `stem()` returns its lemma's stem (`stem("sam") == "bit"`).
+`stem()` stems any single word. `stem_text()` tokenizes, lowercases and stems running text, dropping the 67 stop words: forms of the auxiliaries and modals *biti*, *htjeti*, *željeti*, *morati*, *trebati* and *moći*. Passing a stop word to `stem()` returns it unchanged (`stem("sam") == "sam"`).
 
 ### Command line
 
@@ -69,7 +68,7 @@ CREATE EXTENSION dict_croatian_stem;
 -- template, and the croatian text search configuration.
 
 SELECT to_tsvector('croatian', 'Veliki grad ima lijepe kuće');
--- 'grad':2 'imat':3 'kuć':5 'lijep':4 'velik':1
+-- 'grad':2 'im':3 'kuć':5 'lijep':4 'velik':1
 
 SELECT to_tsvector('croatian', 'Lijepe kuće u velikom gradu')
     @@ to_tsquery('croatian', 'kuća & grad');
@@ -90,33 +89,43 @@ CREATE TEXT SEARCH DICTIONARY my_croatian_stem (
 
 ## How it works
 
-1. **Lexicon.** Forms listed in the lexicon return their lemma's canonical stem. This covers suppletive and irregular paradigms (*biti*, *htjeti*, *ići*, *dati*, …) and a few hundred frequent verbs.
+1. **Stop words.** The 67 auxiliary and modal forms are returned unchanged.
 2. **Superlatives.** A leading *naj-* is peeled off, so *najveći*, *veći* and *velik* can meet.
-3. **Transformations.** 132 suffix rewrites undo consonant alternations (palatalization, sibilarization, jotation) and fleeting *a*.
-4. **Suffix stripping.** 75 ordered rules, each a stem pattern plus a set of suffixes. The first rule that leaves a stem with a vowel and more than one character wins. Syllabic *r* (*trg*, *krv*, *prst*) counts as a vowel.
-5. **Clean-up.** The *-ov-*/*-ev-* plural extension, comparative *-ij*, jotation and short palatalized stems are normalized so related forms share a stem.
+3. **Transformations.** 159 suffix rewrites undo consonant alternations (palatalization, sibilarization, jotation) and fleeting *a*.
+4. **Suffix stripping.** 81 ordered rules, each a stem pattern plus a set of suffixes. The first rule that leaves a stem with a vowel and more than one character wins. Syllabic *r* (*trg*, *krv*, *prst*) counts as a vowel.
+5. **Verbs.** The thematic vowel is dropped the same way in every form, so *raditi*, *radim*, *radila* and *radi* all give *rad*, and *vidjeti*, *vidio* and *vidi* give *vid*. *-ovati*/*-ivati* verbs and their *-uj-* present share a stem (*djelovati*, *djeluje* → *djeliv*), and the *-ići* compounds keep their *đ* (*došao*, *dođe* → *dođ*).
+6. **Participles.** Passive participles lose *-en*, *-an*, *-iran* or *-nut* and undo the root alternation, so they meet their verb (*objavljen* → *objav*, *korišten* → *korist*, *organiziran* → *organizir*).
+7. **Clean-up.** Fleeting *a* (*posao*/*posla*, *postupak*/*postupka*, *kupac*/*kupca*, *metar*/*metra*), the *-ov-*/*-ev-* plural extension and comparative *-ij* are normalized so related forms share a stem.
 
 ## Evaluation
 
-Measured on [hr500k](https://www.clarin.si/repository/xmlui/handle/11356/1792) (CLARIN.SI, CC BY-SA 4.0): 427,270 word tokens with gold lemmas and parts of speech.
+The rules were tuned on [hr500k](https://www.clarin.si/repository/xmlui/handle/11356/1792) (CLARIN.SI, CC BY-SA 4.0; 427,270 word tokens with gold lemmas and parts of speech), so hr500k numbers are in-sample. The held-out check is [ParlaMint-HR 4.1](http://hdl.handle.net/11356/1911) (CLARIN.SI, CC BY 4.0): Croatian parliamentary debates from 2003 to 2022, 85.4 million word tokens, lemmatized and tagged automatically by CLASSLA-Stanza. None of it was looked at during tuning.
 
-| Metric | v0.1 rules | This stemmer |
-|---|---|---|
-| Form-level consistency (forms that get their lemma's majority stem) | 78.3% | 87.7% |
-| Lemma consistency (multi-form lemmas whose forms all share one stem) | 58.6% | 74.5% |
-| Over-stemming (stems shared by 2+ lemmas) | 8.7% | 10.2% |
-| Nouns / adjectives / verbs, form-level | 66.7% / 75.5% / 20.9% | 85.9% / 93.8% / 36.3% |
+The 67 stop words are left out of the scoring, since `stem()` returns them unchanged and text search drops them.
 
-The extra rules, the lexicon and the post-processing were all chosen by measuring against this same corpus (see [AUTORESEARCH.md](AUTORESEARCH.md) and [results.tsv](results.tsv)), so the right-hand column is an in-sample number and overstates accuracy on unseen text. Most of the verb gain comes from the lexicon: with only the stop words in the lexicon, verbs score 28.3% and form-level consistency is 86.2%. A held-out evaluation against human judgments is in progress; `src/croatian_stemmer/labeling` and [docs/labeling.md](docs/labeling.md) describe it.
+| Metric | v0.1, hr500k | This stemmer, hr500k | v0.1, ParlaMint-HR | This stemmer, ParlaMint-HR |
+|---|---|---|---|---|
+| Form-level consistency (forms that get their lemma's majority stem) | 78.4% | 94.3% | 76.3% | 94.4% |
+| The same, weighted by how often each form occurs | 82.8% | 91.9% | 82.9% | 91.3% |
+| Lemma consistency (multi-form lemmas whose forms all share one stem) | 58.6% | 87.4% | 57.2% | 87.3% |
+| Over-stemming (stems shared by 2+ lemmas) | 8.6% | 11.7% | 16.2% | 19.8% |
+| Lemma consistency for nouns / adjectives / verbs | 66.7 / 75.5 / 20.9% | 91.3 / 94.8 / 82.3% | 61.9 / 73.5 / 16.8% | 90.4 / 93.0 / 78.8% |
+
+The gains over v0.1 hold on the held-out corpus, so the rules generalize rather than fit hr500k. Much of the added over-stemming is a verb meeting its own noun or participle (*dokaz*/*dokazati*, *određen*/*odrediti*), which the corpora lemmatize separately but which is usually what search wants. Over-stemming grows with vocabulary size (ParlaMint has six times as many distinct form/lemma pairs as hr500k), so compare it between stemmers on the same corpus, not across corpora. An evaluation against human judgments is in progress; see [docs/labeling.md](https://github.com/brahle/croatian-stemmer/blob/main/docs/labeling.md).
+
+An earlier version also carried a hand-built lexicon of about 3,800 verb and adjective forms chosen from hr500k failures. It raised hr500k verb consistency from 28.3% to 36.3% but ParlaMint-HR verb consistency only from 22.8% to 23.1% (both measured with the stop words included), so it was removed.
 
 To reproduce, download `hr500k.conllup` into `data/` and run:
 
 ```bash
-python evaluate.py          # full report
+python evaluate.py          # full hr500k report
 python evaluate_score.py    # the composite score used during tuning
+
+# held-out: stream ParlaMint-HR.ana.tgz from the link above
+tar -xzOf ParlaMint-HR.ana.tgz '*.conllu' | python evaluate_score.py --corpus -
 ```
 
-[docs/evaluation.md](docs/evaluation.md) is the detailed report for the v0.1 baseline.
+[docs/evaluation.md](https://github.com/brahle/croatian-stemmer/blob/main/docs/evaluation.md) is the detailed report for the v0.1 baseline.
 
 ## Development
 
@@ -136,11 +145,11 @@ src/croatian_stemmer/labeling/  optional human-labeling tools and web app
 tests/                     pytest suite, including C/Python parity
 pg/                        PostgreSQL extension, C stemmer and regression tests
 gen_rules_c.py             generates pg/croatian_stemmer_rules.h from rules.py
-evaluate.py, evaluate_score.py   hr500k evaluation
+evaluate.py, evaluate_score.py   corpus evaluation
 docs/                      research notes and evaluation reports
 ```
 
-The labeling app (Keycloak login, judgment forms, TSV export) is optional and is not needed to use the stemmer. See [docs/labeling-web.md](docs/labeling-web.md).
+The labeling app (Keycloak login, judgment forms, TSV export) is optional and is not needed to use the stemmer. See [docs/labeling-web.md](https://github.com/brahle/croatian-stemmer/blob/main/docs/labeling-web.md).
 
 ## References
 
@@ -150,6 +159,6 @@ The labeling app (Keycloak login, judgment forms, TSV export) is optional and is
 
 ## License
 
-GNU Lesser General Public License v3.0 or later; see [COPYING.LESSER](COPYING.LESSER) and [COPYING](COPYING). The stop list, transformations and suffix rules come from "Simple stemmer for Croatian v0.1", Copyright 2012 Nikola Ljubešić and Ivan Pandžić, also LGPL-3.0-or-later.
+GNU Lesser General Public License v3.0 or later; see [COPYING.LESSER](https://github.com/brahle/croatian-stemmer/blob/main/COPYING.LESSER) and [COPYING](https://github.com/brahle/croatian-stemmer/blob/main/COPYING). The stop list, transformations and suffix rules come from "Simple stemmer for Croatian v0.1", Copyright 2012 Nikola Ljubešić and Ivan Pandžić, also LGPL-3.0-or-later.
 
 The hr500k corpus is not included. It is licensed CC BY-SA 4.0 by its authors.

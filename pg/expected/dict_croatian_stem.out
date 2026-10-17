@@ -38,12 +38,12 @@ SELECT ts_lexize('croatian_stem', 'lijepog');
  {lijep}
 (1 row)
 
--- raditi → "radit" (verbs canonicalize through the lexicon or catch-all
--- rules; lemma stays distinct from the noun "rad").
+-- raditi → "rad": the .+i rule strips -ti and the thematic -i- is dropped,
+-- so it meets radi/radim.
 SELECT ts_lexize('croatian_stem', 'raditi');
  ts_lexize 
 -----------
- {radit}
+ {rad}
 (1 row)
 
 SELECT ts_lexize('croatian_stem', 'šumom');
@@ -77,17 +77,17 @@ SELECT ts_lexize('croatian_stem', 'ću');
  {}
 (1 row)
 
--- Other lexicon forms collapse to one canonical stem per lemma.
+-- Content words are stemmed, never dropped.
 SELECT ts_lexize('croatian_stem', 'saznali');
  ts_lexize 
 -----------
- {saznat}
+ {sazn}
 (1 row)
 
 SELECT ts_lexize('croatian_stem', 'saznati');
  ts_lexize 
 -----------
- {saznat}
+ {sazn}
 (1 row)
 
 SELECT ts_lexize('croatian_stem', 'starim');
@@ -106,7 +106,7 @@ SELECT ts_lexize('croatian_stem', 'najveći');
 SELECT ts_lexize('croatian_stem', 'najljepši');
  ts_lexize 
 -----------
- {ljepš}
+ {ljep}
 (1 row)
 
 -- Morphophonological transformations
@@ -131,9 +131,9 @@ SELECT ts_lexize('croatian_stem', 'trga');
 
 -- Full text search configuration
 SELECT to_tsvector('croatian', 'Veliki grad ima lijepe kuće');
-                  to_tsvector                  
------------------------------------------------
- 'grad':2 'imat':3 'kuć':5 'lijep':4 'velik':1
+                 to_tsvector                 
+---------------------------------------------
+ 'grad':2 'im':3 'kuć':5 'lijep':4 'velik':1
 (1 row)
 
 SELECT to_tsquery('croatian', 'gradovi & kuće');
@@ -150,17 +150,17 @@ SELECT to_tsvector('croatian', 'Lijepe kuće u velikom gradu')
  t
 (1 row)
 
--- "u" is a lexicon form but not a stop word, so it stays as a lexeme.
+-- "u" is not a stop word, so it stays as a lexeme.
 SELECT to_tsvector('croatian', 'Idem u grad');
       to_tsvector      
 -----------------------
  'grad':3 'id':1 'u':2
 (1 row)
 
--- Stop words vanish from the vector; lexicon content words do not.
+-- Stop words vanish from the vector; content words do not.
 SELECT to_tsvector('croatian', 'Saznali smo da starim ljudima treba pomoć');
-                  to_tsvector                  
------------------------------------------------
- 'da':3 'ljud':5 'pomoć':7 'saznat':1 'star':4
+                 to_tsvector                 
+---------------------------------------------
+ 'da':3 'ljud':5 'pomoć':7 'sazn':1 'star':4
 (1 row)
 

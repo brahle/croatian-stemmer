@@ -9,8 +9,8 @@ SELECT ts_lexize('croatian_stem', 'grada');
 -- plural -ov/-ev extensions, so all "grad" forms unify.
 SELECT ts_lexize('croatian_stem', 'gradovi');
 SELECT ts_lexize('croatian_stem', 'lijepog');
--- raditi → "radit" (verbs canonicalize through the lexicon or catch-all
--- rules; lemma stays distinct from the noun "rad").
+-- raditi → "rad": the .+i rule strips -ti and the thematic -i- is dropped,
+-- so it meets radi/radim.
 SELECT ts_lexize('croatian_stem', 'raditi');
 SELECT ts_lexize('croatian_stem', 'šumom');
 
@@ -20,7 +20,7 @@ SELECT ts_lexize('croatian_stem', 'biti');
 SELECT ts_lexize('croatian_stem', 'mogu');
 SELECT ts_lexize('croatian_stem', 'ću');
 
--- Other lexicon forms collapse to one canonical stem per lemma.
+-- Content words are stemmed, never dropped.
 SELECT ts_lexize('croatian_stem', 'saznali');
 SELECT ts_lexize('croatian_stem', 'saznati');
 SELECT ts_lexize('croatian_stem', 'starim');
@@ -44,8 +44,8 @@ SELECT to_tsquery('croatian', 'gradovi & kuće');
 SELECT to_tsvector('croatian', 'Lijepe kuće u velikom gradu')
     @@ to_tsquery('croatian', 'kuća & grad');
 
--- "u" is a lexicon form but not a stop word, so it stays as a lexeme.
+-- "u" is not a stop word, so it stays as a lexeme.
 SELECT to_tsvector('croatian', 'Idem u grad');
 
--- Stop words vanish from the vector; lexicon content words do not.
+-- Stop words vanish from the vector; content words do not.
 SELECT to_tsvector('croatian', 'Saznali smo da starim ljudima treba pomoć');
