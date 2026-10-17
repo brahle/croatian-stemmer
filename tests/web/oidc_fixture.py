@@ -32,6 +32,7 @@ SUBJECT = str(uuid4())
 SUBJECTS = {'annotator': SUBJECT, 'curator': str(uuid4())}
 CURATORS = {'curator'}
 persona = {'name': 'annotator'}
+signed_in = set()  # personas with a fixture 'SSO session', for prompt=none
 last_authorize = {}
 app = FastAPI()
 app.add_middleware(CORSMiddleware,allow_origins=['http://127.0.0.1:55484'],allow_credentials=True,allow_methods=['GET','POST'],allow_headers=['Content-Type'])
@@ -61,8 +62,9 @@ async def authorize(request: Request):
         or p.get('code_challenge_method')!='S256' or not p.get('code_challenge') or not p.get('nonce')):
         raise HTTPException(400,'invalid fixture authorization')
     last_authorize.clear();last_authorize.update(dict(p))
-    if p.get('prompt')=='none':
+    if p.get('prompt')=='none' and persona['name'] not in signed_in:
         return RedirectResponse(REDIRECT+'?'+urlencode({'error':'login_required','state':p['state']}))
+    signed_in.add(persona['name'])
     code=str(uuid4());codes[code]={**dict(p),'persona':persona['name']}
     return RedirectResponse(REDIRECT+'?'+urlencode({'code':code,'state':p['state'],'session_state':'synthetic-fixture','iss':ISSUER}))
 
@@ -87,4 +89,8 @@ async def token(request: Request):
 async def logout(request: Request):
     if request.query_params.get('post_logout_redirect_uri')!=REDIRECT:
         raise HTTPException(400,'invalid redirect')
+    hint=request.query_params.get('id_token_hint')
+    if hint:
+        sub=jwt.decode(hint,options={'verify_signature':False}).get('sub')
+        signed_in.difference_update({name for name,subject in SUBJECTS.items() if subject==sub})
     return RedirectResponse(REDIRECT)

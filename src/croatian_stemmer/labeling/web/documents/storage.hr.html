@@ -9,7 +9,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.0">
+<meta name="document-version" content="1.1">
 <title>Kolačići i pohrana u pregledniku — označavanje hrvatskih lema</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -17,16 +17,17 @@
 <main>
 <p class="crumbs"><a href="/?lang=hr">Natrag na označavanje</a> · <a href="/legal/storage.en" hreflang="en" lang="en">English</a></p>
 <h1>Kolačići i pohrana u pregledniku</h1>
-<p class="meta">Verzija 1.0 (17. listopada 2026.). Voditelj: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+<p class="meta">Verzija 1.1 (17. listopada 2026.). Voditelj: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
 
-<p>Ukratko: ova stranica ne koristi kolačiće i ništa ne sprema trajno u Vašem pregledniku. Kratkotrajni zapisi postoje samo dok se prijavljujete, i nužni su za prijavu koju ste zatražili. Zato ne prikazujemo traku za pristanak na kolačiće: za strogo nužnu pohranu pristanak nije potreban (članak 5. stavak 3. Direktive 2002/58/EZ o privatnosti i elektroničkim komunikacijama i hrvatski propis koji je prenosi).</p>
+<p>Ukratko: ova stranica ne koristi kolačiće i ništa ne sprema trajno u Vašem pregledniku. Kratkotrajni zapisi postoje samo dok se prijavljujete i dok ste prijavljeni u nekoj kartici, i nužni su za prijavu koju ste zatražili. Zato ne prikazujemo traku za pristanak na kolačiće: za strogo nužnu pohranu pristanak nije potreban (članak 5. stavak 3. Direktive 2002/58/EZ o privatnosti i elektroničkim komunikacijama i hrvatski propis koji je prenosi).</p>
 
 <h2 id="aplikacija">1. Ova stranica ({{app_host}})</h2>
 <ul>
 <li><strong>Kolačići</strong>: ne postavljamo nijedan.</li>
 <li><strong>Tokeni za prijavu</strong> čuvaju se samo u memoriji otvorene stranice. Nestaju kada zatvorite karticu, osvježite stranicu ili se odjavite.</li>
+<li><strong>Oznaka prijave</strong>: nakon prijave stranica u pohranu sesije kartice (sessionStorage) sprema jedan zapis naziva <code>labeling-signed-in</code> s vrijednošću <code>1</code>. Ne sadrži token ni ikakav podatak o Vama; samo govori stranici da pri osvježavanju pita poslužitelj za prijavu jeste li još prijavljeni, kako Vas osvježavanje ne bi odjavilo. Preglednik ga briše kada zatvorite karticu, a stranica kada se odjavite ili Vam prijava istekne. Druge kartice ga ne vide.</li>
 <li><strong>Zapis za povratak s prijave</strong>: kada kliknete „Prijava”, biblioteka za prijavu (Keycloak JS) u lokalnu pohranu preglednika (localStorage) sprema jedan zapis čiji naziv počinje s <code>kc-callback-</code>. Sadrži nasumične jednokratne vrijednosti kojima se provjerava da se na stranicu vraćate iz prijave koju ste sami započeli (state, nonce i PKCE verifikator). Zapis se briše čim se vratite s prijave. Ako prijavu prekinete, zapis istječe nakon jednog sata i briše se pri sljedećem posjetu. Biblioteka pri pokretanju na trenutak zapiše i odmah obriše probni zapis <code>kc-test</code>. Ako je lokalna pohrana u Vašem pregledniku isključena, isti se kratkotrajni zapis čuva u kolačiću ove stranice najviše jedan sat.</li>
-<li><strong>Odabir jezika</strong> se ne sprema: vrijedi samo dok je stranica otvorena.</li>
+<li><strong>Odabir jezika</strong> ne sprema se u pregledniku. Odabir engleskog dodaje <code>?lang=en</code> adresi stranice, pa ga osvježavanje zadržava; hrvatski je zadani jezik.</li>
 </ul>
 <p>Svrha: provesti prijavu koju ste zatražili. Strogo nužno; pristanak nije potreban.</p>
 

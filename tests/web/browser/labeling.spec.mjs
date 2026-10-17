@@ -36,7 +36,7 @@ async function storage(page){
   return page.evaluate(() => ({cookie: document.cookie, local: Object.keys(localStorage), session: Object.keys(sessionStorage)}));
 }
 
-test('landing, legal notices and language switch work without signing in', async ({page, context}) => {
+test('landing, legal notices and language switch work without signing in', async ({page, context, browser}) => {
   const faults = watch(page), identity = [];
   page.on('request', r => { if (r.url().startsWith(FIXTURE)) identity.push(r.url()); });
   await page.goto('/');
@@ -59,11 +59,22 @@ test('landing, legal notices and language switch work without signing in', async
   await expect(page.getByRole('button', {name:'Sign in with Google', exact:true})).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('link', {name:'Privacy', exact:true})).toHaveAttribute('href', '/legal/privacy.en');
+  // The choice lives in the address, so a reload keeps it.
+  expect(new URL(page.url()).searchParams.get('lang')).toBe('en');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await page.getByRole('button', {name:'Hrvatski', exact:true}).click();
+  expect(new URL(page.url()).searchParams.has('lang')).toBe(false);
   await expect(page.locator('#landing h2')).toContainText('otvoreni skup podataka');
   expect(await context.cookies()).toEqual([]);
   expect(await storage(page)).toEqual({cookie:'', local:[], session:[]});
   expect(faults).toEqual([]);
+  // Croatian is the default even for a browser that prefers English.
+  const english = await browser.newContext({locale:'en-US'}), visitor = await english.newPage();
+  await visitor.goto('/');
+  await expect(visitor.locator('html')).toHaveAttribute('lang', 'hr');
+  await expect(visitor.getByRole('button', {name:'Prijava Google računom', exact:true})).toBeVisible();
+  await english.close();
 });
 
 test('curator publishes; annotator gate, labeling, data rights and erasure', async ({browser}) => {
@@ -78,6 +89,10 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
   expect(authorize.kc_idp_hint).toBe('google');
   expect(authorize.ui_locales).toBe('hr');
   await acceptGate(cur);
+  // A reload keeps the person signed in: only the token-free tab marker is stored.
+  await cur.reload();
+  await expect(cur.locator('#workspace')).toBeVisible();
+  expect(await storage(cur)).toEqual({cookie:'', local:[], session:['labeling-signed-in']});
   await expect(cur.locator('#nav-curator')).toBeVisible();
   await cur.locator('#nav-curator').click();
   await expect(cur.locator('#curator')).toBeVisible();

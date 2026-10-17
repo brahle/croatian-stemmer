@@ -155,14 +155,24 @@ let config = null, keycloak = null, me = null;
 let current = null, cursor = -1, pending = null, busy = false, generation = 0, shownAt = 0, lastProgress = null;
 let annotatorOffset = 0;
 
+// Croatian unless the address asks for English (?lang=en); the language switch keeps the address in step.
 function initialLanguage(){
-  const asked = new URLSearchParams(location.search).get('lang');
-  if (asked === 'hr' || asked === 'en') return asked;
-  for (const tag of navigator.languages || []) {
-    const base = tag.slice(0, 2).toLowerCase();
-    if (base === 'hr' || base === 'en') return base;
-  }
-  return 'hr';
+  return new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'hr';
+}
+function rememberLanguage(){
+  const url = new URL(location.href);
+  if (lang === 'en') url.searchParams.set('lang', 'en'); else url.searchParams.delete('lang');
+  history.replaceState(history.state, '', url);
+}
+// A tab-scoped flag (no token) so a reload asks Keycloak for the existing session instead of signing out.
+// It is the only thing this page stores; storage.*.html and the browser test list it.
+const SIGNED_IN = 'labeling-signed-in';
+function signedInFlag(value){
+  try {
+    if (value === undefined) return sessionStorage.getItem(SIGNED_IN) === '1';
+    if (value) sessionStorage.setItem(SIGNED_IN, '1'); else sessionStorage.removeItem(SIGNED_IN);
+  } catch {}
+  return false;
 }
 function t(key, values = {}){
   return (strings[lang][key] ?? strings.hr[key] ?? key).replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ''));
@@ -479,9 +489,9 @@ async function curatorErasures(){
 
 // ---- wiring ------------------------------------------------------------------------
 
-$('language').onclick = () => { lang = lang === 'hr' ? 'en' : 'hr'; applyLanguage(); };
+$('language').onclick = () => { lang = lang === 'hr' ? 'en' : 'hr'; rememberLanguage(); applyLanguage(); };
 $('login').onclick = () => keycloak.login({idpHint: config.idpHint || undefined, locale: lang});
-for (const id of ['logout', 'gate-logout', 'erased-logout']) $(id).onclick = () => keycloak.logout({redirectUri: location.origin + '/'});
+for (const id of ['logout', 'gate-logout', 'erased-logout']) $(id).onclick = () => { signedInFlag(false); keycloak.logout({redirectUri: location.origin + '/'}); };
 $('nav-label').onclick = () => run(async () => { me = await json('me'); if (me.consented) await openWorkspace(); else { show('gate'); message(t('gateMessage')); } });
 $('nav-me').onclick = $('gate-erase').onclick = () => run(openMe);
 $('nav-curator').onclick = () => run(openCurator);
@@ -527,8 +537,11 @@ try {
   $('controller').textContent = config.controller.name;
   $('paused').hidden = config.acceptingJudgments;
   keycloak = new Keycloak({url: config.url, realm: config.realm, clientId: config.clientId});
-  // No onLoad check: the identity server is contacted only when the person signs in.
-  const authenticated = await keycloak.init({pkceMethod:'S256', checkLoginIframe:false, flow:'standard', responseMode:'query'});
+  // The identity server is contacted only by someone who signed in from this tab: a reload then
+  // redirects once with prompt=none and comes straight back, signed in or not.
+  const authenticated = await keycloak.init({pkceMethod:'S256', checkLoginIframe:false, flow:'standard', responseMode:'query',
+                                             ...(signedInFlag() ? {onLoad:'check-sso'} : {})});
+  signedInFlag(authenticated);
   $('login').disabled = false;
   if (authenticated) await run(loadMe);
   else { show('landing'); message(t('signInPrompt')); }
