@@ -9,7 +9,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.0">
+<meta name="document-version" content="1.1">
 <title>Cookies and browser storage — Croatian lemma labeling</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -17,16 +17,17 @@
 <main>
 <p class="crumbs"><a href="/?lang=en">Back to labeling</a> · <a href="/legal/storage.hr" hreflang="hr" lang="hr">Hrvatski</a></p>
 <h1>Cookies and browser storage</h1>
-<p class="meta">Version 1.0 (17 October 2026). Controller: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+<p class="meta">Version 1.1 (17 October 2026). Controller: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
 
-<p>In short: this site uses no cookies and stores nothing permanently in your browser. Short-lived records exist only while you sign in, and they are necessary for the sign-in you asked for. That is why we show no cookie consent banner: strictly necessary storage needs no consent (Article 5(3) of the ePrivacy Directive 2002/58/EC and the Croatian law implementing it).</p>
+<p>In short: this site uses no cookies and stores nothing permanently in your browser. Short-lived records exist only while you sign in and while you stay signed in within a tab, and they are necessary for the sign-in you asked for. That is why we show no cookie consent banner: strictly necessary storage needs no consent (Article 5(3) of the ePrivacy Directive 2002/58/EC and the Croatian law implementing it).</p>
 
 <h2 id="app">1. This site ({{app_host}})</h2>
 <ul>
 <li><strong>Cookies</strong>: we set none.</li>
 <li><strong>Sign-in tokens</strong> are kept only in the memory of the open page. They disappear when you close the tab, reload the page or sign out.</li>
+<li><strong>Signed-in marker</strong>: after you sign in, the page saves one record named <code>labeling-signed-in</code> with the value <code>1</code> in the tab's session storage (sessionStorage). It holds no token and nothing about you; it only tells the page, when you reload it, to ask the sign-in server whether you are still signed in, so a reload does not sign you out. The browser deletes it when you close the tab, and the page deletes it when you sign out or your sign-in has expired. Other tabs do not see it.</li>
 <li><strong>Sign-in return record</strong>: when you click "Sign in", the sign-in library (Keycloak JS) saves one record whose name starts with <code>kc-callback-</code> in the browser's local storage (localStorage). It holds random one-time values used to check that you are returning from a sign-in you started yourself (state, nonce and a PKCE verifier). The record is deleted as soon as you return from signing in. If you abandon the sign-in, it expires after one hour and is deleted on your next visit. When it starts, the library also briefly writes and immediately deletes a test record <code>kc-test</code>. If local storage is disabled in your browser, the same short-lived record is kept in a cookie of this site for at most one hour.</li>
-<li><strong>Your language choice</strong> is not saved: it lasts only while the page is open.</li>
+<li><strong>Your language choice</strong> is not saved in the browser. Choosing English adds <code>?lang=en</code> to the page address, so a reload keeps it; Croatian is the default.</li>
 </ul>
 <p>Purpose: to carry out the sign-in you requested. Strictly necessary; no consent needed.</p>
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1
+
+Labeling web app fixes from the first live sign-in.
+
+- Croatian is the default language for every visitor; English only with
+  `?lang=en`, which the language switch now writes to the address so a reload
+  keeps it.
+- Reloading the page no longer signs you out. After sign-in the tab keeps a
+  token-free `labeling-signed-in` marker in sessionStorage; on reload the page
+  asks Keycloak for the existing session (`prompt=none`) and comes straight
+  back. The cookies and storage notice is now version 1.1 and lists it.
+
 ## 0.2.0
 
 The labeling web app becomes a public, multi-user site. The stemmer and the

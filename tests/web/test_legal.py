@@ -26,7 +26,8 @@ async def test_documents_are_served_with_controller_values(name):
     assert "{{" not in body and "}}" not in body
     assert "Ana &lt;Example&gt; &amp; Co" in body and "<Example>" not in body
     assert "privacy@example.org" in body
-    assert '<meta name="document-version" content="1.0">' in body
+    expected = "1.1" if name.startswith("storage") else "1.0"
+    assert '<meta name="document-version" content="%s">' % expected in body
     assert 'lang="%s"' % name.rsplit(".", 1)[1] in body
     assert "<script" not in body and "style=" not in body
     if name.startswith("privacy"):
@@ -68,7 +69,7 @@ def test_guard_refuses_languages_with_different_versions(tmp_path, monkeypatch):
     for path in api_module.DOCUMENTS.iterdir():
         text = path.read_text(encoding="utf-8")
         if path.name == "storage.en.html":
-            text = text.replace('content="1.0"', 'content="1.1"')
+            text = text.replace('name="document-version" content="1.1"', 'name="document-version" content="1.2"')
         (tmp_path / path.name).write_text(text, encoding="utf-8")
     monkeypatch.setattr(api_module, "DOCUMENTS", tmp_path)
     with pytest.raises(ValueError, match="differ"):
