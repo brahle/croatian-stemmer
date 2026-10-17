@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.2
+
+- Privacy notice 1.1 (hr/en): states that the profile (sign-in account
+  identifier and verified email) is created at first sign-in, before
+  acceptance, on the basis of Article 6(1)(b), records nothing else until
+  acceptance, and is kept until erased even if the person never accepts.
+  Deployments must set `LABELING_PRIVACY_VERSION=1.1` with this release;
+  everyone is asked to accept again.
+
 ## 0.2.1
 
 Labeling web app fixes from the first live sign-in.
