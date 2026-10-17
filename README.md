@@ -9,7 +9,7 @@ It starts from the Ljubešić–Pandžić stemmer ("Simple stemmer for Croatian 
 Requires Python 3.10 or newer.
 
 ```bash
-pip install git+https://github.com/brahle/croatian-stemmer
+pip install croatian-stemmer
 ```
 
 ```python
