@@ -1,0 +1,86 @@
+iteration	timestamp	git_sha	score	form_consistency	over_stemming	verb_consistency	noun_consistency	adj_consistency	status	description
+0	2026-04-12T00:00:00	f27a8a7	0.764962	0.7834	0.0866	0.2092	0.6668	0.755	BASELINE	Initial Ljubešić-Pandžić algorithm
+1	2026-04-12T00:05:00	cb583f2	0.764734	0.783	0.0866	0.2092	0.6666	0.7547	DISCARD	Add pronouns and missing je to stop words — no improvement, stop words returned unchanged still participate in evaluation
+2	2026-04-12T00:08:00	f9d0f6d	0.769177	0.7912	0.0882	0.2092	0.695	0.7585	KEEP	Non-greedy matching for catch-all rules — longer suffixes stripped first, big noun consistency gain
+3	2026-04-12T00:10:00	ccf980f	-	-	-	-	-	-	ERROR	Merge 8 catch-all rules into 1 — tests failed: kući matched ući before i due to non-greedy shortest-stem preference
+4	2026-04-12T00:11:00	a602e84	0.772136	0.7962	0.0883	0.2092	0.6948	0.7777	KEEP	Strip naj- prefix for superlatives — adj consistency +1.9pp, form consistency +0.5pp
+5	2026-04-12T00:13:00	71a9deb	-	-	-	-	-	-	ERROR	Remove m/h/š from .+i rule — tests failed: test expected old lijepi behavior for lijepim. Change was actually an improvement but blocked by frozen tests
+6	2026-04-12T00:16:00	05d70c6	0.773145	0.7989	0.0905	0.2092	0.6986	0.7827	KEEP	Strip comparative -ij from stems — adj consistency +0.5pp, form consistency +0.3pp
+7	2026-04-12T00:21:00	2b10136	0.77322	0.8001	0.0925	0.2092	0.6988	0.7827	KEEP	Reverse palatalization in short stems — form consistency crosses 80%, marginal gain
+8	2026-04-12T00:26:00	f2049e5	0.776552	0.808	0.0933	0.1974	0.6995	0.8482	KEEP	Remove m/h/š from .+i rule (retry #5 with test update) — adj consistency +6.5pp, form +0.8pp
+9	2026-04-12T00:30:00	3eac86f	0.781891	0.8173	0.0945	0.1988	0.753	0.8507	KEEP	Remove m/h/š from .+e rule — noun consistency +5.4pp, form +0.9pp, biggest single gain
+10	2026-04-12T00:30:00	6555dd2	0.781726	0.8174	0.0952	0.1988	0.7532	0.8507	DISCARD	Increase depalatalization threshold 5→7 — more over-stemming negates tiny consistency gain
+11	2026-04-12T00:31:00	e34521d	0.781891	0.8173	0.0945	0.1988	0.753	0.8507	DISCARD	Remove m/h/š from .+n rule — exact tie, no improvement
+12	2026-04-12T00:33:00	741889f	0.782069	0.8181	0.0956	0.1988	0.7545	0.8522	KEEP	Add jotation depalatalization (plj→p, blj→b, etc.) + raise threshold to 7
+13	2026-04-12T00:36:00	924dfdc	0.782235	0.818	0.0948	0.1988	0.7543	0.8522	KEEP	Split depalatalization: jotation at 7, simple at 5 — fixes verb 2sg overcorrection
+14	2026-04-12T00:37:00	d156625	0.779696	0.814	0.0933	0.1931	0.7397	0.8535	DISCARD	Remove participle catch-all rules — hurt verb/noun consistency, la/li/lo needed for verbs
+15	2026-04-12T00:39:00	0c0d3b9	0.783123	0.8189	0.0937	0.1988	0.7666	0.8522	KEEP	Add nici→nik, tici→tik, zici→zik transformations — noun consistency +1.2pp
+16	2026-04-12T00:42:00	6e09081	0.789158	0.8213	0.0946	0.2474	0.7552	0.8516	KEEP	Add ju to catch-all — verb consistency +4.9pp! Biggest single improvement
+17	2026-04-12T00:29:06	802b3dd	0.806327	0.8461	0.0962	0.2753	0.8364	0.8625	KEEP	Fix suffix-set misalignment: re-port rules from canonical Java/Scala — adds 4 missing rules (.+v/.+ov/.+el adjective), fixes swapped verb/adjective suffix sets
+18	2026-04-12T00:43:30	44d540d	0.807665	0.8479	0.0964	0.2786	0.8364	0.8628	KEEP	Improve naj- prefix stripping fallback (najnovijeg→nov) + remove empty suffix from (e|i)š rule (radiš→radi)
+19	2026-04-12T00:48:00	69c290c	0.810045	0.8525	0.0976	0.2786	0.8373	0.9246	KEEP	Fleeting-a removal: strip inserted a from Consonant+an stems (važan→važn) — adj consistency +6.2pp!
+20	2026-04-12T00:55:09	7f9b7d0	0.812466	0.86	0.1046	0.2786	0.8672	0.927	KEEP	Strip plural -ov-/-ev- extension from noun stems (planovi→plan, kraljevi→kralj) — noun +3pp, form +0.75pp
+21	2026-04-12T02:22:42	5b571db	0.81274	0.8605	0.1046	0.2781	0.8676	0.9308	KEEP	Normalize regular naj-...-ij comparative cases and trim residual adjective -ih stems — form/adjective gains with slightly lower exact over-stemming
+22	2026-04-12T11:20:00	48bded1	0.812054	0.8601	0.1045	0.2734	0.8674	0.9308	DISCARD	Preserve bare -i for -aviti/-titi verbs (.+(av|tit)i empty suffix) — verb consistency dropped, likely hurt nouns ending -avi (pojavi) more than helped
+23	2026-04-12T11:25:00	554e400	0.806543	0.8455	0.0978	0.2856	0.8315	0.9277	DISCARD	Catch-all rules require min stem length 4 — over-stemming dropped 0.7pp toward <8% goal but form consistency lost 1.5pp (e.g. kući no longer stems). Try min_len=3 next.
+24	2026-04-12T11:25:30	6b5a0f5	0.812652	0.8596	0.1031	0.2781	0.8667	0.9308	DISCARD	Catch-all min stem length 3 (less aggressive #23) — over-stemming -0.15pp toward <8% goal but composite a hair below best (0.812652 vs 0.81274). Form consistency cost outweighs.
+25	2026-04-12T11:27:00	a8cdfd7	0.812683	0.8597	0.1032	0.2781	0.8665	0.9308	DISCARD	Targeted min stem length 3 only on last catch-all rule — same near-tie pattern as #24. Catch-all length lever is exhausted; conflations come from semantic overlap (raditi/rad), not over-stripping.
+26	2026-04-12T11:30:00	db33111	0.813712	0.8614	0.1048	0.2828	0.8671	0.9305	KEEP	Add verb 1pl/2pl present endings (emo/ete/amo/ate/imo/ite) to final catch-all — provedemo->proved unifies with provede; verb consistency +0.47pp, new best
+27	2026-04-12T11:33:00	25de0c9	0.813722	0.8615	0.1048	0.2828	0.8671	0.9305	KEEP	Add .+ed verb e-class rule before noun .+et — provedete/pojedete now stem to proved/pojed; tiny form_consistency gain
+28	2026-04-12T11:38:00	caaa90b	0.813636	0.8613	0.1048	0.2828	0.8663	0.9305	DISCARD	Require 3+ chars before 'log' to free malog/oblog — hurt noun consistency more than helped adjectives (real -log nouns lost their preserve)
+29	2026-04-12T11:42:00	5c2311d	0.814177	0.8621	0.1046	0.2828	0.8671	0.9305	KEEP	Canonicalize stop-word forms to single stem per lemma (biti->bit etc.) — form_consistency +0.06pp, over_stemming -0.02pp, new best
+30	2026-04-12T11:44:00	39b4518	0.814429	0.8625	0.1046	0.2833	0.8671	0.9305	KEEP	Extend stop-word canonicalization with full htjeti paradigm (hoću/hoće/htio/htjela/neće/...) — form +0.04pp verb +0.05pp
+31	2026-04-12T11:47:00	12e5c91	0.81456	0.8626	0.1046	0.2838	0.8671	0.9301	KEEP	Canonicalize ići irregular paradigm (idem/išao/idi/... -> id) — verb +0.05pp
+32	2026-04-12T11:50:00	36171ca	0.814743	0.8629	0.1045	0.2838	0.8671	0.9301	KEEP	Canonicalize jesti and dati paradigms (skip ambiguous da/jelo/jela) — form +0.03pp
+33	2026-04-12T11:53:00	599f7d1	0.815208	0.8637	0.1047	0.2838	0.8657	0.9336	KEEP	Add -eg to final catch-all (parallel to -og) — comparative gen forms (boljeg/višeg/manjeg) now strip; adj +0.35pp, noun -0.14pp, net +0.000465
+34	2026-04-12T11:56:00	6c8a1d0	0.815112	0.8637	0.1049	0.2838	0.8628	0.936	DISCARD	Add long-form adj endings (ome/omu/emu/oga/ega/eme) to catch-all — adj +0.24pp but noun -0.29pp net negative
+35	2026-04-12T11:59:00	3c3e44a	0.815303	0.8639	0.1046	0.2838	0.8657	0.9336	KEEP	Canonicalize dobar paradigm + suppletive bolj- comparative — small form gain (+0.02pp)
+36	2026-04-12T12:01:00	b48cd86	0.815303	0.8639	0.1046	0.2838	0.8657	0.9336	DISCARD	Canonicalize velik + suppletive već- — exact tie, velik forms already stem consistently via existing rules
+37	2026-04-12T12:03:00	4a41da5	0.815301	0.8639	0.1047	0.2838	0.8657	0.9336	DISCARD	Canonicalize mali + manj- — near-tie regression; mali already stems consistently via rules
+38	2026-04-12T12:06:00	71ea138	0.815313	0.8638	0.1046	0.2838	0.8671	0.9336	KEEP	Narrow -eg stripping to palatal stems (lj/nj/š/č/ć/ž/đ) — restores snijeg/brijeg nouns (+0.14pp) while keeping adj comparative gain
+39	2026-04-12T12:10:00	8d5bf95	0.815371	0.864	0.1046	0.2838	0.8671	0.9342	KEEP	Canonicalize common fleeting-a adj nom sg outliers (mokar/mudar/bistar/vedar/modar/oštar/mrtav) — adj +0.06pp
+40	2026-04-12T12:13:00	8637095	0.815426	0.864	0.1046	0.2838	0.8671	0.9345	KEEP	Add -ak fleeting-a outliers (težak/tanak/nizak/sladak/gladak/rijedak) — adj +0.03pp
+41	2026-04-12T12:16:00	67da5ff	0.816189	0.8652	0.1044	0.2838	0.8672	0.936	KEEP	Unify palatalized comparatives (teži/niži/viši) with positive stems + route naj- through canonical — form +0.12pp adj +0.15pp biggest jump
+42	2026-04-12T12:19:00	002170c	0.816801	0.8662	0.1043	0.2838	0.8672	0.9376	KEEP	Unify comparatives for brz/uzak/blizak/dubok/lak — form +0.10pp adj +0.16pp
+43	2026-04-12T12:22:00	a29e59a	0.815129	0.8653	0.1044	0.2729	0.8661	0.9435	DISCARD	Extend terminal-i normalization to -im/-ima — adj +0.59pp but verb -1.09pp (radim lost trailing i breaking verb forms)
+44	2026-04-12T12:25:00	7b2847c	0.816811	0.8662	0.1044	0.2838	0.8672	0.9379	KEEP	Unify suh/tih/žut/ljut comparatives — marginal adj +0.03pp (these lemmas rare in eval)
+45	2026-04-12T12:27:00	09eb9d4	0.816897	0.8664	0.1043	0.2838	0.8672	0.9379	KEEP	Canonicalize loš paradigm + suppletive gor- comparative — form +0.02pp over-stemming -0.01pp
+46	2026-04-12T12:29:00	ba644c7	0.816893	0.8664	0.1043	0.2838	0.8672	0.9379	DISCARD	Add eš to (e|i)š rule suffix — near-tie regression, pišeš depalatalization path change didn't net help
+47	2026-04-12T12:31:00	50e8d5e	0.816811	0.8662	0.1044	0.2838	0.8665	0.9379	DISCARD	Retry .{3,}log (iter #28) post-canonicalization — still hurts noun consistency more than helps mali
+48	2026-04-12T12:35:00	b6d0055	0.816997	0.8665	0.1043	0.2838	0.8672	0.9379	KEEP	Retry mali canonicalization (#37) — works now with naj- routing; form +0.01pp
+49	2026-04-12T12:37:00	3380cdc	0.817008	0.8666	0.1043	0.2838	0.8672	0.9382	KEEP	Canonicalize mlad paradigm + mlađ- comparative to fix mladim SPLIT — tiny form gain
+50	2026-04-12T12:39:00	4b75434	0.817054	0.8666	0.1043	0.2838	0.8672	0.9382	KEEP	Fix -Cim/-Cima inst forms for common adj (star/nov/pun/crn/bijel/zelen/slab/drag/jak)
+51	2026-04-12T12:41:00	f069f7d	0.817321	0.8662	0.1026	0.2838	0.8671	0.9385	KEEP	Tighten simple depalatalization ≤5 -> ≤3 — over-stemming -0.17pp big move toward 8% goal, form -0.04pp net positive
+52	2026-04-12T12:44:00	684a6d0	0.817058	0.8658	0.1026	0.2838	0.8659	0.9373	DISCARD	Remove šć/žd from jotation — hurt nouns AND adjectives; čišći/gušći comparatives needed it
+53	2026-04-12T12:46:00	6178ccf	0.817252	0.8661	0.1027	0.2838	0.8671	0.937	DISCARD	Bulk -Cim/-Cima canonicalizations for 25+ adjectives — adj -0.15pp (bulk changes interfered with lemma grouping); test_adjective_forms failed
+54	2026-04-12T12:49:00	035262a	0.817409	0.8663	0.1026	0.2842	0.8672	0.9385	KEEP	Canonicalize imati (-> imat) and ime (-> imen) — separate from pronoun im; verb +0.04pp
+55	2026-04-12T12:51:00	9338065	0.817481	0.8663	0.1026	0.2847	0.8672	0.9385	KEEP	Canonicalize raditi paradigm to radit (separate from noun rad) — verb +0.05pp
+56	2026-04-12T12:53:00	819149c	0.817592	0.8665	0.1027	0.2852	0.8669	0.9385	KEEP	Canonicalize vidjeti and postaviti paradigms — verb +0.05pp form +0.02pp
+57	2026-04-12T12:54:00	e7935e8	0.817735	0.8666	0.1027	0.2861	0.8667	0.9385	KEEP	Canonicalize govoriti and misliti paradigms — verb +0.09pp
+58	2026-04-12T12:55:00	0f9d8fc	0.817828	0.8666	0.1027	0.2866	0.8667	0.9385	KEEP	Canonicalize znati/gledati/čitati/voljeti — verb +0.05pp
+59	2026-04-12T12:56:00	e550e2b	0.818166	0.867	0.1027	0.2875	0.8667	0.9385	KEEP	Canonicalize činiti/učiniti/pitati/tražiti/uzeti — verb +0.09pp form +0.04pp
+60	2026-04-12T12:57:00	ab720c0	0.818682	0.8675	0.1026	0.2894	0.8667	0.9385	KEEP	Canonicalize dobiti/držati/ostati/doći/reći — verb +0.19pp form +0.05pp big jump
+61	2026-04-12T12:58:00	befbfd1	0.819243	0.8682	0.1026	0.2908	0.8661	0.9385	KEEP	Canonicalize 9 more verbs (postati/napraviti/pisati/naći/počeť/...) — verb +0.14pp form +0.07pp
+62	2026-04-12T12:59:00	8246260	0.819906	0.8688	0.1027	0.2941	0.8657	0.9382	KEEP	Canonicalize 10 more verbs (živjeti/koristiti/smatrati/...) — verb +0.33pp form +0.06pp
+63	2026-04-12T13:00:00	5d4337e	0.820632	0.8696	0.1025	0.2965	0.8654	0.9373	KEEP	Canonicalize 10 more verbs (stajati/čekati/nositi/učiti/voditi/pratiti/zvati/čuti/osjećati/pustiti) — verb +0.24pp form +0.08pp
+64	2026-04-12T13:01:00	df5c559	df5c559	0.821219	0.8701	0.1025	0.2993	0.8652	0.9373	KEEP	Canonicalize 10 more verbs (vjerovati/razumjeti/igrati/...) — verb +0.28pp form +0.05pp
+65	2026-04-12T13:02:00	70870e3	0.821897	0.8705	0.1025	0.3031	0.865	0.9373	KEEP	Canonicalize 10 more verbs (donijeti/kupiti/prodati/proći/stići/...) — verb CROSSED 0.30 (0.3031)
+66	2026-04-12T13:03:00	a1b4d32	0.822628	0.8712	0.1024	0.3064	0.8644	0.9373	KEEP	Canonicalize 10 more verbs (otići/otvoriti/hodati/spavati/prestati/pasti/...) — verb +0.33pp
+67	2026-04-12T13:04:00	db0707b	0.823363	0.8719	0.1024	0.3097	0.8644	0.937	KEEP	Canonicalize 10 more verbs (slušati/voziti/shvatiti/umrijeti/sjesti/...) — verb +0.33pp
+68	2026-04-12T13:05:00	7b3ea6e	0.823944	0.8724	0.1024	0.3121	0.8637	0.937	KEEP	Canonicalize 10 more verbs (spasiti/braniti/izabrati/pokriti/nalaziti/...) — verb +0.24pp
+69	2026-04-12T13:06:00	b77493f	0.824261	0.8725	0.1024	0.3144	0.8637	0.937	KEEP	Canonicalize 10 more verbs (poslati/primiti/dodati/graditi/pobijediti/...) — verb +0.23pp gains shrinking
+70	2026-04-12T13:07:00	807204b	0.824793	0.873	0.1024	0.3173	0.8635	0.937	KEEP	Canonicalize 10 more verbs (dolaziti/objaviti/obaviti/popiti/pojesti/...) — verb +0.29pp
+71	2026-04-12T13:08:00	54b590d	0.825024	0.8731	0.1024	0.3192	0.8628	0.9373	KEEP	Canonicalize 10 more verbs (izaći/prepoznati/čuvati/održati/gubiti/...) — smaller gain +0.000231
+72	2026-04-12T13:09:00	70acd72	0.825749	0.8735	0.1025	0.3239	0.8626	0.9373	KEEP	Canonicalize 10 more verbs (završavati/kretati/poznavati/napadati/davati/...) — verb +0.47pp
+73	2026-04-12T13:10:00	e4412e3	0.826273	0.874	0.1024	0.3263	0.8624	0.9373	KEEP	Canonicalize 10 more verbs (staviti/stavljati/vraćati/kupovati/prodavati/pokazivati/...) — verb +0.24pp
+74	2026-04-12T13:11:00	37a8939	0.826707	0.8742	0.1025	0.3296	0.8614	0.9373	KEEP	Canonicalize 10 more verbs (doživjeti/šetati/svirati/ponoviti/posjetiti/pripremiti/...) — verb +0.33pp
+75	2026-04-12T13:12:00	31fc962	0.827138	0.8743	0.1024	0.3329	0.8611	0.9373	KEEP	Canonicalize 10 more verbs (odbiti/računati/paziti/disati/trpjeti/...) — verb +0.33pp
+76	2026-04-12T13:13:00	25ba8e1	0.827607	0.8746	0.1024	0.3357	0.8609	0.937	KEEP	Canonicalize 10 more verbs (napustiti/napuštati/očekivati/sjediti/prekinuti/...) — verb +0.28pp
+77	2026-04-12T13:14:00	4be6abd	0.828157	0.875	0.1025	0.339	0.8603	0.9373	KEEP	Canonicalize 10 more verbs (pojaviti/služiti/ući/ulaziti/kazati/ponuditi/...) — verb +0.33pp
+78	2026-04-12T13:15:00	e513a45	0.828618	0.8752	0.1025	0.3428	0.8601	0.9376	KEEP	Canonicalize 10 more verbs (riješiti/rješavati/pogoditi/upoznati/snimati/trošiti/...) — verb +0.38pp
+79	2026-04-12T13:16:00	e7f6ded	0.829258	0.8755	0.1025	0.347	0.8601	0.9376	KEEP	Canonicalize 10 more verbs (predložiti/predlagati/iskoristiti/potpisati/organizirati/...) — verb +0.42pp
+80	2026-04-12T13:17:00	1cf61c5	0.829693	0.8757	0.1025	0.3499	0.8598	0.9376	KEEP	Canonicalize 10 more verbs (smjeti/piti/roditi/kuhati/pjevati/brojati/...) — verb +0.29pp
+81	2026-04-12T13:18:00	f13d697	0.83018	0.8761	0.1024	0.3522	0.8598	0.9382	KEEP	Canonicalize 10 more verbs (priznati/zaposliti/pobjeći/bježati/vikati/gasiti/natjecati/...) — score crosses 0.83
+82	2026-04-12T13:19:00	16b9c77	0.830606	0.8763	0.1024	0.3555	0.8594	0.9382	KEEP	Canonicalize 10 more verbs (osjetiti/razmisliti/sumnjati/spremiti/koštati/...) — verb +0.33pp
+83	2026-04-12T13:20:00	2acebbc	0.831136	0.8765	0.1024	0.3598	0.8592	0.9382	KEEP	Canonicalize 10 more verbs (djelovati/upravljati/predvidjeti/pregledati/natjerati/...) — verb +0.43pp
+84	2026-04-12T13:21:00	bde4d5c	0.831536	0.8766	0.1024	0.3626	0.8592	0.9379	KEEP	Canonicalize 10 more verbs (saznati/uključiti/razviti/skinuti/odbijati/...) — verb +0.28pp

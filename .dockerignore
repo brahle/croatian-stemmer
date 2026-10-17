@@ -1,0 +1,16 @@
+.git
+.venv
+node_modules
+data
+__pycache__
+**/__pycache__
+.pytest_cache
+src/croatian_stemmer/labeling/web/static/vendor
+pg
+*.o
+*.so
+test-results
+playwright-report
+.DS_Store
+**/.DS_Store
+**/._*

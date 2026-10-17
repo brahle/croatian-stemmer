@@ -1,0 +1,14 @@
+{
+  "name": "croatian-stemmer-labeling-web-assets",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-web-assets.mjs",
+    "test:browser": "playwright test"
+  },
+  "dependencies": {
+    "keycloak-js": "26.2.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

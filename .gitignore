@@ -1,0 +1,14 @@
+data/
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+*.o
+*.so
+pg/test_stemmer
+pg/results/
+node_modules/
+src/croatian_stemmer/labeling/web/static/vendor/
+test-results/
+playwright-report/

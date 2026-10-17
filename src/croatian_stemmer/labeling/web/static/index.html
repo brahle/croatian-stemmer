@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="hr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hrvatski korijeni — označavanje</title><link rel="stylesheet" href="/static/app.css"><script type="module" src="/static/app.js"></script></head>
+<body>
+<header><div><p class="eyebrow">Hrvatski korijeni</p><h1>Označavanje jezičnih primjera</h1></div><div><span id="identity"></span> <button id="login" disabled>Prijava</button><button id="logout" hidden>Odjava</button></div></header>
+<main>
+<p id="message" role="status" aria-live="polite">Prijavite se za pristup svojim korpusima.</p>
+<section id="workspace" hidden>
+<div class="toolbar"><label>Korpus <select id="corpus"><option value="">Odaberite korpus</option></select></label><button id="export" disabled>Preuzmi TSV</button></div>
+<details><summary>Uvoz prijedloga iz korpusa</summary><form id="import"><p>Učitajte pripremljenu JSONL datoteku. Prijedlozi nisu ljudske oznake. Uvoz ne mijenja postojeće odgovore.</p><label>Naziv korpusa <input id="name" required maxlength="200"></label><label>Datoteka s prijedlozima <input id="file" type="file" accept=".jsonl" hidden></label><button id="select-file" type="button">Odaberi datoteku</button> <span id="file-name">Datoteka nije odabrana.</span><button id="import-button">Uvezi prijedloge</button><p class="muted">Najviše 20.000 primjera i 32 MiB po uvozu. Veće skupove podijelite u više datoteka.</p></form></details>
+<section id="labeling" hidden>
+<div id="progress" class="progress" aria-live="polite"></div>
+<div class="toolbar"><label>Vrsta <select id="kind"><option value="pair">Par riječi</option><option value="lemma">Lema</option><option value="stem">Korijen</option></select></label><label>Red za pregled <select id="queue"><option value="unlabelled">Neoznačeni</option><option value="unsure">Nesigurni</option><option value="labelled">Označeni — izmjena odgovora</option></select></label><button id="restart">Od početka reda</button></div>
+<article id="question" hidden>
+<p id="revision" class="muted"></p><h2 id="prompt"></h2><div class="words"><div><strong id="word"></strong><p id="context"></p><small id="word-ref"></small></div><div id="second"><strong id="other-word"></strong><p id="other-context"></p><small id="other-ref"></small></div></div>
+<p id="source"></p><details><summary>Prijedlozi iz korpusa i način uzorkovanja</summary><p id="hints"></p><p id="stratum"></p><p id="license"></p></details>
+<form id="answer"><label id="lemma-field" hidden>Potvrđena ili ispravljena lema <input id="lemma" maxlength="128" autocomplete="off"></label><p id="stem-field" hidden>Predloženi korijen: <strong id="stem"></strong></p><label class="check"><input type="checkbox" id="irregular"> Nepravilan oblik / iznimka</label><div id="choices" class="choices"></div><button id="retry" type="button" hidden>Ponovi spremanje istog odgovora</button></form>
+</article><p id="empty" hidden>U ovom redu nema više primjera.</p><button id="skip" hidden>Preskoči bez oznake</button>
+</section></section>
+</main><footer>Svaki odgovor spremamo s vašim identitetom i revizijom. Nesigurni odgovori i prijedlozi iz korpusa ne ulaze u broj potvrđenih oznaka.</footer>
+</body></html>

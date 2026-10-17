@@ -1,0 +1,13 @@
+comment = 'text search dictionary for Croatian stemming (Ljubešić-Pandžić algorithm)'
+default_version = '1.0'
+module_pathname = '$libdir/dict_croatian_stem'
+relocatable = true
+# Lets a non-superuser DB owner install the extension. The install
+# script creates a C-language template and a tsearch template/
+# dictionary/configuration — all normally superuser-only — but trusted
+# extensions run their script as the bootstrap superuser regardless of
+# who invoked CREATE EXTENSION. Marking trusted here means GitOps app
+# migrations (running as the app role) can ``CREATE EXTENSION
+# IF NOT EXISTS dict_croatian_stem`` without manual operator
+# intervention.
+trusted = true

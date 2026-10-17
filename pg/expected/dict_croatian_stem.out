@@ -1,0 +1,166 @@
+CREATE EXTENSION dict_croatian_stem;
+-- Basic noun stemming via ts_lexize
+SELECT ts_lexize('croatian_stem', 'kuća');
+ ts_lexize 
+-----------
+ {kuć}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'kuće');
+ ts_lexize 
+-----------
+ {kuć}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'kući');
+ ts_lexize 
+-----------
+ {kuć}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'grada');
+ ts_lexize 
+-----------
+ {grad}
+(1 row)
+
+-- gradovi was {gradov} pre-autoresearch; the stripper now collapses
+-- plural -ov/-ev extensions, so all "grad" forms unify.
+SELECT ts_lexize('croatian_stem', 'gradovi');
+ ts_lexize 
+-----------
+ {grad}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'lijepog');
+ ts_lexize 
+-----------
+ {lijep}
+(1 row)
+
+-- raditi → "radit" (verbs canonicalize through the lexicon or catch-all
+-- rules; lemma stays distinct from the noun "rad").
+SELECT ts_lexize('croatian_stem', 'raditi');
+ ts_lexize 
+-----------
+ {radit}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'šumom');
+ ts_lexize 
+-----------
+ {šum}
+(1 row)
+
+-- Built-in stop words (auxiliary/modal forms) are dropped.
+SELECT ts_lexize('croatian_stem', 'sam');
+ ts_lexize 
+-----------
+ {}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'biti');
+ ts_lexize 
+-----------
+ {}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'mogu');
+ ts_lexize 
+-----------
+ {}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'ću');
+ ts_lexize 
+-----------
+ {}
+(1 row)
+
+-- Other lexicon forms collapse to one canonical stem per lemma.
+SELECT ts_lexize('croatian_stem', 'saznali');
+ ts_lexize 
+-----------
+ {saznat}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'saznati');
+ ts_lexize 
+-----------
+ {saznat}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'starim');
+ ts_lexize 
+-----------
+ {star}
+(1 row)
+
+-- naj- superlative prefix collapses with comparative/base forms.
+SELECT ts_lexize('croatian_stem', 'najveći');
+ ts_lexize 
+-----------
+ {već}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'najljepši');
+ ts_lexize 
+-----------
+ {ljepš}
+(1 row)
+
+-- Morphophonological transformations
+SELECT ts_lexize('croatian_stem', 'metara');
+ ts_lexize 
+-----------
+ {metr}
+(1 row)
+
+SELECT ts_lexize('croatian_stem', 'centar');
+ ts_lexize 
+-----------
+ {centr}
+(1 row)
+
+-- Syllabic R
+SELECT ts_lexize('croatian_stem', 'trga');
+ ts_lexize 
+-----------
+ {trg}
+(1 row)
+
+-- Full text search configuration
+SELECT to_tsvector('croatian', 'Veliki grad ima lijepe kuće');
+                  to_tsvector                  
+-----------------------------------------------
+ 'grad':2 'imat':3 'kuć':5 'lijep':4 'velik':1
+(1 row)
+
+SELECT to_tsquery('croatian', 'gradovi & kuće');
+   to_tsquery   
+----------------
+ 'grad' & 'kuć'
+(1 row)
+
+-- Search match
+SELECT to_tsvector('croatian', 'Lijepe kuće u velikom gradu')
+    @@ to_tsquery('croatian', 'kuća & grad');
+ ?column? 
+----------
+ t
+(1 row)
+
+-- "u" is a lexicon form but not a stop word, so it stays as a lexeme.
+SELECT to_tsvector('croatian', 'Idem u grad');
+      to_tsvector      
+-----------------------
+ 'grad':3 'id':1 'u':2
+(1 row)
+
+-- Stop words vanish from the vector; lexicon content words do not.
+SELECT to_tsvector('croatian', 'Saznali smo da starim ljudima treba pomoć');
+                  to_tsvector                  
+-----------------------------------------------
+ 'da':3 'ljud':5 'pomoć':7 'saznat':1 'star':4
+(1 row)
+
