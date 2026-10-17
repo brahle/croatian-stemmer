@@ -191,7 +191,9 @@ def create_app(settings: Settings) -> FastAPI:
             task.cancel()
             await ctx.engine.dispose()
 
-    app = FastAPI(title="Croatian stemmer labeling", lifespan=lifespan)
+    # No interactive docs or schema on a public site: they list every route and model.
+    app = FastAPI(title="Croatian stemmer labeling", lifespan=lifespan,
+                  docs_url=None, redoc_url=None, openapi_url=None)
     app.state.engine, app.state.auth, app.state.ctx = ctx.engine, ctx.auth, ctx
     app.add_middleware(RequestBounds)
 
@@ -201,6 +203,7 @@ def create_app(settings: Settings) -> FastAPI:
         # Same-origin only. The identity server is reached by top-level
         # navigation (sign-in) and fetch (token endpoint); no frames.
         response.headers.update({"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+                                 "X-Robots-Tag": "noindex, nofollow",
                                  "Referrer-Policy": "no-referrer",
                                  "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; "
                                  "img-src 'self'; connect-src 'self' " + settings.identity_origin

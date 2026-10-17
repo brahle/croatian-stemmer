@@ -100,3 +100,12 @@ def test_ui_version_comes_from_the_release():
     from pathlib import Path
     pyproject = (Path(__file__).resolve().parents[2] / "pyproject.toml").read_text()
     assert make_settings().ui_version == re.search(r'(?m)^version = "([^"]+)"$', pyproject).group(1)
+
+
+@pytest.mark.asyncio
+async def test_no_api_docs_and_not_indexed():
+    async with app_client() as client:
+        for path in ("/docs", "/redoc", "/openapi.json"):
+            assert (await client.get(path)).status_code == 404
+        r = await client.get("/legal/privacy.en")
+    assert r.headers["x-robots-tag"] == "noindex, nofollow"
