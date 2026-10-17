@@ -9,7 +9,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.0">
+<meta name="document-version" content="1.1">
 <title>Obavijest o privatnosti — označavanje hrvatskih lema</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -17,7 +17,7 @@
 <main>
 <p class="crumbs"><a href="/?lang=hr">Natrag na označavanje</a> · <a href="/legal/privacy.en" hreflang="en" lang="en">English</a></p>
 <h1>Obavijest o privatnosti</h1>
-<p class="meta">Verzija 1.0 (17. listopada 2026.). Ova obavijest vrijedi za stranicu {{app_host}} na kojoj dobrovoljci označavaju hrvatske riječi (leme, parove riječi i korijene) za otvoreni jezični skup podataka.</p>
+<p class="meta">Verzija 1.1 (17. listopada 2026.). Ova obavijest vrijedi za stranicu {{app_host}} na kojoj dobrovoljci označavaju hrvatske riječi (leme, parove riječi i korijene) za otvoreni jezični skup podataka.</p>
 
 <p>Ovdje objašnjavamo koje osobne podatke obrađujemo kada sudjelujete, zašto, na kojoj pravnoj osnovi, koliko dugo ih čuvamo i koja su Vaša prava prema Općoj uredbi o zaštiti podataka (Uredba (EU) 2016/679, „GDPR”).</p>
 
@@ -30,6 +30,7 @@
 <h2 id="podaci">2. Koje podatke obrađujemo i odakle</h2>
 <h3>Prijava putem Google računa</h3>
 <p>Prijavljujete se Google računom preko poslužitelja za prijavu (Keycloak) na adresi {{identity_host}}. Google nam pri prijavi predaje: oznaku Vašeg Google računa, adresu e-pošte, podatak je li adresa potvrđena te ime i prezime. Te podatke sprema poslužitelj za prijavu u Vaš korisnički račun. Aplikacija za označavanje od njih sprema samo tehničku oznaku Vašeg računa na poslužitelju za prijavu i adresu e-pošte (i to samo ako je potvrđena).</p>
+<p>Aplikacija taj profil stvara pri Vašoj prvoj prijavi, prije nego što prihvatite ovu obavijest i uvjete, jer joj je potreban da Vam prikaže korak prihvaćanja i omogući brisanje računa s tog zaslona („Izbriši račun”). Dok ne prihvatite, o Vama ne bilježi ništa drugo i ne možete označavati.</p>
 <h3>Podaci koje unosite ili koji nastaju dok sudjelujete</h3>
 <ul>
 <li>Vaši odgovori (oznake): odgovor na pitanje, upisana lema, oznaka nepravilnog oblika, redni broj izmjene odgovora i vrijeme spremanja.</li>
@@ -44,6 +45,7 @@
 
 <h2 id="svrhe">3. Svrhe i pravne osnove</h2>
 <ul>
+<li><strong>Stvaranje Vašeg profila pri prvoj prijavi, prije prihvaćanja</strong>: radnje poduzete na Vaš zahtjev prije sudjelovanja prema uvjetima sudjelovanja (članak 6. stavak 1. točka (b) GDPR-a).</li>
 <li><strong>Vođenje Vašeg profila i bilježenje odgovora radi izrade jezičnog skupa podataka</strong>: Vaša privola (članak 6. stavak 1. točka (a) GDPR-a), koju dajete na početku sudjelovanja. Privolu možete povući u svakom trenutku brisanjem profila (odjeljak 7).</li>
 <li><strong>Procjena pouzdanosti odgovora, otkrivanje zlouporabe, ograničavanje broja zahtjeva i blokiranje računa</strong>: legitimni interes (članak 6. stavak 1. točka (f)) da javni istraživački skup podataka bude točan i zaštićen od lažnih ili automatiziranih unosa. Pri odvagivanju smo uzeli u obzir da te procjene nemaju nikakav učinak izvan ove stranice i da podaci ne napuštaju voditelja obrade.</li>
 <li><strong>Sigurnosni zapisi na rubu mreže</strong>: legitimni interes (članak 6. stavak 1. točka (f)) u zaštiti usluge od napada.</li>
@@ -63,7 +65,7 @@
 
 <h2 id="cuvanje">6. Koliko dugo čuvamo podatke</h2>
 <ul>
-<li>Profil u aplikaciji (tehnička oznaka računa, adresa e-pošte): dok ne izbrišete profil.</li>
+<li>Profil u aplikaciji (tehnička oznaka računa, adresa e-pošte): dok ne izbrišete profil. To vrijedi i ako se prijavite, a nikad ne prihvatite; profil možete izbrisati sa zaslona za prihvaćanje.</li>
 <li>Korisnički račun na poslužitelju za prijavu (ime, prezime, adresa e-pošte): dok ne izbrišete profil; nakon zahtjeva za brisanje račun brišemo u roku od 30 dana.</li>
 <li>Odgovori: trajno, kao dio skupa podataka, pod nasumičnom oznakom sudionika. Brisanjem profila ta se oznaka trajno odvaja od Vašeg identiteta.</li>
 <li>Vrijeme potrebno za odgovor i popis prikazanih primjera: dok ne izbrišete profil.</li>
