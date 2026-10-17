@@ -265,7 +265,7 @@ wheels = [
 
 [[package]]
 name = "croatian-stemmer"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 
 [package.optional-dependencies]
@@ -290,8 +290,8 @@ requires-dist = [
     { name = "fastapi", marker = "extra == 'web'", specifier = "==0.142.2" },
     { name = "httpx", marker = "extra == 'web'", specifier = "==0.28.1" },
     { name = "pyjwt", extras = ["crypto"], marker = "extra == 'web'", specifier = "==2.15.1" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "==9.1.1" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = "==1.4.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.1" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.4" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'web'", specifier = "==2.0.54" },
     { name = "uvicorn", marker = "extra == 'web'", specifier = "==0.54.0" },
 ]

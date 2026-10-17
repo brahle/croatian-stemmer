@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "croatian-stemmer"
-version = "0.1.0"
+version = "0.1.1"
 description = "Croatian language stemmer based on the Ljubešić-Pandžić algorithm"
 readme = "README.md"
 license = "LGPL-3.0-or-later"
@@ -32,18 +32,23 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/brahle/croatian-stemmer"
+Documentation = "https://github.com/brahle/croatian-stemmer#readme"
 Issues = "https://github.com/brahle/croatian-stemmer/issues"
+Changelog = "https://github.com/brahle/croatian-stemmer/blob/main/CHANGELOG.md"
 
 [project.scripts]
 croatian-stemmer = "croatian_stemmer.__main__:main"
 croatian-stemmer-labels = "croatian_stemmer.labeling.__main__:main"
 
 [project.optional-dependencies]
-dev = ["pytest==9.1.1", "pytest-asyncio==1.4.0"]
+dev = ["pytest>=9.1", "pytest-asyncio>=1.4"]
 web = ["httpx==0.28.1", "fastapi==0.142.2", "uvicorn==0.54.0", "PyJWT[crypto]==2.15.1", "SQLAlchemy[asyncio]==2.0.54", "asyncpg==0.31.0", "alembic==1.20.0"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/croatian_stemmer"]
+# The labeling web app runs from a checkout or the container (Dockerfile.web):
+# its JS assets are built by npm and its migrations live outside the package.
+exclude = ["src/croatian_stemmer/labeling/web"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -51,14 +56,16 @@ include = [
     "tests/",
     "pg/",
     "docs/evaluation.md",
-    "docs/research.md",
+    "docs/labeling.md",
     "evaluate.py",
     "evaluate_score.py",
     "gen_rules_c.py",
     "README.md",
+    "CHANGELOG.md",
     "COPYING",
     "COPYING.LESSER",
 ]
+exclude = ["tests/web"]
 
 [tool.pytest.ini_options]
 # Compact output by default: quiet progress, short tracebacks, no header,

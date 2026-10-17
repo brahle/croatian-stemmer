@@ -163,7 +163,7 @@ package.json               labeling app JS dependencies (Keycloak adapter, Playw
 requirements-web.txt       hashed, pinned dependencies for the labeling container
 ```
 
-The labeling app (Keycloak login, judgment forms, TSV export) is optional and is not needed to use the stemmer. See [docs/labeling-web.md](https://github.com/brahle/croatian-stemmer/blob/main/docs/labeling-web.md).
+The labeling app (Keycloak login, judgment forms, TSV export) is optional and is not needed to use the stemmer. It runs from a checkout (`pip install -e ".[web]"`) or the container built from `Dockerfile.web`, not from the PyPI package, which ships only the offline `croatian-stemmer-labels` tools. See [docs/labeling-web.md](https://github.com/brahle/croatian-stemmer/blob/main/docs/labeling-web.md).
 
 ## References
 
