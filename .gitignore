@@ -12,3 +12,4 @@ node_modules/
 src/croatian_stemmer/labeling/web/static/vendor/
 test-results/
 playwright-report/
+src/croatian_stemmer/labeling/web/static/version.js
