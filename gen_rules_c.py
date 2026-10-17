@@ -29,8 +29,12 @@ catch-alls.
 import re
 import sys
 from itertools import product
+from pathlib import Path
 
-sys.path.insert(0, "src")
+ROOT = Path(__file__).resolve().parent
+OUTPUT = ROOT / "pg" / "croatian_stemmer_rules.h"
+
+sys.path.insert(0, str(ROOT / "src"))
 
 from croatian_stemmer.rules import (
     STOP_WORDS,
@@ -269,7 +273,7 @@ def main() -> None:
     lines.append("")
     lines.append("#endif /* CROATIAN_STEMMER_RULES_H */")
 
-    with open("pg/croatian_stemmer_rules.h", "w", encoding="utf-8") as f:
+    with open(OUTPUT, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
     total_endings = sum(

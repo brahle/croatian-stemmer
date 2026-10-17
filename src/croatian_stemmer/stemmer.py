@@ -331,7 +331,7 @@ def _stem_word(word: str) -> str:
     # a stable -an mostly have -lan/-ran/-van/-kan/-tan: plan, ekran, Ivan):
     # drop -an to meet napis-ati. The bare form stays with fleeting-a.
     # -ovati/-ivati participles (očekivana, imenovanog) join the -iv stem
-    # that #89 gives these verbs.
+    # that results.tsv #89 gives these verbs.
     elif (stemmed.endswith(("ivan", "ovan")) and len(stemmed) > 6
             and transformed[len(stemmed):]):
         stemmed = stemmed[:-4] + "iv"

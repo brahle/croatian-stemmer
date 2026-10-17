@@ -62,6 +62,8 @@ cd pg/
 
 ### Usage
 
+The extension is marked `trusted = true`, like contrib's `unaccent`, so once it is installed on the server any user with CREATE privilege on a database, such as its owner, can run `CREATE EXTENSION dict_croatian_stem` without superuser. If you do not want that, delete the `trusted` line from `dict_croatian_stem.control` before installing.
+
 ```sql
 CREATE EXTENSION dict_croatian_stem;
 -- Creates the croatian_stem dictionary, the croatian_stem_template
@@ -111,6 +113,8 @@ The 67 stop words are left out of the scoring, since `stem()` returns them uncha
 | Over-stemming (stems shared by 2+ lemmas) | 8.6% | 11.7% | 16.2% | 19.8% |
 | Lemma consistency for nouns / adjectives / verbs | 66.7 / 75.5 / 20.9% | 91.3 / 94.8 / 82.3% | 61.9 / 73.5 / 16.8% | 90.4 / 93.0 / 78.8% |
 
+The v0.1 hr500k figures (78.4% form-level consistency, 8.6% over-stemming) differ slightly from [docs/evaluation.md](https://github.com/brahle/croatian-stemmer/blob/main/docs/evaluation.md) (78.3%, 8.7%) because the stop words are now left out of the scoring.
+
 The gains over v0.1 hold on the held-out corpus, so the rules generalize rather than fit hr500k. Much of the added over-stemming is a verb meeting its own noun or participle (*dokaz*/*dokazati*, *određen*/*odrediti*), which the corpora lemmatize separately but which is usually what search wants. Over-stemming grows with vocabulary size (ParlaMint has six times as many distinct form/lemma pairs as hr500k), so compare it between stemmers on the same corpus, not across corpora. An evaluation against human judgments is in progress; see [docs/labeling.md](https://github.com/brahle/croatian-stemmer/blob/main/docs/labeling.md).
 
 An earlier version also carried a hand-built lexicon of about 3,800 verb and adjective forms chosen from hr500k failures. It raised hr500k verb consistency from 28.3% to 36.3% but ParlaMint-HR verb consistency only from 22.8% to 23.1% (both measured with the stop words included), so it was removed.
@@ -126,6 +130,10 @@ tar -xzOf ParlaMint-HR.ana.tgz '*.conllu' | python evaluate_score.py --corpus -
 ```
 
 [docs/evaluation.md](https://github.com/brahle/croatian-stemmer/blob/main/docs/evaluation.md) is the detailed report for the v0.1 baseline.
+
+### How the rules were tuned
+
+The rules were tuned by an automated agent working in a loop. [AUTORESEARCH.md](https://github.com/brahle/croatian-stemmer/blob/main/AUTORESEARCH.md) is the brief it was given, and [results.tsv](https://github.com/brahle/croatian-stemmer/blob/main/results.tsv) is its experiment log, one row per experiment. The loop only ever saw hr500k; ParlaMint-HR was the held-out check, run between loops. Per-word lists (lexicons, exception tables, extra stop words) are banned, so every change is a general rule or algorithm change.
 
 ## Development
 
@@ -146,10 +154,18 @@ tests/                     pytest suite, including C/Python parity
 pg/                        PostgreSQL extension, C stemmer and regression tests
 gen_rules_c.py             generates pg/croatian_stemmer_rules.h from rules.py
 evaluate.py, evaluate_score.py   corpus evaluation
-docs/                      research notes and evaluation reports
+AUTORESEARCH.md            brief for the automated rule-tuning agent
+results.tsv                tuning experiment log, one row per experiment
+docs/                      research notes, evaluation reports, labeling guides
+build.sh                   builds and pushes the labeling app image
+Dockerfile.web             container image for the labeling app
+migrations/, alembic.ini   labeling app database migrations (Alembic)
+scripts/                   labeling app asset build and test runner
+package.json               labeling app JS dependencies (Keycloak adapter, Playwright)
+requirements-web.txt       hashed, pinned dependencies for the labeling container
 ```
 
-The labeling app (Keycloak login, judgment forms, TSV export) is optional and is not needed to use the stemmer. See [docs/labeling-web.md](https://github.com/brahle/croatian-stemmer/blob/main/docs/labeling-web.md).
+The labeling app (Keycloak login, judgment forms, TSV export) is optional and is not needed to use the stemmer. It runs from a checkout (`pip install -e ".[web]"`) or the container built from `Dockerfile.web`, not from the PyPI package, which ships only the offline `croatian-stemmer-labels` tools. See [docs/labeling-web.md](https://github.com/brahle/croatian-stemmer/blob/main/docs/labeling-web.md).
 
 ## References
 

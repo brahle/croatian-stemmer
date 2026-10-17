@@ -1,5 +1,7 @@
 # Research: Croatian Stemmer for PostgreSQL
 
+> This is the original planning note, kept for reference. The implementation was built from the LGPL "Simple stemmer for Croatian v0.1" tarball; it contains no code from SCStemmers, which is GPL.
+
 ## 1. The Ljubesic-Pandzic Stemming Algorithm
 
 ### Original Paper

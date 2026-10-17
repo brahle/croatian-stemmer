@@ -220,7 +220,7 @@ _RULES: list[tuple[str, str]] = [
     # --- Adjective participle ---
     ('.+at', 'ijega|ijemu|ijima|ijeg|ijem|ijih|ijim|ima|oga|ome|omu|iji|ije|ija|iju|oj|og|om|im|ih|a|u|i|e|o|'),
     ('.+et', 'avši|ući|emo|imo|em|eš|e|u|i'),
-    # --- Catch-all rules (non-greedy stems, iteration #2 improvement) ---
+    # --- Catch-all rules (non-greedy stems, results.tsv #2) ---
     ('.+?', 'ajući|alima|alom|avši|asmo|aste|ajmo|ajte|ivši|amo|ate|aju|ati|aše|ahu|ali|ala|ale|alo|ana|ano|ani|ane|am|aš|at|ah|ao|aj|an'),
     ('.+?', 'anje|enje|anja|enja|enom|enoj|enog|enim|enih|anom|anoj|anog|anim|anih|eno|ovi|ova|oga|ima|ove|enu|anu|ena|ama'),
     ('.+?', 'nijega|nijemu|nijima|nijeg|nijem|nijim|nijih|nima|niji|nije|nija|niju|noj|nom|nog|nim|nih|an|na|nu|ni|ne|no'),
