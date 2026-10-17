@@ -8,10 +8,11 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import HTTPException
 from croatian_stemmer.labeling.web.auth import Authenticator
 from croatian_stemmer.labeling.web.config import Settings
+from labeling_support import make_settings
 
 @pytest.fixture
 def identity():
-    settings = Settings("postgresql+asyncpg://test@localhost/labeling_test", "https://identity.example/realms/test")
+    settings = make_settings()
     private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     auth = Authenticator(settings)
     auth.keys, auth.loaded_at = {"test": private.public_key()}, time.monotonic()
@@ -27,7 +28,7 @@ def identity():
 @pytest.mark.asyncio
 async def test_valid_subject(identity):
     auth,token=identity
-    assert await auth.authenticate(token()) == "test-human"
+    assert (await auth.authenticate(token())).subject == "test-human"
 
 @pytest.mark.parametrize("changes",[
     {"iss":"https://other.example/realms/test"},{"aud":"other"},
@@ -70,7 +71,7 @@ async def test_unknown_key_and_expired_cache_fail_closed(identity,monkeypatch):
 @pytest.mark.parametrize("issuer",["http://identity.example/realms/test","https://identity.example/", "https://user:password@identity.example/realms/test","https://identity.example/realms/test?x=1"])
 def test_issuer_restrictions(issuer):
     with pytest.raises(ValueError):
-        Settings("postgresql+asyncpg://test@localhost/labeling_test",issuer)
+        make_settings(issuer=issuer)
 
 @pytest.mark.asyncio
 async def test_jwks_refresh_rotation_and_invalid_documents(identity,monkeypatch):
@@ -92,7 +93,7 @@ async def test_jwks_refresh_rotation_and_invalid_documents(identity,monkeypatch)
     document({"keys":[key]})
     claims=jwt.decode(token()[7:],options={"verify_signature":False})
     rotated="Bearer "+jwt.encode(claims,private,algorithm="RS256",headers={"kid":"new"})
-    assert await auth.authenticate(rotated)=="test-human"
+    assert (await auth.authenticate(rotated)).subject=="test-human"
     assert set(auth.keys)=={"new"}
     for payload,status in [({"keys":[]},200),({"keys":[key,key]},200),({"keys":["bad"]},200),({"keys":"bad"},200),({"padding":"x"*262145},200),({},503)]:
         document(payload,status)
@@ -161,15 +162,14 @@ async def test_failed_jwks_refresh_is_shared_and_recovers_after_cooldown(identit
         await auth.authenticate(token())
     assert exc.value.status_code == 503 and calls == 1
     clock[0] = 1018.0
-    assert await auth.authenticate(token()) == "test-human"
+    assert (await auth.authenticate(token())).subject == "test-human"
     assert calls == 2
-    assert await auth.authenticate(token()) == "test-human"
+    assert (await auth.authenticate(token())).subject == "test-human"
     assert calls == 2
 
 
-def group_identity(role_source="groups"):
-    settings = Settings("postgresql+asyncpg://test@localhost/labeling_test",
-                        "https://identity.example/realms/test", role_source=role_source)
+def group_identity(role_source="groups", **changes):
+    settings = make_settings(role_source=role_source, **changes)
     private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     auth = Authenticator(settings)
     auth.keys, auth.loaded_at = {"test": private.public_key()}, time.monotonic()
@@ -188,8 +188,8 @@ def group_identity(role_source="groups"):
 async def test_groups_source_accepts_realm_group_membership():
     # Realms that map group membership carry authorization as a flat `groups` claim, not client roles.
     auth, token = group_identity()
-    assert await auth.authenticate(token()) == "test-human"
-    assert await auth.authenticate(token(groups=["reader", "annotator"])) == "test-human"
+    assert (await auth.authenticate(token())).subject == "test-human"
+    assert (await auth.authenticate(token(groups=["reader", "annotator"]))).subject == "test-human"
 
 
 @pytest.mark.parametrize("changes",[
@@ -227,14 +227,138 @@ async def test_default_source_ignores_groups(identity):
 @pytest.mark.parametrize("value", ["", "group", "realm-roles", "GROUPS"])
 def test_role_source_must_be_known(value):
     with pytest.raises(ValueError):
-        Settings("postgresql+asyncpg://test@localhost/labeling_test",
-                 "https://identity.example/realms/test", role_source=value)
+        make_settings(role_source=value)
+
+
+def compliance_environment(monkeypatch):
+    monkeypatch.setenv("LABELING_DATABASE_URL", "postgresql+asyncpg://test@localhost/labeling_test")
+    monkeypatch.setenv("LABELING_OIDC_ISSUER", "https://identity.example/realms/test")
+    for key, value in {"CONTROLLER_NAME": "Example Controller", "CONTROLLER_EMAIL": "privacy@example.org",
+                       "HOSTING_SUMMARY": "Example Hosting, Germany", "EDGE_LOG_RETENTION": "7 days",
+                       "BACKUP_RETENTION": "14 days"}.items():
+        monkeypatch.setenv("LABELING_" + key, value)
 
 
 def test_role_source_from_environment(monkeypatch):
-    monkeypatch.setenv("LABELING_DATABASE_URL", "postgresql+asyncpg://test@localhost/labeling_test")
-    monkeypatch.setenv("LABELING_OIDC_ISSUER", "https://identity.example/realms/test")
+    compliance_environment(monkeypatch)
     monkeypatch.delenv("LABELING_OIDC_ROLE_SOURCE", raising=False)
     assert Settings.from_environment().role_source == "client-role"
     monkeypatch.setenv("LABELING_OIDC_ROLE_SOURCE", "groups")
     assert Settings.from_environment().role_source == "groups"
+
+
+# ---- Principal, annotator policy and curator detection ---------------------
+
+@pytest.mark.asyncio
+async def test_principal_email_only_when_verified():
+    auth, token = group_identity()
+    principal = await auth.authenticate(token(email="ana@example.org", email_verified=True))
+    assert (principal.email, principal.email_verified, principal.curator) == ("ana@example.org", True, False)
+    assert principal.username == "synthetic-test-human"
+    for verified in (False, "true", 1, None, ...):
+        principal = await auth.authenticate(token(email="ana@example.org", email_verified=verified))
+        assert principal.email is None and principal.email_verified is False
+    assert (await auth.authenticate(token(email=["x@example.org"], email_verified=True))).email is None
+
+
+@pytest.mark.parametrize("groups,curator", [
+    (["annotator"], False), (["annotator", "curator"], True), (["curator"], False),
+    (["annotator", "Curator"], False), (["annotator", "/curator"], False),
+])
+@pytest.mark.asyncio
+async def test_curator_from_groups_claim(groups, curator):
+    # Group policy: the annotator group is still required; curator is an extra flag.
+    auth, token = group_identity()
+    if "annotator" not in groups:
+        with pytest.raises(HTTPException) as exc:
+            await auth.authenticate(token(groups=groups))
+        assert exc.value.status_code == 403
+        return
+    assert (await auth.authenticate(token(groups=groups))).curator is curator
+
+
+@pytest.mark.asyncio
+async def test_curator_from_client_role(identity):
+    auth, token = identity
+    audience = auth.settings.audience
+    assert (await auth.authenticate(token(resource_access={audience: {"roles": ["annotator", "curator"]}}))).curator
+    assert not (await auth.authenticate(token())).curator
+    # The client-role deployment never reads groups, also not for curators.
+    assert not (await auth.authenticate(token(groups=["curator"]))).curator
+
+
+@pytest.mark.asyncio
+async def test_open_policy_accepts_any_realm_human_without_groups():
+    auth, token = group_identity(annotator_policy="open")
+    principal = await auth.authenticate(token(groups=...))
+    assert principal.subject == "test-human" and principal.curator is False
+    assert (await auth.authenticate(token(groups=[]))).curator is False
+    assert (await auth.authenticate(token(groups=["curator"]))).curator is True
+    assert (await auth.authenticate(token(groups="curator"))).curator is False
+
+
+@pytest.mark.parametrize("changes", [
+    {"preferred_username": "service-account-client"}, {"typ": "ID"}, {"azp": "other-client"},
+    {"aud": "other"}, {"iss": "https://other.example/realms/test"}, {"exp": int(time.time()) - 60},
+    {"sub": ""}, {"sub": "x" * 257},
+])
+@pytest.mark.asyncio
+async def test_open_policy_still_rejects_non_human_or_foreign_tokens(changes):
+    auth, token = group_identity(annotator_policy="open")
+    with pytest.raises(HTTPException) as exc:
+        await auth.authenticate(token(**changes))
+    assert exc.value.status_code == 401
+
+
+@pytest.mark.parametrize("value", ["", "Open", "closed", "groups"])
+def test_annotator_policy_must_be_known(value):
+    with pytest.raises(ValueError):
+        make_settings(annotator_policy=value)
+
+
+def test_policy_and_compliance_from_environment(monkeypatch):
+    compliance_environment(monkeypatch)
+    settings = Settings.from_environment()
+    assert settings.annotator_policy == "group" and settings.curator_group == "curator"
+    assert settings.controller_address == "" and settings.daily_cap == 3000 and settings.target_votes == 3
+    monkeypatch.setenv("LABELING_ANNOTATOR_POLICY", "open")
+    monkeypatch.setenv("LABELING_DAILY_CAP", "10")
+    monkeypatch.setenv("LABELING_READ_ONLY", "true")
+    settings = Settings.from_environment()
+    assert (settings.annotator_policy, settings.daily_cap, settings.read_only) == ("open", 10, True)
+    for key, value in (("LABELING_DAILY_CAP", "-1"), ("LABELING_DAILY_CAP", "0"), ("LABELING_READ_ONLY", "yes")):
+        monkeypatch.setenv(key, value)
+        with pytest.raises(ValueError):
+            Settings.from_environment()
+        monkeypatch.delenv(key)
+
+
+@pytest.mark.parametrize("key", ["controller_name", "controller_email", "hosting_summary",
+                                 "edge_log_retention", "backup_retention"])
+def test_compliance_values_are_required(key):
+    for value in ("", "   "):
+        with pytest.raises(ValueError):
+            make_settings(**{key: value})
+
+
+def test_controller_address_is_optional_and_email_validated():
+    assert make_settings(controller_address="").controller_address == ""
+    assert make_settings(controller_address="Ulica 1, 10000 Zagreb").controller_address
+    for email in ("not-an-email", "a@b", "<a@b.hr>", "a b@c.hr"):
+        with pytest.raises(ValueError):
+            make_settings(controller_email=email)
+    for version in ("", "1 0", "x" * 33, "1.0/2"):
+        with pytest.raises(ValueError):
+            make_settings(privacy_version=version)
+
+
+@pytest.mark.asyncio
+async def test_failed_authentication_logs_no_claims(caplog):
+    import logging
+    auth, token = group_identity()
+    caplog.set_level(logging.DEBUG)
+    for changes in ({"groups": []}, {"aud": "other"}, {"typ": "ID"}):
+        with pytest.raises(HTTPException) as exc:
+            await auth.authenticate(token(email="secret.person@example.org", email_verified=True, **changes))
+        assert "secret.person" not in str(exc.value.detail)
+    assert "secret.person" not in caplog.text and "test-human" not in caplog.text

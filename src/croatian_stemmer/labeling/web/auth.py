@@ -1,13 +1,31 @@
-"""Keycloak access-token validation; subjects come only from verified tokens."""
+"""Keycloak access-token validation; principals come only from verified tokens."""
 
 import asyncio
 import time
+from dataclasses import dataclass
 
 import httpx
 import jwt
 from fastapi import HTTPException
 
 from .config import Settings
+
+
+@dataclass(frozen=True)
+class Principal:
+    """The verified caller. `email` is set only when the token says it is verified."""
+    subject: str
+    email: str | None
+    email_verified: bool
+    curator: bool
+    username: str | None = None
+
+
+def _names(value):
+    """A list of exact string names, or None when the claim has another shape."""
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        return None
+    return value
 
 
 class Authenticator:
@@ -58,7 +76,7 @@ class Authenticator:
             self.keys, self.loaded_at = keys, time.monotonic()
             self.retry_after = 0.0
 
-    async def authenticate(self, authorization: str | None) -> str:
+    async def authenticate(self, authorization: str | None) -> Principal:
         def refused():
             return HTTPException(401, detail={"code": "invalid_token"}, headers={"WWW-Authenticate": "Bearer"})
         if not authorization or not authorization.startswith("Bearer ") or len(authorization) > 16384:
@@ -87,12 +105,19 @@ class Authenticator:
                 or str(claims.get("preferred_username", "")).startswith("service-account-")):
             raise refused()
         if self.settings.role_source == "groups":
-            # Exact group name only; the realm's groups mapper emits names, not paths.
-            roles = claims.get("groups")
+            # Exact group names only; the realm's groups mapper emits names, not paths.
+            roles = _names(claims.get("groups"))
         else:
             access = claims.get("resource_access") or {}
             client_access = access.get(self.settings.audience) if isinstance(access, dict) else None
-            roles = client_access.get("roles") if isinstance(client_access, dict) else None
-        if not isinstance(roles, list) or self.settings.role not in roles:
+            roles = _names(client_access.get("roles")) if isinstance(client_access, dict) else None
+        if self.settings.annotator_policy == "group" and (roles is None or self.settings.role not in roles):
             raise HTTPException(403, detail={"code": "annotator_role_required"})
-        return subject
+        curator_name = self.settings.curator_group if self.settings.role_source == "groups" else self.settings.curator_role
+        verified = claims.get("email_verified") is True
+        email = claims.get("email")
+        email = email if verified and isinstance(email, str) and 0 < len(email) <= 320 else None
+        username = claims.get("preferred_username")
+        username = username if isinstance(username, str) and 0 < len(username) <= 256 else None
+        return Principal(subject=subject, email=email, email_verified=verified,
+                         curator=roles is not None and curator_name in roles, username=username)
