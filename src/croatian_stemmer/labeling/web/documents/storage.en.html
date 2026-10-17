@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- DRAFT. This text must be reviewed by the owner (controller) and a lawyer before publication. It is not legal advice.
+     The Croatian version (storage.hr.html) and this one must say the same thing and carry the same version.
+     The inventory below was checked against the application code (app.js, keycloak-js 26.2.4 callback storage)
+     and is enforced by the browser test (no cookie and no persistent storage key on the app origin).
+     Any feature that stores something in the browser must update this notice and that test first.
+     Owner: confirm the sign-in server's session lifetimes if the realm overrides Keycloak's defaults. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="document-version" content="1.0">
+<title>Cookies and browser storage — Croatian lemma labeling</title>
+<link rel="stylesheet" href="/static/legal.css">
+</head>
+<body>
+<main>
+<p class="crumbs"><a href="/?lang=en">Back to labeling</a> · <a href="/legal/storage.hr" hreflang="hr" lang="hr">Hrvatski</a></p>
+<h1>Cookies and browser storage</h1>
+<p class="meta">Version 1.0 (17 October 2026). Controller: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+
+<p>In short: this site uses no cookies and stores nothing permanently in your browser. Short-lived records exist only while you sign in, and they are necessary for the sign-in you asked for. That is why we show no cookie consent banner: strictly necessary storage needs no consent (Article 5(3) of the ePrivacy Directive 2002/58/EC and the Croatian law implementing it).</p>
+
+<h2 id="app">1. This site ({{app_host}})</h2>
+<ul>
+<li><strong>Cookies</strong>: we set none.</li>
+<li><strong>Sign-in tokens</strong> are kept only in the memory of the open page. They disappear when you close the tab, reload the page or sign out.</li>
+<li><strong>Sign-in return record</strong>: when you click "Sign in", the sign-in library (Keycloak JS) saves one record whose name starts with <code>kc-callback-</code> in the browser's local storage (localStorage). It holds random one-time values used to check that you are returning from a sign-in you started yourself (state, nonce and a PKCE verifier). The record is deleted as soon as you return from signing in. If you abandon the sign-in, it expires after one hour and is deleted on your next visit. When it starts, the library also briefly writes and immediately deletes a test record <code>kc-test</code>. If local storage is disabled in your browser, the same short-lived record is kept in a cookie of this site for at most one hour.</li>
+<li><strong>Your language choice</strong> is not saved: it lasts only while the page is open.</li>
+</ul>
+<p>Purpose: to carry out the sign-in you requested. Strictly necessary; no consent needed.</p>
+
+<h2 id="signin">2. Sign-in server ({{identity_host}})</h2>
+<p>Sign-in is handled by a Keycloak server at {{identity_host}}. When you sign in, it sets the cookies it needs for signing in on its own address:</p>
+<table>
+<thead><tr><th>Name</th><th>Purpose</th><th>Lifetime</th></tr></thead>
+<tbody>
+<tr><td><code>AUTH_SESSION_ID</code>, <code>KC_AUTH_SESSION_HASH</code></td><td>link the steps of one sign-in</td><td>until the browser is closed</td></tr>
+<tr><td><code>KC_RESTART</code></td><td>lets an interrupted sign-in continue</td><td>until the browser is closed</td></tr>
+<tr><td><code>KEYCLOAK_IDENTITY</code>, <code>KEYCLOAK_SESSION</code></td><td>remember that you are signed in, so you do not have to sign in on every page</td><td>until you sign out or the sign-in session ends (by default at most 10 hours, or 30 minutes of inactivity)</td></tr>
+</tbody>
+</table>
+<p>Some server versions also set the same cookies with a <code>_LEGACY</code> suffix for older browsers. Names can differ slightly between versions; all of them serve sign-in only. Strictly necessary; no consent needed.</p>
+
+<h2 id="google">3. Google</h2>
+<p>Signing in with a Google account happens on Google's pages (accounts.google.com), where Google sets its own cookies. Google is responsible for them as an independent controller. See <a href="https://policies.google.com/technologies/cookies?hl=en" rel="noopener noreferrer">policies.google.com/technologies/cookies</a>.</p>
+
+<h2 id="removing">4. How to remove these records</h2>
+<p>Signing out ends your session on the sign-in server. You can also delete all records at any time in your browser settings (clear site data).</p>
+
+<h2 id="changes">5. Changes</h2>
+<p>If we ever start storing anything else in your browser, we will first update this notice, and we will ask for your consent to anything that is not strictly necessary.</p>
+
+<p class="meta">Related: <a href="/legal/privacy.en">Privacy notice</a> · <a href="/legal/terms.en">Terms of participation and licence</a></p>
+</main>
+</body>
+</html>
