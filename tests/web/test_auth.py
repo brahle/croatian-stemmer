@@ -60,7 +60,9 @@ async def test_unknown_key_and_expired_cache_fail_closed(identity,monkeypatch):
     async def unavailable():
         raise HTTPException(503,detail={"code":"identity_unavailable"})
     monkeypatch.setattr(auth,"refresh",unavailable)
-    auth.loaded_at=0
+    # Older than the 300 s cache window. A literal 0 is not: time.monotonic()
+    # counts from boot, so on a runner up for under five minutes 0 looks fresh.
+    auth.loaded_at=time.monotonic()-301
     with pytest.raises(HTTPException) as exc:
         await auth.authenticate(token())
     assert exc.value.status_code==503
