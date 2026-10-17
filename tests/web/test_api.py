@@ -18,6 +18,16 @@ def root(row):
     return f'/api/corpora/{row["corpus_id"]}'
 
 
+async def listed(api, name, curator=False):
+    """Every corpus the caller can list, across pages (the test database accumulates corpora)."""
+    rows, offset = [], 0
+    while offset is not None:
+        page = (await api.request("GET", "/api/corpora", name, curator, params={"offset": offset})).json()
+        rows += page["items"]
+        offset = page["next_offset"]
+    return rows
+
+
 async def next_item(api, row, kind="pair", name="alice"):
     r = await api.request("GET", root(row) + "/next", name, params={"kind": kind})
     assert r.status_code == 200, r.text
@@ -37,13 +47,11 @@ async def test_draft_corpus_is_invisible_to_annotators(api):
     row = rows[0]
     await api.consent("alice")
     await api.consent("curator", True)
-    listed = (await api.request("GET", "/api/corpora", "alice")).json()["items"]
-    assert row["corpus_id"] not in {c["id"] for c in listed}
+    assert row["corpus_id"] not in {c["id"] for c in await listed(api, "alice")}
     for tail in ("progress", "next", "items", "items/" + row["item_id"]):
         assert (await api.request("GET", root(row) + "/" + tail, "alice")).status_code == 404
     assert (await api.request("POST", answer_path(row), "alice", json=answer())).status_code == 404
-    mine = (await api.request("GET", "/api/corpora", "curator", True)).json()["items"]
-    draft = next(c for c in mine if c["id"] == row["corpus_id"])
+    draft = next(c for c in await listed(api, "curator", True) if c["id"] == row["corpus_id"])
     assert draft["status"] == "draft" and draft["items"] == {"pair": 1, "lemma": 1, "stem": 1}
     r = await api.request("GET", root(row) + "/next", "curator", True)
     assert r.status_code == 409 and r.json()["detail"]["code"] == "corpus_not_published"
@@ -193,7 +201,7 @@ async def test_unpublish_hides_items_and_retired_items_are_refused(api):
     assert retired.status_code == 409 and retired.json()["detail"]["code"] == "item_retired"
     assert await next_item(api, row) is None
     assert (await api.request("POST", root(row) + "/unpublish", "curator", True)).status_code == 200
-    assert row["corpus_id"] not in {c["id"] for c in (await api.request("GET", "/api/corpora", "alice")).json()["items"]}
+    assert row["corpus_id"] not in {c["id"] for c in await listed(api, "alice")}
     assert (await api.request("GET", root(row) + "/next", "alice", params={"kind": "lemma"})).status_code == 404
     assert (await api.request("POST", answer_path(rows[1]), "alice", json=answer(0, "unsure"))).status_code == 404
     again = await api.request("POST", root(row) + "/unpublish", "curator", True)
@@ -339,7 +347,7 @@ async def test_annotator_status_blocks_and_is_journaled(api):
                            "AND target = :t ORDER BY id DESC LIMIT 1", t=alice)).one()
     assert str(event.actor_id) == curator and event.details == {"from": "active", "to": "blocked", "reason": reason}
     listed = (await api.request("GET", "/api/admin/annotators", "curator", True, params={"status": "blocked"})).json()["items"]
-    assert any(a["id"] == alice and a["email"] == "alice@example.org" for a in listed)
+    assert any(a["id"] == alice and a["email"] == "alice@example.org" and a["status_reason"] == reason for a in listed)
     own = await api.request("PUT", f"/api/admin/annotators/{curator}/status", "curator", True,
                             json={"status": "blocked", "reason": "oops"})
     assert own.status_code == 409 and own.json()["detail"]["code"] == "own_status_change"

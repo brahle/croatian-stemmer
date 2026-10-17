@@ -204,16 +204,19 @@ def register(app, ctx):
         counts = (select(Judgment.annotator_id, func.count().label("judgments"),
                          func.count(func.distinct(Judgment.item_id)).label("item_count"))
                   .group_by(Judgment.annotator_id).subquery())
-        query = (select(Annotator, func.coalesce(counts.c.judgments, 0), func.coalesce(counts.c.item_count, 0))
+        reason = (select(AdminEvent.details["reason"].astext)
+                  .where(AdminEvent.kind == "annotator.status", AdminEvent.target == cast(Annotator.id, String))
+                  .order_by(AdminEvent.id.desc()).limit(1).scalar_subquery())
+        query = (select(Annotator, func.coalesce(counts.c.judgments, 0), func.coalesce(counts.c.item_count, 0), reason)
                  .outerjoin(counts, counts.c.annotator_id == Annotator.id))
         if status:
             query = query.where(Annotator.status == status)
         async with db.begin():
-            rows = (await db.execute(query.order_by(Annotator.created_at, Annotator.id).offset(offset).limit(101))).all()
+            rows = (await db.execute(query.order_by(Annotator.created_at.desc(), Annotator.id.desc()).offset(offset).limit(101))).all()
         return {"items": [{"id": str(a.id), "email": a.email, "email_verified": a.email_verified, "status": a.status,
                            "created_at": a.created_at.isoformat(), "last_seen_at": a.last_seen_at.isoformat(),
-                           "counts": {"judgments": judgments, "items": items}}
-                          for a, judgments, items in rows[:100]],
+                           "counts": {"judgments": judgments, "items": items}, "status_reason": reason}
+                          for a, judgments, items, reason in rows[:100]],
                 "next_offset": offset + 100 if len(rows) > 100 else None}
 
     @app.put("/api/admin/annotators/{annotator_id}/status")

@@ -231,6 +231,10 @@ def test_role_source_must_be_known(value):
 
 
 def compliance_environment(monkeypatch):
+    import os
+    for key in list(os.environ):
+        if key.startswith("LABELING_"):
+            monkeypatch.delenv(key)
     monkeypatch.setenv("LABELING_DATABASE_URL", "postgresql+asyncpg://test@localhost/labeling_test")
     monkeypatch.setenv("LABELING_OIDC_ISSUER", "https://identity.example/realms/test")
     for key, value in {"CONTROLLER_NAME": "Example Controller", "CONTROLLER_EMAIL": "privacy@example.org",
