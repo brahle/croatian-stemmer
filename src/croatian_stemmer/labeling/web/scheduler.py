@@ -173,7 +173,11 @@ async def pick(ctx, db, caller, corpus_ids, kind, expert_work=True):
                                      .join(Item, (Item.corpus_id == Gold.corpus_id) & (Item.id == Gold.item_id))
                                      .outerjoin(Assignment, join)
                                      .where(Gold.kind == kind, Gold.pool == "qualification", Gold.status == "active",
-                                            Gold.corpus_id.in_(corpus_ids), Item.status == "active", unseen))).all()
+                                            Gold.corpus_id.in_(corpus_ids), Item.status == "active",
+                                            # An unanswered check comes back at once: the knowledge
+                                            # check is announced and must be answered to finish.
+                                            or_(Assignment.annotator_id.is_(None),
+                                                Assignment.current_revision == 0)))).all()
             if rows:
                 corpus_id, item_id = min(rows, key=lambda r: keyed(key, f"qual:{a}:{kind}:{r[1]}"))
                 return Pick(corpus_id, item_id, blind_forced, qualification)
