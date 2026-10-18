@@ -74,6 +74,12 @@ async def test_erasing_an_anchor_leaves_no_identity_and_no_link(fresh_api):
     assert (await api.request("POST", f'/api/admin/erasures/{request["id"]}/complete', "curator", True)).status_code == 200
     assert await rows_mentioning(api, subject) == {}
     assert await rows_mentioning(api, owner, new) == {}
+    # Nor any two-hop join: no row naming the old id names an item or corpus the new id answered.
+    places = {str(v) for row in (await api.sql("SELECT DISTINCT corpus_id, item_id FROM label_judgment "
+                                               "WHERE annotator_id = :n", n=new)).all() for v in row}
+    for table, texts in (await rows_mentioning(api, owner)).items():
+        for text_ in texts:
+            assert not [p for p in places if p in text_], (table, text_)
     # The pinned run's bundle, rebuilt now, holds no identity either.
     bundle = (await api.request("GET", f"/api/admin/scoring/runs/{first}/bundle", "curator", True)).text
     for value in ("owner@example.org", digest, "Owner", subject):

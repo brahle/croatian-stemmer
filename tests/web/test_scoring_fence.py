@@ -151,3 +151,17 @@ async def test_a_later_block_makes_a_run_stale_and_its_pin_is_refused(fresh_api)
     assert detail["stale"] is True
     refused = await api.request("POST", f"/api/admin/scoring/runs/{run_id}/pin", "curator", True)
     assert refused.status_code == 409 and refused.json()["detail"]["code"] == "run_stale"
+
+
+async def test_a_run_is_not_stale_because_of_its_own_quarantines(fresh_api):
+    api = unlimited(await fresh_api())
+    rows = await api.imported(candidates(pairs=35))
+    await profiled(api, "x")
+    for row in [r for r in rows if r["kind"] == "pair"][:32]:
+        assert (await api.request("POST", answer_path(row), "x", json=answer(elapsed_ms=200))).status_code == 200
+    [(run_id, status_)] = await score_now(api)
+    assert status_ == "done"
+    assert (await api.sql("SELECT count(*) FROM label_admin_event WHERE details ->> 'run_id' = :r",
+                          r=str(run_id))).scalar_one() == 1  # the run's own quarantine
+    assert (await api.request("GET", f"/api/admin/scoring/runs/{run_id}", "curator", True)).json()["stale"] is False
+    assert (await api.request("POST", f"/api/admin/scoring/runs/{run_id}/pin", "curator", True)).status_code == 200

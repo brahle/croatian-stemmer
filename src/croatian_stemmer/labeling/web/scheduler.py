@@ -94,7 +94,9 @@ async def eligible_now(db, annotator_ids):
 
 async def counted_now(db, params, corpus_id, item_id, epoch, sampled, gold_active, without=None, with_lease=False):
     """{"low": n, "expert": n}: the capped count of admitted first answers in the item's epoch
-    from annotators whose votes are eligible now (the same rule a run applies). With
+    from annotators whose votes are eligible now (the same rule a run applies: before any
+    reopen the epoch is 0 and holds every answer, those written before 003 with seq NULL
+    included). With
     `with_lease`, also other annotators' unanswered showings of the last 30 minutes."""
     firsts = (await db.execute(text("""
         SELECT f.*, a.status, EXISTS (SELECT 1 FROM label_anchor x WHERE x.annotator_id = f.annotator_id) AS anchor,
@@ -104,8 +106,8 @@ async def counted_now(db, params, corpus_id, item_id, epoch, sampled, gold_activ
                coalesce((SELECT array_agg(ARRAY[c.document, c.version, c.age_threshold::text])
                          FROM label_consent c WHERE c.annotator_id = f.annotator_id), '{}') AS consents
         FROM (SELECT DISTINCT ON (annotator_id) annotator_id, admitted, admission_group, coalesce(seq, 0) AS seq, id
-              FROM label_judgment WHERE corpus_id = :c AND item_id = :i AND coalesce(seq, 0) > :e
-              ORDER BY annotator_id, coalesce(seq, 0), id) f
+              FROM label_judgment WHERE corpus_id = :c AND item_id = :i AND (:e = 0 OR coalesce(seq, 0) > :e)
+              ORDER BY annotator_id, coalesce(seq, 0), revision, id) f
         RIGHT JOIN (SELECT 1) one ON true
         LEFT JOIN label_annotator a ON a.id = f.annotator_id"""),
         {"c": corpus_id, "i": item_id, "e": epoch, "w": without})).all()

@@ -293,3 +293,10 @@ class ReapplyRequest(BaseModel):
     """Keycloak user ids from the erasure list kept outside the database (after a restore)."""
     model_config = ConfigDict(extra="forbid")
     keycloak_user_ids: list[StrictStr] = Field(min_length=1, max_length=1000)
+
+
+class ReleaseRequest(BaseModel):
+    """The item ids of the release's labels.tsv (optional: without them, every releasable row
+    of the run that is not a known-answer item in use)."""
+    model_config = ConfigDict(extra="forbid")
+    item_ids: list[UUID] | None = Field(default=None, max_length=200000)

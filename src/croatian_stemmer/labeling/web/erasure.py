@@ -45,7 +45,10 @@ async def erase_profile(db, person, *, actor_id, details):
     await db.execute(update(Annotator).where(Annotator.id == person.id).values(
         subject=None, email=None, email_verified=False, status="erased", erased_at=func.now()))
     await db.execute(delete(Assignment).where(Assignment.annotator_id == person.id))
-    await erase_trust(db, person.id, email, actor_id)
+    # Events naming items or entries are written by "the system" when the person erases
+    # themselves: an event with the old id as actor on an item the moved answers sit on would
+    # join the old and the new identifier.
+    await erase_trust(db, person.id, email, None if actor_id == person.id else actor_id)
     if previous in EXCLUDED_STATUSES:
         await db.execute(delete(Judgment).where(Judgment.annotator_id == person.id))
         await db.execute(delete(Consent).where(Consent.annotator_id == person.id))

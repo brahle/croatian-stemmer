@@ -342,6 +342,11 @@ CREATE FUNCTION label_item_audit_append_only() RETURNS trigger LANGUAGE plpgsql 
 BEGIN
   RAISE EXCEPTION 'label_item_audit is append-only' USING ERRCODE = 'integrity_constraint_violation';
 END $$""")
+    # People erased under V1 keep the redaction V2 gives every erasure: their status events lose
+    # reasons (the erasure request keeps its Keycloak id until the curator completes it).
+    op.execute("""UPDATE label_admin_event e SET details = label_redact_details(e.kind, e.details)
+                  WHERE e.kind <> 'erasure.requested' AND e.details <> label_redact_details(e.kind, e.details)
+                    AND EXISTS (SELECT 1 FROM label_annotator a WHERE a.id::text = e.target AND a.status = 'erased')""")
     for table in ("label_trust_event", "label_item_audit"):
         op.execute(f"CREATE TRIGGER {table}_append_only BEFORE UPDATE OR DELETE ON {table} "
                    f"FOR EACH ROW EXECUTE FUNCTION {table}_append_only()")

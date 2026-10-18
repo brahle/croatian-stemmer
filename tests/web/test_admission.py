@@ -157,3 +157,32 @@ async def test_an_established_answer_uses_the_expert_slots(fresh_api):
     await score_now(api)
     current = await queue(api, row)
     assert (current.state, current.n_low, current.n_expert) == ("needs_expert", 5, 1)
+
+
+async def test_answers_from_before_003_use_the_budget_at_answer_time(fresh_api):
+    """V1 answers (seq NULL) are in epoch 0 for a run; the request path counts them the same way,
+    and a revision of a V1 answer inherits its (admitted) decision."""
+    api, row = await one_pair(fresh_api)
+    early = [f"v{n}" for n in range(5)]
+    await api.sql("ALTER TABLE label_judgment DISABLE TRIGGER label_judgment_journal_stamp")
+    try:
+        for name in early:
+            who = await profiled(api, name)
+            await api.sql("INSERT INTO label_judgment (id, corpus_id, item_id, annotator_id, revision, answer, irregular, "
+                          "item_revision, client_version, created_at) VALUES (:id, :c, :i, :a, 1, 'same', false, 1, "
+                          "'0.2.3', now())", id=uuid4(), c=row["corpus_id"], i=row["item_id"], a=who)
+            await api.sql("INSERT INTO label_assignment (annotator_id, corpus_id, item_id, first_shown_at, "
+                          "last_shown_at, shown_count, current_revision) VALUES (:a, :c, :i, now(), now(), 1, 1)",
+                          a=who, c=row["corpus_id"], i=row["item_id"])
+    finally:
+        await api.sql("ALTER TABLE label_judgment ENABLE TRIGGER label_judgment_journal_stamp")
+    assert (await api.sql("SELECT count(*) FROM label_judgment WHERE seq IS NULL")).scalar_one() == 5
+    await profiled(api, "late")
+    assert (await api.request("POST", answer_path(row), "late", json=answer())).status_code == 200
+    revision = answer(1, "different")
+    assert (await api.request("POST", answer_path(row), "v0", json=revision)).status_code == 200
+    decided = {r.annotator_id: (r.admitted, r.admission_group) for r in (await api.sql(
+        "SELECT annotator_id::text, admitted, admission_group FROM label_judgment WHERE seq IS NOT NULL")).all()}
+    assert decided == {await api.annotator_id("late"): (False, "low"), await api.annotator_id("v0"): (True, "low")}
+    await score_now(api)
+    assert (await queue(api, row)).n_low == 5

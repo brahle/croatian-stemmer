@@ -72,3 +72,16 @@ async def test_replay_after_an_erasure_reports_the_changed_inputs(fresh_api):
     assert report["inputs_match"] is False and report["outputs_match"] is None
     changed = {c["journal"] for c in report["changed"]}
     assert {"judgments", "consents"} <= changed
+
+
+async def test_the_bundle_holds_no_reasons_and_no_keycloak_ids(fresh_api):
+    api, rows, _ = await setup(fresh_api)
+    alice, carol = await api.annotator_id("alice"), await api.annotator_id("carol")
+    await api.request("PUT", f"/api/admin/annotators/{alice}/status", "curator", True,
+                      json={"status": "blocked", "reason": "tajni-razlog-1"})
+    subject = api.identity.subjects["carol"]
+    assert (await api.request("POST", "/api/me/erase", "carol", json={"confirm": "DELETE"})).status_code == 200
+    [(run_id, _)] = await score_now(api)
+    text_ = (await api.request("GET", f"/api/admin/scoring/runs/{run_id}/bundle", "curator", True)).text
+    assert "tajni-razlog-1" not in text_ and subject not in text_
+    assert replay(json.loads(text_))["report"]["outputs_match"]

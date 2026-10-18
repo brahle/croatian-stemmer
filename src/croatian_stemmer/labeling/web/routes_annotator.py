@@ -10,7 +10,7 @@ from uuid import UUID
 
 from fastapi import Depends, Query
 from fastapi.responses import JSONResponse
-from sqlalchemy import and_, func, or_, select, text
+from sqlalchemy import and_, func, or_, select, text, true
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 
@@ -327,7 +327,9 @@ def register(app, ctx):
         first = (await db.execute(
             select(Judgment.admitted, Judgment.admission_group).where(
                 Judgment.annotator_id == caller.id, Judgment.corpus_id == item.corpus_id, Judgment.item_id == item.id,
-                func.coalesce(Judgment.seq, 0) > epoch).order_by(func.coalesce(Judgment.seq, 0), Judgment.id)
+                # Epoch 0 holds every answer, V1's (seq NULL) included, as in a run.
+                true() if epoch == 0 else func.coalesce(Judgment.seq, 0) > epoch)
+            .order_by(func.coalesce(Judgment.seq, 0), Judgment.revision, Judgment.id)
             .limit(1))).first()
         if first is not None:  # a revision inherits its epoch's first answer's decision
             return (True if first.admitted is None else first.admitted), first.admission_group or "low"

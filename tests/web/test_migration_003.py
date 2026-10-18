@@ -94,6 +94,14 @@ def test_003_backfills_and_keeps_the_v1_exceptions(scratch_database):
         UNION ALL SELECT seq FROM label_admin_event WHERE seq IS NOT NULL UNION ALL SELECT id FROM label_trust_event""")]
     assert sorted(stamped) == [1, 2, 3, 4]
 
+    # Someone erased under V1 already has the V2 redaction: no reason on their status events; the
+    # erasure request keeps its Keycloak id until the curator completes it.
+    e = ids["erased_blocked"]
+    assert query(url, f"SELECT details #>> '{{}}' FROM label_admin_event WHERE kind = 'annotator.status' "
+                      f"AND target = '{e}'")[0][0] == '{"to": "blocked", "from": "active"}'
+    assert query(url, f"SELECT details ->> 'keycloak_user_id' FROM label_admin_event WHERE kind = 'erasure.requested' "
+                      f"AND target = '{e}'")[0][0] == "kc-1"
+
     # The V1 statements 003 must still permit.
     q, e, n = ids["quarantined"], ids["erased_blocked"], ids["receiver"]
     query(url, f"UPDATE label_annotator SET status = 'active' WHERE id = '{q}'", script=True)

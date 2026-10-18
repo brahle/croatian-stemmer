@@ -81,13 +81,18 @@ def holds(item, params):
     return release_rule(prior, votes, k, tiers, p)
 
 
+def in_use(item):
+    """A known-answer item that must never be published: any qualification item, and an
+    unannounced check that is active now (gold set by a later run counts: `gold_status_now`
+    is read when the export is made) or was active at the run."""
+    now = item.get("gold_status_now")
+    return (item.get("gold_pool") == "qualification" or now == "active"
+            or (now is None and item.get("gold_status") == "active"))
+
+
 def releasable(item):
     """In labels.tsv: resolved and releasable, and not a known-answer item still in use."""
-    if item["state"] != "resolved" or not item["releasable"]:
-        return False
-    if item.get("gold_pool") == "qualification" or (item.get("gold_pool") == "audit" and item.get("gold_status") == "active"):
-        return False
-    return True
+    return item["state"] == "resolved" and item["releasable"] and not in_use(item)
 
 
 def build(export: Path, output: Path, released_on: date | None = None):
@@ -216,8 +221,7 @@ def check(directory: Path, export: Path, annotators: Path | None = None):
             if item is None:
                 problems.append(f"labels.tsv:{number}: item not in the run export")
                 continue
-            if item.get("gold_pool") == "qualification" or (item.get("gold_pool") == "audit"
-                                                            and item.get("gold_status") == "active"):
+            if in_use(item):
                 problems.append(f"labels.tsv:{number}: a known-answer item still in use")
             source = row.get("resolution_source")
             if source in CHECKED_SOURCES:

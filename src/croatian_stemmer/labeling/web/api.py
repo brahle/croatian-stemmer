@@ -54,7 +54,9 @@ class RequestBounds:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
-        importing = (scope["method"], scope["path"]) in LARGE_BODY_ROUTES
+        importing = (scope["method"], scope["path"]) in LARGE_BODY_ROUTES or (
+            scope["method"] == "POST" and scope["path"].startswith("/api/admin/scoring/runs/")
+            and scope["path"].endswith("/release"))  # a release's item ids
         limit = 32 * 1024 * 1024 if importing else 16384
         headers = dict(scope.get("headers", []))
         try:

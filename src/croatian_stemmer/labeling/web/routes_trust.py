@@ -25,8 +25,8 @@ from .common import Caller, failure, scoring_params, trust_event
 from .models import (Anchor, Annotator, AnnotatorScore, Corpus, Gold, Item, ItemAudit, ItemPosterior, ItemState,
                      ScoringRun, Setting, TrustedEmail, TrustEvent)
 from .requests import (AdjudicateRequest, Candidate, GoldActionRequest, GoldImportRequest, ReasonRequest,
-                       RedrawRequest, ReopenRequest, ScoringParamsRequest, ScoringSettingsRequest, TrustedRemoveRequest,
-                       TrustedRequest, gold_answer)
+                       RedrawRequest, ReleaseRequest, ReopenRequest, ScoringParamsRequest, ScoringSettingsRequest,
+                       TrustedRemoveRequest, TrustedRequest, gold_answer)
 from .trusted import email_digest, grant_anchor, normalized_email, revoke_anchors
 from .scheduler import live_readiness
 from .scoring_run import ScoringBusy, bundle, moderation_tx, run_now, run_outputs, stale
@@ -82,7 +82,7 @@ def register(app, ctx):
         async with db.begin():
             rows = (await db.execute(select(ScoringRun).order_by(ScoringRun.started_at.desc(), ScoringRun.id)
                                      .offset(offset).limit(51))).scalars().all()
-            stale_flags = [await stale(db, run.watermark) if run.status == "done" else None for run in rows[:50]]
+            stale_flags = [await stale(db, run.watermark, run.id) if run.status == "done" else None for run in rows[:50]]
         return {"items": [run_json(run, flag) for run, flag in zip(rows[:50], stale_flags)],
                 "next_offset": offset + 50 if len(rows) > 50 else None}
 
@@ -97,7 +97,7 @@ def register(app, ctx):
     async def one_run(run_id: UUID, caller: Caller = Depends(curator), db=Depends(session)):
         async with db.begin():
             run = await get_run(db, run_id)
-            return run_json(run, await stale(db, run.watermark) if run.status == "done" else None, full=True)
+            return run_json(run, await stale(db, run.watermark, run.id) if run.status == "done" else None, full=True)
 
     @app.post("/api/admin/scoring/run")
     async def start_run(caller: Caller = Depends(curator)):
@@ -113,7 +113,7 @@ def register(app, ctx):
             run = await get_run(db, run_id, lock=True)
             if run.status != "done":
                 raise failure(409, "run_not_done")
-            if value and await stale(db, run.watermark):
+            if value and await stale(db, run.watermark, run.id):
                 raise failure(409, "run_stale")
             run.pinned = value
             await event(db, caller, "run.pinned" if value else "run.unpinned", details={"run_id": str(run.id)})
@@ -587,7 +587,7 @@ def register(app, ctx):
             ready = {kind: await live_readiness(db, params, kind) for kind in ("pair", "lemma", "stem")}
             run = (await db.execute(select(ScoringRun).where(ScoringRun.status == "done")
                                     .order_by(ScoringRun.finished_at.desc()).limit(1))).scalar_one_or_none()
-            last = run_json(run, await stale(db, run.watermark), full=True) if run else None
+            last = run_json(run, await stale(db, run.watermark, run.id), full=True) if run else None
         corpora = {}
         for corpus_id, name, kind, state, n in counts:
             entry = corpora.setdefault(str(corpus_id), {"id": str(corpus_id), "name": name, "kinds": {}})
@@ -611,7 +611,7 @@ def register(app, ctx):
         if not kept and not scored and run.n_judgments:
             # Older than the 30-day output retention: replay its bundle offline instead.
             raise failure(410, "run_outputs_expired")
-        return run, await stale(db, run.watermark)
+        return run, await stale(db, run.watermark, run.id)
 
     def stale_headers(run, is_stale, name):
         return {"Content-Disposition": f'attachment; filename="{name}"',
@@ -675,7 +675,9 @@ def register(app, ctx):
                 raise failure(404, "not_found")
             run, is_stale = await exported_run(db, run_id)
             rows = await posterior_rows(db, run, corpus_id)
-            pools = dict((await db.execute(select(Gold.item_id, Gold.pool).where(Gold.corpus_id == corpus_id))).all())
+            # The gold as it is now, not at the run: a later run may have made an item an active check.
+            golds = {item_id: (pool, status) for item_id, pool, status in (await db.execute(
+                select(Gold.item_id, Gold.pool, Gold.status).where(Gold.corpus_id == corpus_id))).all()}
         outputs, changed = await run_outputs(ctx, run.watermark, run.as_of_day, run.params, run.inputs_sha256)
         lines = [{"record": "run", "run": {
             "id": str(run.id), "scoring_version": run.scoring_version, "params": run.params,
@@ -693,7 +695,8 @@ def register(app, ctx):
                           "resolved_answer": post.resolved_answer, "resolved_lemma": post.resolved_lemma,
                           "confidence": post.confidence, "classes": post.classes, "epoch": post.epoch,
                           "n_definite": post.n_definite, "n_annotators": post.n_annotators,
-                          "gold_status": post.gold_status, "gold_pool": pools.get(item.id),
+                          "gold_status": post.gold_status, "gold_pool": golds.get(item.id, (None, None))[0],
+                          "gold_status_now": golds.get(item.id, (None, None))[1],
                           "k": votes["k"], "prior": votes["prior"],
                           "votes": [{key: v[key] for key in ("annotator_id", "tier", "class", "theta", "weight", "answer",
                                                              "lemma", "irregular", "presentation", "admitted")}
@@ -719,27 +722,40 @@ def register(app, ctx):
                         headers=stale_headers(run, is_stale, f"annotators-{run.id}.jsonl"))
 
     @app.post("/api/admin/scoring/runs/{run_id}/release")
-    async def release(run_id: UUID, caller: Caller = Depends(curator), db=Depends(session)):
+    async def release(run_id: UUID, data: ReleaseRequest | None = None, caller: Caller = Depends(curator),
+                      db=Depends(session)):
         """Record that a pinned run's labels are published: every gold item among the released
-        rows is disclosed, so no later answer on it counts as evidence of skill (4.3.5)."""
+        rows is disclosed, so no later answer on it counts as evidence of skill (4.3.5).
+        `item_ids` (the release's labels.tsv) is checked: a qualification item or an active
+        check, as the gold stands now, is refused."""
         async with db.begin():
+            await moderation_tx(db)
             run = await get_run(db, run_id, lock=True)
             if run.status != "done" or not run.pinned:
                 raise failure(409, "run_not_pinned")
-            if await stale(db, run.watermark):
+            if await stale(db, run.watermark, run.id):
                 raise failure(409, "run_stale")
+            rows = (await db.execute(text("""
+                SELECT p.corpus_id, p.item_id, g.pool, g.status FROM label_item_posterior p
+                LEFT JOIN label_gold g ON g.corpus_id = p.corpus_id AND g.item_id = p.item_id
+                WHERE p.run_id = :r AND p.state = 'resolved' AND p.releasable"""), {"r": run_id})).all()
+            released = {r.item_id: r for r in rows}
+            if data is not None and data.item_ids is not None:
+                unknown = [i for i in data.item_ids if i not in released]
+                in_use = [str(i) for i in data.item_ids if i in released and (
+                    released[i].pool == "qualification" or released[i].status == "active")]
+                if unknown or in_use:
+                    raise failure(409, "gold_in_use" if in_use else "not_released", items=in_use or
+                                  [str(i) for i in unknown])
+                chosen = [released[i] for i in data.item_ids]
+            else:
+                chosen = [r for r in rows if not (r.pool == "qualification" or r.status == "active")]
             disclosed = {(r[0], r[1]) for r in (await db.execute(text(
                 "SELECT corpus_id, item_id FROM label_trust_event WHERE kind = 'gold.disclosed'"))).all()}
-            released = (await db.execute(text("""
-                SELECT p.corpus_id, p.item_id FROM label_item_posterior p
-                JOIN label_gold g ON g.corpus_id = p.corpus_id AND g.item_id = p.item_id
-                WHERE p.run_id = :r AND p.state = 'resolved' AND p.releasable
-                  -- what labels.tsv leaves out (qualification items, active checks) is not disclosed
-                  AND g.pool = 'audit' AND g.status <> 'active'"""), {"r": run_id})).all()
             count = 0
-            for corpus_id, item_id in released:
-                if (corpus_id, item_id) not in disclosed:
-                    await event(db, caller, "gold.disclosed", corpus_id=corpus_id, item_id=item_id,
+            for row in chosen:
+                if row.pool is not None and (row.corpus_id, row.item_id) not in disclosed:
+                    await event(db, caller, "gold.disclosed", corpus_id=row.corpus_id, item_id=row.item_id,
                                 details={"reason": "release", "run_id": str(run_id)})
                     count += 1
         return {"run_id": str(run_id), "disclosed": count}

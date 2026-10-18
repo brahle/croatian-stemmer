@@ -19,9 +19,11 @@ from .models import JOURNAL_LOCK, MODERATION_LOCK, SCORING_LOCK
 
 log = logging.getLogger("croatian_stemmer.labeling.web.scoring")
 
+# A run's own status changes (automatic quarantines and releases carry its id) never make it stale.
 MODERATED_AFTER = text("""
     SELECT EXISTS (SELECT 1 FROM label_admin_event WHERE coalesce(seq, 0) > :w
-                   AND label_is_moderation('label_admin_event', kind, NULL, details))
+                   AND label_is_moderation('label_admin_event', kind, NULL, details)
+                   AND (CAST(:r AS text) IS NULL OR (details ->> 'run_id') IS DISTINCT FROM CAST(:r AS text)))
         OR EXISTS (SELECT 1 FROM label_trust_event WHERE id > :w
                    AND label_is_moderation('label_trust_event', kind, run_id, details))""")
 
@@ -49,9 +51,9 @@ async def moderation_tx(db):
     await db.execute(text("SELECT pg_advisory_xact_lock_shared(:k)"), {"k": MODERATION_LOCK})
 
 
-async def stale(db, watermark) -> bool:
-    """A run is stale when a moderation event exists after its watermark."""
-    return bool((await db.execute(MODERATED_AFTER, {"w": watermark})).scalar_one())
+async def stale(db, watermark, run_id=None) -> bool:
+    """A run is stale when a moderation event it did not write exists after its watermark."""
+    return bool((await db.execute(MODERATED_AFTER, {"w": watermark, "r": str(run_id) if run_id else None})).scalar_one())
 
 
 async def barrier(engine, lock_timeout="30s"):
@@ -109,8 +111,11 @@ async def load_inputs(engine, watermark, as_of_day, max_judgments=2_000_000):
                         for r in await connection.execute(text(
                             "SELECT seq, annotator_id, document, version, age_threshold FROM label_consent "
                             "WHERE coalesce(seq, 0) <= :w ORDER BY coalesce(seq, 0), id"), w)]
+            # Only what scoring reads: the status change and the deciding run, never a reason, a
+            # flag list or an erasure request's Keycloak id (these inputs travel in the bundle).
             admin = [{"seq": r.seq, "id": r.id, "at": _iso(r.at), "actor_id": _str(r.actor_id), "kind": r.kind,
-                      "target": r.target, "details": r.details}
+                      "target": r.target, "details": {k: v for k, v in r.details.items() if k in ("from", "to", "run_id")}
+                      if r.kind == "annotator.status" else {}}
                      for r in await connection.execute(text(
                          "SELECT seq, id, at, actor_id, kind, target, details FROM label_admin_event "
                          "WHERE coalesce(seq, 0) <= :w AND kind IN ('annotator.status', 'erasure.requested') "

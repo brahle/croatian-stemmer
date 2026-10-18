@@ -184,7 +184,11 @@ rows carry a band. On success it prints `{"ok": true, "files": [...]}`.
    the same run.
 3. Press "Zabilježi izdanje" for the run. This records every known-answer item among
    the released rows as disclosed, so later answers on it no longer count as evidence of
-   skill.
+   skill. Known-answer items in use now (any qualification item, an active check, also
+   one a later run created) are never released: the run export carries each item's
+   current gold status (`gold_status_now`), `release` leaves such items out and
+   `release-check` refuses them. `POST /api/admin/scoring/runs/{id}/release` with
+   `{"item_ids": [...]}` (the release's labels.tsv) refuses them too (409 `gold_in_use`).
 4. Run `croatian-stemmer-labels release` per corpus, then `release-check` on each
    directory.
 5. Publish the checked directories as a GitHub release of
