@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.0
+
+Candidates from raw Croatian text and Wikipedia dumps. No web, schema or scoring change.
+
+- New `croatian-stemmer-labels from-text`: plain text files, directories, standard
+  input or a MediaWiki XML dump (`.xml.bz2` streamed) become candidates in the existing
+  JSONL format. A built-in wikitext cleaner handles templates, references, tables,
+  links, files, categories, headings and lists; `--parser mwparserfromhell` is an
+  option through the new `wiki` extra. Sentence splitting understands Croatian
+  abbreviations and initials, and contexts with markup residue, addresses or URLs are
+  dropped. Words are filtered to the Croatian alphabet, with stop words, rare forms
+  (`--min-count`) and heuristically detected names skipped. Lemma and POS suggestions
+  come from a lemmatised `--lexicon` (hr500k). Pairs come from `prepare`'s own sampling
+  code; word items are spread over frequency bands. Strata are prefixed `text_`.
+- Provenance: the corpus hash is the input's hash. For a dump the licence defaults to
+  CC BY-SA 4.0, and each `word_ref` is a permanent link to the article revision. The web
+  app already allows only CC BY-SA labels for such a source. `release` adds the
+  Wikipedia attribution and the statement of changes to the dataset card when the
+  source is a Wikimedia address.
+- `gold` refuses raw-text candidates: raw text has no ground truth.
+- Documentation: downloading and checking the Croatian Wikipedia dump, the command,
+  and the time and memory it takes on a laptop.
+
 ## 0.3.4
 
 Known-answer coverage: the gold builder can now fill every `pair` and `lemma` pool the

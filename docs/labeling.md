@@ -78,6 +78,108 @@ lemma/stem review from 67,245 unique form/lemma/POS suggestions. It produced
 **zero new human judgments**. No corpus text or candidate file is committed to
 this repository.
 
+## Candidates from raw text and Wikipedia
+
+`from-text` turns raw Croatian text into candidates in the same JSONL format, for the
+same import. Inputs are text files, directories (every `*.txt` below them, read as
+UTF-8), `-` for standard input, or a MediaWiki XML export such as a Wikipedia dump
+(`.xml`, or `.xml.bz2` read as a stream; `--format` overrides the detection by name).
+
+```sh
+croatian-stemmer-labels from-text TEXT_OR_DUMP... --lexicon path/to/hr500k.conllup \
+  [--source-uri URI --license LICENCE] [--pairs 10000] [--word-items 1000] \
+  [--min-count 2] [--seed 0] [--parser builtin|mwparserfromhell] [--max-pages N] \
+  --output candidates.jsonl
+```
+
+How it works:
+
+- **Wikitext.** Only main-namespace articles are read; redirects and disambiguation
+  pages are skipped. The built-in cleaner removes comments, references and other
+  non-text tags (math, gallery, code and so on), templates and tables (nested too),
+  file, category and interlanguage links, headings, list and table markup and bold or
+  italic quotes; links keep their text. `--parser mwparserfromhell` uses that library
+  (`pip install 'croatian-stemmer[wiki]'`) for the parsing step. The default stays the
+  built-in cleaner so that the output does not depend on what is installed.
+- **Sentences.** Paragraphs are split after `.`, `!`, `?` or `…` when a space and an
+  upper-case letter or digit follow, but not after a known abbreviation (npr., tj.,
+  itd., dr., sv., god., pr. Kr. and others) or a one-letter initial. A sentence becomes
+  a context only when it has 4 to 60 words, ends like a sentence, holds no markup
+  residue (`[ ] { } | < > = _ \`), no address (`@`) and no URL, and does not repeat
+  earlier in the same document.
+- **Words.** A word is a whitespace token with its punctuation stripped that is purely
+  alphabetic, 2 to 40 letters of the Croatian alphabet (č, ć, dž, đ, lj, nj, š, ž;
+  no q, w, x, y or foreign accents), and not one of the stemmer's stop words. Names are
+  skipped heuristically: a form written with a capital letter inside a sentence more
+  often than in lower case. Forms occurring fewer than `--min-count` times are skipped.
+- **Suggestions.** Raw text has no lemmas, so `--lexicon` (one or more lemmatised
+  CoNLL-U corpora, normally hr500k) gives each form its most frequent lemma and POS
+  there (ties broken by lemma, then POS). Forms the lexicon does not know, and forms
+  whose analysis is a name, foreign word, number or symbol, are skipped. A suggestion
+  can be wrong in context, as with any corpus suggestion.
+- **Sampling.** Each form keeps one occurrence, chosen by a seeded hash so contexts are
+  spread over the whole text. Pairs come from `prepare`'s sampling code (same-lemma,
+  stem-collision and random different-lemma suggestions), so items are comparable;
+  word items (a lemma and a stem item per form) are spread evenly over frequency bands
+  (2-4, 5-19, 20-99, 100-999 and 1000+ occurrences). Strata are prefixed `text_`
+  (`text_corpus_same_lemma_suggestion`, `text_word_band_5-19`, ...), so a raw-text corpus
+  never shares an estimated class prior with a lemmatised one.
+- **Identity.** `corpus_sha256` is the SHA-256 of the input file as given (the
+  compressed dump), or of the sorted list of names and hashes of several inputs. Item
+  ids are stable for the same input, options and seed. `word_ref` names the occurrence:
+  for a dump, a permanent link to the article revision plus a sentence and word
+  number, for example `https://hr.wikipedia.org/w/index.php?oldid=7244060#s20.w9`; for
+  a text file, its path relative to the directory given, plus the same numbers.
+
+Provenance and licence: plain text needs `--source-uri` and `--license`. For a dump the
+licence defaults to `CC BY-SA 4.0` (Wikipedia's text licence) and the source URI to
+`https://dumps.wikimedia.org/<dbname>/`; pass the dated dump URL instead. A CC BY-SA
+source can only be published under CC BY-SA labels: the web app refuses any other
+labels licence (409 `license_not_publishable`), which keeps share-alike. Attribution
+travels with every row: each context's `word_ref` and `other_word_ref` link to the
+revision whose history lists its authors. When the source URI is a Wikimedia or
+Wikipedia address, `release` adds to the dataset card that the sentences are by
+Wikipedia contributors, where the links lead, and what was changed (markup removed,
+text split into sentences).
+
+**No gold from raw text.** Text without annotation has no ground truth, so `gold`
+cannot build known-answer items for such a corpus, and `from-text` reports
+`"gold": "none: raw text has no ground truth"`; `gold` refuses candidates with `text_`
+strata. Tiers and accuracies are per kind across corpora, so the weight of a vote on a
+raw-text corpus comes from the known answers its author met on corpora with gold
+(hr500k). Checks are served from the corpus being labelled, so on a raw-text corpus
+none are served until it has known answers of its own, which come from the trusted
+list (anchors' answers through the seed queue, or curator decisions).
+
+### The Croatian Wikipedia
+
+Download the articles dump (about 350 MB) and its checksums into the gitignored
+`data/` directory, and check the file:
+
+```sh
+mkdir -p data/hrwiki && cd data/hrwiki
+curl -fLO https://dumps.wikimedia.org/hrwiki/latest/hrwiki-latest-pages-articles.xml.bz2
+curl -fLO https://dumps.wikimedia.org/hrwiki/latest/hrwiki-latest-sha1sums.txt
+shasum -a 1 hrwiki-latest-pages-articles.xml.bz2   # equals the pages-articles line
+cd ../..
+```
+
+The checksums file names the dated dump (for example `hrwiki-20261001-...`). Use that
+date in the source URI:
+
+```sh
+croatian-stemmer-labels from-text data/hrwiki/hrwiki-latest-pages-articles.xml.bz2 \
+  --lexicon data/hr500k.conllup --source-uri https://dumps.wikimedia.org/hrwiki/20261001/ \
+  --pairs 8000 --word-items 1000 --output hrwiki-candidates.jsonl
+```
+
+That gives 10,000 items. On a laptop (one core, Apple silicon, other work running) the
+20261001 dump took about 10.5 minutes (575 s of CPU) and at most about 145 MB of memory.
+It read 212,779 articles, 3.8 million sentences (3.2 million usable as contexts) and
+51 million word tokens, and found 45,785 eligible forms. Most of the time goes into decompressing and
+cleaning the wikitext. Memory is bounded by the lexicon and one context per known form,
+not by the size of the dump. `--max-pages 2000` makes a trial run of a few seconds.
+
 ## Evaluate exported judgments
 
 ```sh

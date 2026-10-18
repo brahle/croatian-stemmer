@@ -189,3 +189,18 @@ def test_gold_reserve_items_are_never_released(tmp_path):
         handle.write("\t".join(row.values()) + "\n")
     with pytest.raises(ValueError, match="a gold-reserve item"):
         check(out, path)
+
+
+def test_a_wikipedia_source_gets_its_attribution_in_the_dataset_card(tmp_path):
+    plain = export(tmp_path, [item([("established", "same", E)] * 3)], name="plain.jsonl")
+    build(plain, tmp_path / "plain")
+    assert "Wikipedia contributors" not in (tmp_path / "plain" / "dataset-card.md").read_text(encoding="utf-8")
+    wiki = plain.read_text(encoding="utf-8").replace('"urn:test:release"',
+                                                     '"https://dumps.wikimedia.org/hrwiki/20261001/"')
+    path = tmp_path / "wiki.jsonl"
+    path.write_text(wiki, encoding="utf-8")
+    build(path, tmp_path / "wiki")
+    card = (tmp_path / "wiki" / "dataset-card.md").read_text(encoding="utf-8")
+    assert "written by Wikipedia contributors" in card and "permanent link to the article revision" in card
+    assert "licensed CC BY-SA 4.0" in card and "Changes:" in card
+    check(tmp_path / "wiki", path)
