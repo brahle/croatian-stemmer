@@ -7,21 +7,24 @@ plus a non-blocked annotator record). Privileged actions write label_admin_event
 import csv
 import io
 import json
+from collections import defaultdict
 from typing import Literal
 from uuid import UUID
 
 from fastapi import Depends, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
-from sqlalchemy import String, cast, func, select, update
+from sqlalchemy import String, cast, exists, func, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 
 from ..schema import FIELDS
 from .common import Caller, corpus_json, excluded_annotators, failure, scoring_params, trust_event
 from .licenses import allowed
-from .models import AdminEvent, Annotator, Corpus, ErasureRequest, Item, ItemAudit, ItemState, Judgment, Setting
+from ..scoring import HARD_FLAGS, REPORTED_FLAGS
+from .models import (AdminEvent, Anchor, Annotator, AnnotatorScore, Corpus, ErasureRequest, Item, ItemAudit, ItemState,
+                     Judgment, Setting, TrustedEmail)
 from .scheduler import audit_key, item_bits
-from .scoring_run import moderation_tx
+from .scoring_run import latest_done, moderation_tx
 from .requests import Candidate, ImportRequest, PublishRequest, SettingsRequest, StatusRequest
 
 
@@ -221,6 +224,9 @@ def register(app, ctx):
 
     @app.get("/api/admin/annotators")
     async def annotators(status: Literal["active", "quarantined", "blocked", "erased"] | None = None,
+                         flagged: bool = False, tier: Literal["new", "qualified", "established", "anchor",
+                                                             "quarantined"] | None = None,
+                         quarantine: Literal["open"] | None = None,
                          offset: int = Query(0, ge=0, le=2**31 - 1), caller: Caller = Depends(curator),
                          db=Depends(session)):
         counts = (select(Judgment.annotator_id, func.count().label("judgments"),
@@ -229,16 +235,52 @@ def register(app, ctx):
         reason = (select(AdminEvent.details["reason"].astext)
                   .where(AdminEvent.kind == "annotator.status", AdminEvent.target == cast(Annotator.id, String))
                   .order_by(AdminEvent.id.desc()).limit(1).scalar_subquery())
-        query = (select(Annotator, func.coalesce(counts.c.judgments, 0), func.coalesce(counts.c.item_count, 0), reason)
+        since = (select(func.max(AdminEvent.at))
+                 .where(AdminEvent.kind == "annotator.status", AdminEvent.target == cast(Annotator.id, String))
+                 .scalar_subquery())
+        query = (select(Annotator, func.coalesce(counts.c.judgments, 0), func.coalesce(counts.c.item_count, 0), reason,
+                        func.extract("day", func.now() - since))
                  .outerjoin(counts, counts.c.annotator_id == Annotator.id))
-        if status:
-            query = query.where(Annotator.status == status)
         async with db.begin():
-            rows = (await db.execute(query.order_by(Annotator.created_at.desc(), Annotator.id.desc()).offset(offset).limit(101))).all()
-        return {"items": [{"id": str(a.id), "email": a.email, "email_verified": a.email_verified, "status": a.status,
+            latest = await latest_done(db)
+            if status:
+                query = query.where(Annotator.status == status)
+            if quarantine == "open":
+                query = query.where(Annotator.status == "quarantined")
+            if flagged or tier:
+                score = select(AnnotatorScore.annotator_id).where(AnnotatorScore.run_id == latest,
+                                                                  AnnotatorScore.annotator_id == Annotator.id)
+                if tier:
+                    score = score.where(AnnotatorScore.tier == tier)
+                if flagged:
+                    score = score.where(text("EXISTS (SELECT 1 FROM jsonb_each(label_annotator_score.flags) f "
+                                             "WHERE f.key = ANY(:hard) AND f.value ->> 'on' = 'true')"))
+                query = query.where(exists(score))
+            rows = (await db.execute(query.order_by(Annotator.created_at.desc(), Annotator.id.desc())
+                                     .offset(offset).limit(101), {"hard": list(HARD_FLAGS)})).all()
+            ids = [a.id for a, *_ in rows[:100]]
+            scores = defaultdict(dict)
+            for row in (await db.execute(select(AnnotatorScore).where(
+                    AnnotatorScore.run_id == latest, AnnotatorScore.annotator_id.in_(ids)))).scalars():
+                scores[row.annotator_id][row.kind] = {
+                    "tier": row.tier, "base_tier": row.base_tier, "qualified": row.qualified, "theta": row.theta_mean,
+                    "weight": row.weight, "theta_lb_gold": row.theta_lb_gold,
+                    "gold": {"seen": row.gold_seen, "hits": row.gold_hits, "disc_seen": row.disc_seen,
+                             "disc_hits": row.disc_hits, "wrong_sugg_seen": row.wrong_sugg_seen,
+                             "wrong_sugg_hits": row.wrong_sugg_hits},
+                    "flags": sorted(name for name in HARD_FLAGS + REPORTED_FLAGS
+                                    if isinstance(row.flags.get(name), dict) and row.flags[name].get("on")),
+                    "signals": row.flags, "n_definite": row.n_definite}
+            anchors = dict((await db.execute(select(Anchor.annotator_id, TrustedEmail.label).join(
+                TrustedEmail, TrustedEmail.id == Anchor.trusted_id).where(Anchor.annotator_id.in_(ids)))).all())
+        return {"run_id": str(latest) if latest else None,
+                "items": [{"id": str(a.id), "email": a.email, "email_verified": a.email_verified, "status": a.status,
                            "created_at": a.created_at.isoformat(), "last_seen_at": a.last_seen_at.isoformat(),
-                           "counts": {"judgments": judgments, "items": items}, "status_reason": reason}
-                          for a, judgments, items, reason in rows[:100]],
+                           "counts": {"judgments": judgments, "items": items}, "status_reason": reason,
+                           "anchor": a.id in anchors, "trusted_label": anchors.get(a.id),
+                           "kinds": scores.get(a.id, {}),
+                           "quarantine_age_days": int(age) if a.status == "quarantined" and age is not None else None}
+                          for a, judgments, items, reason, age in rows[:100]],
                 "next_offset": offset + 100 if len(rows) > 100 else None}
 
     @app.put("/api/admin/annotators/{annotator_id}/status")

@@ -32,6 +32,7 @@ from .legal import LegalDocuments
 from .limits import Limiter
 from .models import Annotator, Consent, ErasureRequest, Gold, Setting
 from .scheduler import audit_key, live_readiness
+from .trusted import match_anchor
 from .scoring_run import moderation_tx, scheduled_tick
 
 STATIC = Path(__file__).parent / "static"
@@ -177,6 +178,7 @@ class Context:
 
         async def annotator_any(request: Request, db=Depends(session)) -> Caller:
             principal = await auth.authenticate(request.headers.get("authorization"))
+            fresh = False  # a profile created or refreshed now: check the trusted list (4.7.2)
             async with db.begin():
                 row = (await db.execute(select(Annotator.id, Annotator.status, Annotator.last_seen_at,
                                                func.now() - Annotator.last_seen_at, consents)
@@ -193,9 +195,14 @@ class Context:
                     row = (await db.execute(select(Annotator.id, Annotator.status, Annotator.last_seen_at,
                                                    func.now() - Annotator.last_seen_at, consents)
                                             .where(Annotator.subject == principal.subject))).one()
-                elif row[3].total_seconds() > 600 and not await refresh_profile(db, row[0], principal):
-                    # Erased since the SELECT above: never write the email back or go on as a stale caller.
-                    raise await pending_erasure(db, principal.subject) or failure(409, "erasure_pending")
+                    fresh = True
+                elif row[3].total_seconds() > 600:
+                    if not await refresh_profile(db, row[0], principal):
+                        # Erased since the SELECT above: never write the email back or go on as a stale caller.
+                        raise await pending_erasure(db, principal.subject) or failure(409, "erasure_pending")
+                    fresh = True
+            if fresh and principal.email:
+                await match_anchor(sessions, row[0], principal)
             return Caller(id=row[0], status=row[1], principal=principal,
                           consents=tuple(tuple(c) for c in row[4] or ()))
 

@@ -5,7 +5,7 @@ import asyncio
 import pytest
 pytest.importorskip("sqlalchemy")
 pytest.importorskip("asyncpg")
-from labeling_support import answer, answer_path, candidates, profiled, score_now, unlimited
+from labeling_support import answer, answer_path, candidates, make_anchor, profiled, score_now, unlimited
 
 pytestmark = pytest.mark.asyncio
 
@@ -39,18 +39,25 @@ async def counted_voters(api, run_id):
     return (await api.sql("SELECT sum(n_annotators) FROM label_item_posterior WHERE run_id = :r", r=run_id)).scalar_one()
 
 
-@pytest.mark.parametrize("action", ["block", "clear", "erase", "gold"])
+@pytest.mark.parametrize("action", ["block", "clear", "erase", "gold", "revoke", "reopen"])
 async def test_a_moderation_event_during_a_run_supersedes_it(fresh_api, action):
     api = await fresh_api()
     rows = await labelled(api, ["alice", "bob"])
     ctx = api.app.state.ctx
     if action == "clear":
         await status(api, "bob", "quarantined")
+    if action == "revoke":
+        await make_anchor(api, "owner")
+    entry = (await api.sql("SELECT id FROM label_trusted_email ORDER BY id DESC LIMIT 1")).scalar()
     moves = {"block": lambda: status(api, "bob", "blocked"), "clear": lambda: status(api, "bob", "active"),
              "erase": lambda: api.request("POST", "/api/me/erase", "bob", json={"confirm": "DELETE"}),
              "gold": lambda: api.request("PUT", f'/api/admin/gold/{rows[0]["corpus_id"]}/{rows[0]["item_id"]}',
                                          "curator", True, json={"action": "set", "pool": "audit", "answer": "same",
-                                                                "reason": "fence"})}
+                                                                "reason": "fence"}),
+             "revoke": lambda: api.request("DELETE", f"/api/admin/trusted/{entry}", "curator", True,
+                                           json={"reason": "fence"}),
+             "reopen": lambda: api.request("POST", f'/api/admin/items/{rows[0]["corpus_id"]}/{rows[0]["item_id"]}/reopen',
+                                           "curator", True, json={"reason": "fence", "discard_previous": True})}
     once(ctx, moves[action])
     results = await score_now(api)
     assert [status_ for _, status_ in results] == ["superseded", "done"]
@@ -63,6 +70,12 @@ async def test_a_moderation_event_during_a_run_supersedes_it(fresh_api, action):
         assert voters == 8
     elif action == "erase":
         assert voters == 8  # the answers live on under the new identifier
+    elif action == "revoke":
+        anchors = (await api.sql("SELECT count(*) FROM label_annotator_score WHERE run_id = :r AND tier = 'anchor'",
+                                 r=done)).scalar_one()
+        assert anchors == 0
+    elif action == "reopen":
+        assert voters == 6  # the discarded item's two votes are gone
     else:
         gold = (await api.sql("SELECT gold_status FROM label_item_posterior WHERE run_id = :r AND item_id = :i",
                               r=done, i=rows[0]["item_id"])).scalar_one_or_none()

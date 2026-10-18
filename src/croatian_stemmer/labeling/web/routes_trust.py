@@ -7,6 +7,7 @@ update in one transaction, so a run that did not see it cannot publish over it.
 """
 
 import json
+from collections import defaultdict
 from typing import Literal
 from uuid import UUID
 
@@ -16,11 +17,16 @@ from pydantic import ValidationError
 from sqlalchemy import func, select, text, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
 
-from ..scoring import CELLS, DEFAULT_PARAMS, answer_class, params_sha256, suggested_class, validate_params
+from ..scoring import (CELLS, DEFAULT_PARAMS, answer_class, krippendorff_alpha, observed_agreement, params_sha256,
+                       suggested_class, validate_params)
 from .common import Caller, failure, scoring_params, trust_event
-from .models import Corpus, Gold, Item, ItemAudit, ScoringRun, Setting, TrustEvent
-from .requests import (GoldActionRequest, GoldImportRequest, RedrawRequest, ScoringParamsRequest,
-                       ScoringSettingsRequest, gold_answer)
+from .models import (Anchor, Annotator, Corpus, Gold, Item, ItemAudit, ItemPosterior, ItemState, ScoringRun, Setting,
+                     TrustedEmail, TrustEvent)
+from .requests import (AdjudicateRequest, Candidate, GoldActionRequest, GoldImportRequest, ReasonRequest,
+                       RedrawRequest, ReopenRequest, ScoringParamsRequest, ScoringSettingsRequest, TrustedRemoveRequest,
+                       TrustedRequest, gold_answer)
+from .trusted import email_digest, grant_anchor, normalized_email, revoke_anchors
+from .scheduler import live_readiness
 from .scoring_run import ScoringBusy, bundle, moderation_tx, run_now, stale
 
 
@@ -330,3 +336,236 @@ def register(app, ctx):
                 "next_offset": offset + 200 if len(rows) > 200 else None,
                 "pools": [{"kind": k, "pool": p, "status": s, "suggestion_agrees": a, "n": n}
                           for k, p, s, a, n in pools]}
+
+    # ---- the trusted list (4.7) ------------------------------------------------------
+
+    @app.get("/api/admin/trusted")
+    async def trusted_list(caller: Caller = Depends(curator), db=Depends(session)):
+        async with db.begin():
+            rows = (await db.execute(select(TrustedEmail, Anchor.annotator_id).outerjoin(
+                Anchor, Anchor.trusted_id == TrustedEmail.id).order_by(TrustedEmail.id))).all()
+        return {"items": [{"id": t.id, "email": t.email, "label": t.label, "added_at": t.added_at.isoformat(),
+                           "annotator_id": str(anchor) if anchor else None}
+                          for t, anchor in rows if t.removed_at is None],
+                "removed": [{"id": t.id, "added_at": t.added_at.isoformat(), "removed_at": t.removed_at.isoformat()}
+                            for t, _ in rows if t.removed_at is not None]}
+
+    @app.post("/api/admin/trusted")
+    async def trust(data: TrustedRequest, caller: Caller = Depends(curator), db=Depends(session)):
+        email = normalized_email(data.email)
+        if email is None:
+            raise failure(422, "invalid_email")
+        digest = email_digest(email)
+        async with db.begin():
+            await moderation_tx(db)
+            if (await db.execute(select(TrustedEmail.id).where(TrustedEmail.email_sha256 == digest,
+                                                               TrustedEmail.removed_at.is_(None)))).first():
+                raise failure(409, "already_trusted")
+            entry = (await db.execute(insert(TrustedEmail).values(email=email, email_sha256=digest, label=data.label,
+                                                                  added_by=caller.id).returning(TrustedEmail.id))).scalar_one()
+            await event(db, caller, "trusted.added", details={"trusted_id": entry})
+            # Someone who already signed in with this verified address becomes an anchor now.
+            person = (await db.execute(select(Annotator.id).where(
+                Annotator.email == email, Annotator.email_verified, Annotator.status != "erased")
+                .with_for_update())).scalar_one_or_none()
+            if person is not None:
+                await grant_anchor(db, person, entry)
+        ctx.forget_settings()
+        return {"id": entry}
+
+    @app.delete("/api/admin/trusted/{trusted_id}")
+    async def untrust(trusted_id: int, data: TrustedRemoveRequest, caller: Caller = Depends(curator),
+                      db=Depends(session)):
+        async with db.begin():
+            await moderation_tx(db)
+            entry = (await db.execute(select(TrustedEmail).where(TrustedEmail.id == trusted_id)
+                                      .with_for_update())).scalar_one_or_none()
+            if entry is None or entry.removed_at is not None:
+                raise failure(404, "not_found")
+            entry.removed_at, entry.email, entry.email_sha256, entry.label = func.now(), None, None, None
+            await event(db, caller, "trusted.removed", details={"trusted_id": trusted_id, "reason": data.reason})
+            await revoke_anchors(db, trusted_id, "trusted.removed", actor_id=caller.id)
+        ctx.forget_settings()
+        return {"id": trusted_id, "removed": True}
+
+    # ---- adjudication, ambiguity, reopening (4.5.3) ----------------------------------
+
+    async def item_for_decision(db, corpus_id, item_id):
+        row = (await db.execute(select(Item, ItemState).join(
+            ItemState, (ItemState.corpus_id == Item.corpus_id) & (ItemState.item_id == Item.id))
+            .where(Item.corpus_id == corpus_id, Item.id == item_id).with_for_update(of=ItemState))).one_or_none()
+        if row is None:
+            raise failure(404, "unknown_item")
+        return row
+
+    @app.post("/api/admin/items/{corpus_id}/{item_id}/adjudicate")
+    async def adjudicate(corpus_id: UUID, item_id: UUID, data: AdjudicateRequest, caller: Caller = Depends(curator),
+                         db=Depends(session)):
+        async with db.begin():
+            await moderation_tx(db)
+            item, state = await item_for_decision(db, corpus_id, item_id)
+            # The curator settles disputed crowd work; never an item the crowd has not voted on.
+            if state.state not in ("contested", "needs_expert", "provisional"):
+                raise failure(409, "not_adjudicable", state=state.state)
+            try:
+                Candidate.model_validate(item.payload).annotation(
+                    owner="curator", revision=1, answer=data.answer, lemma=data.lemma,
+                    irregular=data.irregular).validate()
+                if data.answer == "unsure":
+                    raise ValueError
+            except ValueError:
+                raise failure(422, "invalid_judgment") from None
+            await event(db, caller, "item.adjudicated", corpus_id=corpus_id, item_id=item_id, details={
+                "answer": data.answer, "lemma": data.lemma, "irregular": data.irregular, "reason": data.reason})
+            state.state, state.releasable, state.updated_at = "resolved", True, func.now()
+        return {"state": "resolved"}
+
+    @app.post("/api/admin/items/{corpus_id}/{item_id}/ambiguous")
+    async def ambiguous(corpus_id: UUID, item_id: UUID, data: ReasonRequest, caller: Caller = Depends(curator),
+                        db=Depends(session)):
+        async with db.begin():
+            await moderation_tx(db)
+            _, state = await item_for_decision(db, corpus_id, item_id)
+            await event(db, caller, "item.ambiguous", corpus_id=corpus_id, item_id=item_id,
+                        details={"reason": data.reason})
+            state.state, state.releasable, state.updated_at = "ambiguous", False, func.now()
+        return {"state": "ambiguous"}
+
+    @app.post("/api/admin/items/{corpus_id}/{item_id}/reopen")
+    async def reopen(corpus_id: UUID, item_id: UUID, data: ReopenRequest, caller: Caller = Depends(curator),
+                     db=Depends(session)):
+        async with db.begin():
+            await moderation_tx(db)
+            _, state = await item_for_decision(db, corpus_id, item_id)
+            event_id = await event(db, caller, "item.reopened", corpus_id=corpus_id, item_id=item_id,
+                                   details={"reason": data.reason, "discard_previous": data.discard_previous})
+            # A fresh budget: the epoch is the reopen's journal position.
+            state.state, state.releasable, state.n_low, state.n_expert = "open", False, 0, 0
+            state.epoch, state.epoch_at, state.epoch_discard, state.updated_at = (
+                event_id, func.now(), data.discard_previous, func.now())
+        return {"state": "open", "epoch": event_id}
+
+    @app.get("/api/admin/items/queue")
+    async def item_queue(state: Literal["contested", "needs_expert", "provisional"] = "contested",
+                         corpus: UUID | None = None, kind: Literal["pair", "lemma", "stem"] | None = None,
+                         caller: Caller = Depends(curator), db=Depends(session)):
+        async with db.begin():
+            run_id = (await db.execute(text("SELECT id FROM label_scoring_run WHERE status = 'done' "
+                                            "ORDER BY finished_at DESC LIMIT 1"))).scalar()
+            query = (select(Item, ItemState, ItemPosterior.classes)
+                     .join(ItemState, (ItemState.corpus_id == Item.corpus_id) & (ItemState.item_id == Item.id))
+                     .outerjoin(ItemPosterior, (ItemPosterior.run_id == run_id)
+                                & (ItemPosterior.corpus_id == Item.corpus_id) & (ItemPosterior.item_id == Item.id))
+                     .where(ItemState.state == state))
+            if corpus:
+                query = query.where(Item.corpus_id == corpus)
+            if kind:
+                query = query.where(Item.kind == kind)
+            rows = (await db.execute(query.order_by(Item.corpus_id, Item.ordinal).limit(200))).all()
+            votes = {}
+            if rows:
+                keys = [(item.corpus_id, item.id) for item, _, _ in rows]
+                for corpus_id, item_id, annotator_id, answer, lemma, tier in await db.execute(text("""
+                        SELECT DISTINCT ON (j.corpus_id, j.item_id, j.annotator_id) j.corpus_id, j.item_id,
+                               j.annotator_id, j.answer, j.lemma, s.tier
+                        FROM label_judgment j
+                        LEFT JOIN label_annotator_score s ON s.run_id = :r AND s.annotator_id = j.annotator_id
+                             AND s.kind = (SELECT kind FROM label_item WHERE corpus_id = j.corpus_id AND id = j.item_id)
+                        WHERE (j.corpus_id, j.item_id) IN (SELECT * FROM unnest(CAST(:cs AS uuid[]), CAST(:is AS uuid[])))
+                        ORDER BY j.corpus_id, j.item_id, j.annotator_id, j.revision DESC"""),
+                        {"r": run_id, "cs": [k[0] for k in keys], "is": [k[1] for k in keys]}):
+                    votes.setdefault((corpus_id, item_id), []).append(
+                        {"annotator_id": str(annotator_id), "answer": answer, "lemma": lemma, "tier": tier or "new"})
+        return {"run_id": str(run_id) if run_id else None, "items": [
+            {"corpus_id": str(item.corpus_id), "item_id": str(item.id), "kind": item.kind, "state": s.state,
+             "word": item.payload.get("word"), "other_word": item.payload.get("other_word"),
+             "proposed_lemma": item.payload.get("proposed_lemma"),
+             "other_proposed_lemma": item.payload.get("other_proposed_lemma"),
+             "proposed_stem": item.payload.get("proposed_stem"), "context": item.payload.get("context"),
+             "classes": classes or [], "votes": votes.get((item.corpus_id, item.id), [])}
+            for item, s, classes in rows]}
+
+    # ---- agreement and alerts ---------------------------------------------------------
+
+    @app.get("/api/admin/scoring/iaa")
+    async def agreement(corpus: UUID, caller: Caller = Depends(curator), db=Depends(session)):
+        """Krippendorff's alpha (nominal) per kind and stratum over the latest definite answers
+        of annotators whose votes count, observed agreement, and the anchors' agreement with gold."""
+        async with db.begin():
+            rows = (await db.execute(text("""
+                SELECT DISTINCT ON (j.item_id, j.annotator_id) j.item_id, j.annotator_id, j.answer, j.lemma, i.kind,
+                       i.payload ->> 'sampling_stratum' AS stratum
+                FROM label_judgment j JOIN label_item i ON i.corpus_id = j.corpus_id AND i.id = j.item_id
+                JOIN label_annotator a ON a.id = j.annotator_id
+                WHERE j.corpus_id = :c AND a.status NOT IN ('blocked', 'quarantined') AND j.admitted IS NOT FALSE
+                ORDER BY j.item_id, j.annotator_id, j.revision DESC"""), {"c": corpus})).all()
+            anchor_rows = (await db.execute(text("""
+                SELECT DISTINCT ON (j.item_id, j.annotator_id) j.answer, j.lemma, g.answer AS gold_answer,
+                       g.lemma AS gold_lemma
+                FROM label_judgment j JOIN label_anchor x ON x.annotator_id = j.annotator_id
+                JOIN label_gold g ON g.corpus_id = j.corpus_id AND g.item_id = j.item_id
+                WHERE j.corpus_id = :c AND j.answer <> 'unsure' AND g.status IN ('active', 'retired')
+                ORDER BY j.item_id, j.annotator_id, j.revision"""), {"c": corpus})).all()
+        units = defaultdict(lambda: defaultdict(list))
+        for row in rows:
+            cls = answer_class(row.kind, row.answer, row.lemma)
+            if cls is not None:
+                units[(row.kind, row.stratum or "")][row.item_id].append(cls)
+        result = {}
+        for (kind, stratum), items in sorted(units.items()):
+            values = list(items.values())
+            entry = result.setdefault(kind, {"strata": {}})
+            entry["strata"][stratum] = {"alpha": krippendorff_alpha(values), "observed_agreement":
+                                        observed_agreement(values), "items": sum(len(v) >= 2 for v in values)}
+        for kind in result:
+            values = [v for (k, _), items in units.items() if k == kind for v in items.values()]
+            result[kind].update({"alpha": krippendorff_alpha(values), "observed_agreement": observed_agreement(values)})
+        hits = sum((r.answer, r.lemma) == (r.gold_answer, r.gold_lemma) for r in anchor_rows)
+        return {"corpus_id": str(corpus), "kinds": result,
+                "anchor_gold": {"seen": len(anchor_rows), "agree": hits,
+                                "accuracy": hits / len(anchor_rows) if anchor_rows else None}}
+
+    @app.get("/api/admin/alerts")
+    async def alerts(caller: Caller = Depends(curator), db=Depends(session)):
+        found = []
+        async with db.begin():
+            params = await scoring_params(db)
+            f = params["flags"]
+            burst = (await db.execute(text("""
+                SELECT count(*) FROM label_annotator a WHERE a.created_at > now() - interval '7 days' AND (
+                  SELECT count(*) FROM label_annotator b WHERE b.created_at BETWEEN a.created_at
+                    AND a.created_at + make_interval(mins => :w)) >= :n"""),
+                {"w": f["signup_burst_window_min"], "n": f["signup_burst_count"]})).scalar_one()
+            if burst:
+                found.append({"code": "signup_burst"})
+            for kind in ("pair", "lemma", "stem"):
+                ready = await live_readiness(db, params, kind)
+                audit = sum(ready["pools"]["audit"].values())
+                if audit < params["gold_pool_warn"]:
+                    found.append({"code": "gold_pool_low", "kind": kind, "audit_pool": audit})
+                missing = [name for name in ("qualification", "audit", "promotion") if not ready[name]]
+                if missing:
+                    found.append({"code": "kind_not_ready", "kind": kind, "missing": missing})
+            recent = (await db.execute(text("SELECT status FROM label_scoring_run ORDER BY started_at DESC LIMIT 3"))
+                      ).scalars().all()
+            if len(recent) == 3 and set(recent) == {"failed"}:
+                found.append({"code": "runs_failing"})
+            superseded = (await db.execute(text("SELECT count(*) FROM label_scoring_run WHERE status = 'superseded' "
+                                                "AND started_at > now() - interval '1 day'"))).scalar_one()
+            if superseded:
+                found.append({"code": "runs_superseded", "count": superseded})
+            due = (await db.execute(text("""
+                SELECT a.id FROM label_annotator a WHERE a.status = 'quarantined'
+                  AND (SELECT max(e.at) FROM label_admin_event e WHERE e.kind = 'annotator.status'
+                       AND e.target = a.id::text) < now() - interval '7 days'"""))).scalars().all()
+            found += [{"code": "quarantine_review_due", "annotator_id": str(a)} for a in due]
+            weak = (await db.execute(text("""
+                SELECT s.annotator_id, s.kind FROM label_annotator_score s
+                WHERE s.run_id = (SELECT id FROM label_scoring_run WHERE status = 'done' ORDER BY finished_at DESC LIMIT 1)
+                  AND s.tier = 'anchor' AND s.gold_seen > 0 AND s.gold_hits < 0.8 * s.gold_seen"""))).all()
+            found += [{"code": "anchor_gold_accuracy", "annotator_id": str(a), "kind": k} for a, k in weak]
+            waiting = (await db.execute(text("SELECT count(*) FROM label_erasure_request WHERE keycloak_deleted_at IS "
+                                             "NULL AND requested_at < now() - interval '14 days'"))).scalar_one()
+            if waiting:
+                found.append({"code": "erasures_waiting", "count": waiting})
+        return {"items": found}

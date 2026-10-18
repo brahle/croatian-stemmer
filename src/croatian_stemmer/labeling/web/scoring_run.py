@@ -310,6 +310,7 @@ async def run_now(ctx, *, triggered_by=None, as_of_day=None, wait=False):
                 results.append((run_id, status))
                 if status != "superseded":
                     break
+            ctx.forget_settings()  # a run can change the gold pools the scheduler caches
             return results
         finally:
             await holder.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": SCORING_LOCK})

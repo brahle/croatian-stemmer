@@ -1277,3 +1277,34 @@ def replay(bundle) -> dict:
     report["outputs_sha256"] = sha256(outputs)
     report["outputs_match"] = report["outputs_sha256"] == run["outputs_sha256"] if report["inputs_match"] else None
     return {"report": report, "outputs": outputs}
+
+
+def krippendorff_alpha(units):
+    """Krippendorff's alpha for nominal data. units: one list of values per item (only items
+    with at least two values are pairable). None when there is no disagreement to expect."""
+    coincidence = defaultdict(float)
+    for values in units:
+        m = len(values)
+        if m < 2:
+            continue
+        counts = defaultdict(int)
+        for value in values:
+            counts[value] += 1
+        for c in sorted(counts):
+            for k in sorted(counts):
+                coincidence[(c, k)] += counts[c] * (counts[k] - (c == k)) / (m - 1)
+    totals = defaultdict(float)
+    for (c, _), value in sorted(coincidence.items()):
+        totals[c] += value
+    n = sum(totals.values())
+    if n <= 1:
+        return None
+    observed = sum(value for (c, k), value in coincidence.items() if c != k)
+    expected = sum(totals[c] * totals[k] for c in totals for k in totals if c != k) / (n - 1)
+    return None if expected == 0 else 1 - observed / expected
+
+
+def observed_agreement(units):
+    """The share of items with at least two definite answers on which all agree."""
+    multi = [values for values in units if len(values) >= 2]
+    return sum(len(set(values)) == 1 for values in multi) / len(multi) if multi else None

@@ -247,3 +247,43 @@ class GoldActionRequest(BaseModel):
         if self.lemma:
             self.lemma = word(self.lemma, "lemma")
         return self
+
+
+class TrustedRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: StrictStr = Field(min_length=3, max_length=320)
+    # A curator's note; the dashboard asks for no more than a first name.
+    label: StrictStr = Field(min_length=1, max_length=100)
+
+    @field_validator("label")
+    @classmethod
+    def meaningful(cls, value):
+        return _reason(value)
+
+
+class ReasonRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: StrictStr = Field(min_length=1, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def meaningful(cls, value):
+        return _reason(value)
+
+
+TrustedRemoveRequest = ReasonRequest
+
+
+class AdjudicateRequest(ReasonRequest):
+    answer: Literal["same", "different", "confirmed", "accept", "reject"]
+    lemma: StrictStr = Field(default="", max_length=128)
+    irregular: StrictBool = False
+
+    @field_validator("lemma")
+    @classmethod
+    def normalized_lemma(cls, value):
+        return word(value, "lemma") if value else ""
+
+
+class ReopenRequest(ReasonRequest):
+    discard_previous: StrictBool = False

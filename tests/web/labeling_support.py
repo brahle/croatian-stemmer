@@ -276,3 +276,61 @@ async def make_anchor(api, name="owner"):
     assert granted == 1
     api.app.state.ctx.forget_settings()
     return annotator
+
+
+async def easy_params(api, **changes):
+    """Small readiness and promotion thresholds, so a test can promote someone with a dozen
+    known answers (the rules are the defaults' rules; only the numbers are smaller)."""
+    r = await api.request("GET", "/api/admin/scoring/params", "curator", True)
+    params = r.json()["params"]
+    params["readiness"].update({"qualification_pool": 1, "audit_pool": 12, "wrong_suggestion_pool": 12,
+                                "stem_qualification_pool": 1, "stem_audit_pool": 2, "anchors": 1})
+    params.update({"established_disc_gold": 12, "established_votes": 12, "established_wrong_sugg_gold": 12,
+                   "qualification_n": 1, "qualification_hits": 1})
+    for key, value in changes.items():
+        params[key] = value
+    r = await api.request("PUT", "/api/admin/scoring/params", "curator", True, json={"params": params})
+    assert r.status_code == 200, r.text
+    return params
+
+
+async def wrong_suggestion_gold(api, rows, n=12):
+    """Curator gold on n unsampled pair items whose answer differs from the suggestion."""
+    free = [r for r in await unsampled(api, rows) if r["kind"] == "pair"
+            and r["proposed_lemma"] == r["other_proposed_lemma"]][:n]
+    assert len(free) == n
+    for row in free:
+        r = await api.request("PUT", f'/api/admin/gold/{row["corpus_id"]}/{row["item_id"]}', "curator", True,
+                              json={"action": "set", "pool": "audit", "answer": "different", "reason": "test"})
+        assert r.status_code == 200, r.text
+    return free
+
+
+async def promote(api, name, gold_rows, value="different"):
+    """`name` answers the given gold correctly (twelve discriminating answers)."""
+    await profiled(api, name)
+    for row in gold_rows:
+        r = await api.request("POST", answer_path(row), name, json=answer(value=value))
+        assert r.status_code == 200, r.text
+
+
+def later(days=2):
+    """A run's day far enough ahead that today's audit answers are past the gold delay."""
+    from datetime import date, timedelta
+    return date.today() + timedelta(days=days)
+
+
+def synthetic_conllu(path, lemmas=120, repeat=6):
+    """A synthetic CoNLL-U file: `lemmas` lemmas with five frequent forms each."""
+    import string
+    letters = string.ascii_lowercase
+    lines = []
+    for n in range(lemmas):
+        lemma = "lem" + letters[n // 26 % 26] + letters[n % 26] + ("x" * (n // 676))
+        for _ in range(repeat):
+            forms = [lemma + suffix for suffix in ("a", "e", "i", "u", "om")]
+            lines.append("# text = " + " ".join(forms))
+            lines += [f"{i}\t{form}\t{lemma}\tNOUN" for i, form in enumerate(forms, 1)]
+            lines.append("")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
