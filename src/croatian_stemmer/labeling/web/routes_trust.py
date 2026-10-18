@@ -24,7 +24,7 @@ from ..scoring import (CELLS, DEFAULT_PARAMS, answer_class, krippendorff_alpha, 
 from .common import Caller, failure, scoring_params, trust_event
 from .models import (Anchor, Annotator, AnnotatorScore, Corpus, Gold, Item, ItemAudit, ItemPosterior, ItemState,
                      ScoringRun, Setting, TrustedEmail, TrustEvent)
-from .requests import (AdjudicateRequest, Candidate, GoldActionRequest, GoldImportRequest, ReasonRequest,
+from .requests import (AdjudicateRequest, Candidate, GoldActionRequest, GoldImportRequest, GoldRetireRequest, ReasonRequest,
                        RedrawRequest, ReleaseRequest, ReopenRequest, ScoringParamsRequest, ScoringSettingsRequest,
                        TrustedRemoveRequest, TrustedRequest, gold_answer)
 from .trusted import email_digest, grant_anchor, normalized_email, revoke_anchors
@@ -315,6 +315,38 @@ def register(app, ctx):
                 gold.status, gold.last_event_id = status, event_id
         ctx.forget_settings()
         return {"corpus_id": str(corpus_id), "item_id": str(item_id), "action": data.action}
+
+    @app.post("/api/admin/gold/retire")
+    async def retire_gold(data: GoldRetireRequest, caller: Caller = Depends(curator), db=Depends(session)):
+        """Retire every listed active known-answer item in one transaction: per item the same
+        `gold.retired` event (with the reason) and mirror update as the single retire, under
+        the moderation lock. Idempotent: a retired item is reported, not touched again. Ids
+        found in several corpora are refused unless `corpus_id` names one; with it, ids of
+        other corpora count as unknown."""
+        ids = sorted(set(data.item_ids), key=str)
+        async with db.begin():
+            await moderation_tx(db)
+            query = select(Gold).where(Gold.item_id.in_(ids))
+            if data.corpus_id is not None:
+                query = query.where(Gold.corpus_id == data.corpus_id)
+            golds = (await db.execute(query.order_by(Gold.corpus_id, Gold.item_id).with_for_update())).scalars().all()
+            corpora = sorted({str(g.corpus_id) for g in golds})
+            if data.corpus_id is None and len(corpora) > 1:
+                raise failure(409, "several_corpora", corpora=corpora)
+            counts = {"retired": 0, "already_retired": 0, "not_active": 0}
+            for gold in golds:
+                if gold.status == "retired":
+                    counts["already_retired"] += 1
+                    continue
+                if gold.status != "active":  # contested or retracted: already out of use
+                    counts["not_active"] += 1
+                    continue
+                event_id = await event(db, caller, "gold.retired", corpus_id=gold.corpus_id, item_id=gold.item_id,
+                                       details={"reason": data.reason})
+                gold.status, gold.last_event_id = "retired", event_id
+                counts["retired"] += 1
+        ctx.forget_settings()
+        return {**counts, "unknown": len(ids) - len(golds), "corpus_id": corpora[0] if len(corpora) == 1 else None}
 
     @app.get("/api/admin/gold")
     async def list_gold(corpus: UUID | None = None, kind: Literal["pair", "lemma", "stem"] | None = None,

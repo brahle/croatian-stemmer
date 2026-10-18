@@ -353,6 +353,20 @@ conflicts with an existing valid answer fails the whole import with 409
 `gold_conflict`. For a top-up, build the next file with `--with` the files already
 imported (their items are never reused) and a new seed.
 
+To retire many known-answer items at once (for example a gold set whose selection became
+public), use "Povuci sve s popisa" under "Zlatni primjeri": upload a text file of item ids,
+one per line, choose the corpus (or "svi korpusi" when all ids are in one corpus) and give a
+reason. `POST /api/admin/gold/retire` (`{"item_ids": [...], "reason": "...", "corpus_id":
+optional}`, curator only) retires every listed active item in one transaction, each with the
+same `gold.retired` event (with the reason) and mirror update as the single "Povuci", under
+the moderation lock, so runs and replays read it exactly as single retires. It reports
+`retired`, `already_retired`, `not_active` (contested or retracted, left as they are) and
+`unknown` (no known-answer item, or one in another corpus when a corpus is named), and is
+idempotent. Ids found in more than one corpus are refused (409 `several_corpora`) unless the
+corpus is named. Retired items free their place in the qualification pool, so a replacement
+gold file imported next fills it again, and the next run's readiness counts only the active
+rows.
+
 Gold-reserve items are served only as known-answer checks: never in the normal queue,
 the expert queues or the V1 order, not counted in progress or in the overview's open
 work (shown there as "provjere u pričuvi"), never released, and never disclosed by

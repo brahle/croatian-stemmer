@@ -51,6 +51,11 @@ init container runs the migration).
   occurrence of the earlier file.
 - The overview counts reserve items apart from open work ("provjere u pričuvi"), and
   `/api/next` orders corpora by their real work.
+- Bulk retire: "Povuci sve s popisa" under "Zlatni primjeri" (`POST /api/admin/gold/retire`)
+  takes a file of item ids and a reason and retires every listed active known-answer item
+  in one transaction, with a `gold.retired` event per item as the single retire writes. It
+  reports retired, already retired, out of use and unknown counts, is idempotent, and
+  refuses ids from several corpora unless the corpus is named.
 - Migration 005's downgrade refuses while reserve items are active
   (`LABELING_MIGRATION_RETIRE_RESERVE=true` retires them first), and the app refuses to
   start on a schema revision it does not know. The rollback procedure is in

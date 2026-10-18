@@ -374,3 +374,61 @@ test('trust system: knowledge check, blind showing, dashboard tabs and adjudicat
   expect(faults.flat()).toEqual([]);
   await curatorContext.close(); await annotatorContext.close();
 });
+
+test('curator retires a list of known-answer items at once', async ({browser}) => {
+  const rows = candidates(), corpus = rows[0].corpus_id;
+  const context = await browser.newContext();
+  const cur = await context.newPage();
+  const faults = watch(cur);
+  await signIn(cur, CURATOR, true);
+  await expect(cur.locator('#workspace')).toBeVisible();
+  await cur.locator('#nav-curator').click();
+  // No calibration sample while importing, so every gold line is accepted.
+  await cur.getByRole('tab', {name:'Bodovanje', exact:true}).click();
+  if (!(await cur.locator('#params').isVisible())) await cur.getByText('Parametri', {exact:true}).click();
+  await expect(cur.locator('#params')).not.toHaveValue('');
+  const original = await cur.locator('#params').inputValue();
+  const params = JSON.parse(original);
+  params.audit_sample_rate = 0; params.review_sample_rate = 0;
+  await cur.locator('#params').fill(JSON.stringify(params));
+  await cur.getByRole('button', {name:'Spremi parametre', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Parametri su spremljeni');
+  await cur.getByRole('tab', {name:'Pregled', exact:true}).click();
+  if (!(await cur.locator('#name').isVisible())) await cur.getByText('Uvoz prijedloga iz korpusa', {exact:true}).click();
+  await cur.locator('#name').fill('Sintetički skupno povlačenje');
+  await cur.locator('#file').setInputFiles({name:'bulk.jsonl', mimeType:'application/jsonl', buffer:Buffer.from(rows.map(r => JSON.stringify(r)).join('\n'))});
+  await cur.getByRole('button', {name:'Uvezi prijedloge', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Uvezeno 4 novih prijedloga');
+
+  await cur.getByRole('tab', {name:'Zlatni primjeri', exact:true}).click();
+  const lines = rows.slice(0, 2).map(r => JSON.stringify({gold_schema_version:1, corpus_id:corpus, item_id:r.item_id, kind:'pair',
+    pool:'audit', answer:'same', lemma:'', basis:'browser-test', source:'hr500k', corpus_sha256:r.corpus_sha256, batch:'browser'}));
+  await cur.locator('#gold-file').setInputFiles({name:'gold.jsonl', mimeType:'application/jsonl', buffer:Buffer.from(lines.join('\n'))});
+  await cur.getByRole('button', {name:'Uvezi zlatne primjere', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Prihvaćeno pair 0/2');
+
+  // The ids file: one per line, plus an id that is no known-answer item.
+  const ids = Buffer.from([rows[0].item_id, rows[1].item_id, randomUUID(), ''].join('\n'));
+  const retire = async () => {
+    await cur.locator('#gold-retire-file').setInputFiles({name:'ids.txt', mimeType:'text/plain', buffer:ids});
+    await cur.locator('#gold-retire-corpus').selectOption(corpus);
+    await cur.locator('#gold-retire-reason').fill('zamjena privatnim skupom');
+    await cur.getByRole('button', {name:'Povuci sve s popisa', exact:true}).click();
+  };
+  await cur.getByRole('button', {name:'Povuci sve s popisa', exact:true}).click();
+  await expect(cur.locator('#message')).toHaveAttribute('data-error', 'true');  // no file yet
+  await retire();
+  await expect(cur.locator('#message')).toContainText('Povučeno 2; već povučeno 0; izvan uporabe 0; nepoznato 1.');
+  for (const row of rows.slice(0, 2))
+    await expect(cur.locator(`#gold tr[data-gold="${row.item_id}"]`).getByRole('button', {name:'Vrati', exact:true})).toBeVisible();
+  await retire();  // again: nothing changes
+  await expect(cur.locator('#message')).toContainText('Povučeno 0; već povučeno 2; izvan uporabe 0; nepoznato 1.');
+
+  await cur.getByRole('tab', {name:'Bodovanje', exact:true}).click();
+  if (!(await cur.locator('#params').isVisible())) await cur.getByText('Parametri', {exact:true}).click();
+  await cur.locator('#params').fill(original);
+  await cur.getByRole('button', {name:'Spremi parametre', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Parametri su spremljeni');
+  expect(faults).toEqual([]);
+  await context.close();
+});
