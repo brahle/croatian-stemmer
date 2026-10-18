@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.4.0
+
+Candidates from raw Croatian text and Wikipedia dumps. Web app: candidate schema 2 and
+migration 006 (lexicon provenance); no scoring change. Deployments need the new image.
+
+- New `croatian-stemmer-labels from-text`: plain text files, directories, standard
+  input or a MediaWiki XML dump (`.xml.bz2` streamed) become candidates in the existing
+  JSONL format. A built-in wikitext cleaner handles templates, references, tables,
+  links, files, categories, headings and lists; `--parser mwparserfromhell` is an
+  option through the new `wiki` extra. Sentence splitting understands Croatian
+  abbreviations and initials, and contexts with markup residue, addresses or URLs are
+  dropped. Words are filtered to the Croatian alphabet, with stop words, rare forms
+  (`--min-count`) and heuristically detected names skipped. Lemma and POS suggestions
+  come from a lemmatised `--lexicon` (hr500k). Pairs come from `prepare`'s own sampling
+  code; word items are spread over frequency bands. Strata are prefixed `text_`.
+- Provenance: the corpus hash is the input's hash. For a dump the licence defaults to
+  CC BY-SA 4.0, and each `word_ref` is a permanent link to the article revision. The web
+  app already allows only CC BY-SA labels for such a source. `release` adds the
+  Wikipedia attribution and the statement of changes to the dataset card when the
+  source is a Wikimedia address.
+- Lexicon provenance: `--lexicon-source-uri` and `--lexicon-license` are required and
+  every row carries them (candidate schema 2). The web import stores them (migration
+  006, `label_corpus.lexicon_uri`/`lexicon_license`, part of the corpus provenance), and
+  publishing allows only a labels licence that both the source and the lexicon allow
+  (`allowed()` takes the stricter, now in `croatian_stemmer.labeling.licenses`). `release`
+  names the lexicon on the dataset card and refuses a labels licence either forbids.
+- A MediaWiki dump is always CC BY-SA: any other `--license` is refused.
+- The corpus id of a raw-text corpus covers the options that change its items (seed,
+  sample sizes, `--min-count`, `--max-pages`, parser, format, lexicon hashes), so
+  different runs over one file never share a corpus.
+- `gold` refuses raw-text candidates: raw text has no ground truth.
+- Documentation: downloading and checking the Croatian Wikipedia dump, the command,
+  and the time and memory it takes on a laptop.
+
 ## 0.3.4
 
 Known-answer coverage: the gold builder can now fill every `pair` and `lemma` pool the

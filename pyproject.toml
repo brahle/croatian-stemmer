@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "croatian-stemmer"
-version = "0.3.4"
+version = "0.4.0"
 description = "Croatian language stemmer based on the Ljubešić-Pandžić algorithm"
 readme = "README.md"
 license = "LGPL-3.0-or-later"
@@ -42,6 +42,8 @@ croatian-stemmer-labels = "croatian_stemmer.labeling.__main__:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=9.1", "pytest-asyncio>=1.4"]
+# Optional wikitext parser for `croatian-stemmer-labels from-text --parser mwparserfromhell`.
+wiki = ["mwparserfromhell==0.7.2"]
 web = ["httpx==0.28.1", "fastapi==0.142.2", "uvicorn==0.54.0", "PyJWT[crypto]==2.15.1", "SQLAlchemy[asyncio]==2.0.54", "asyncpg==0.31.0", "alembic==1.20.0"]
 
 [tool.hatch.build.targets.wheel]

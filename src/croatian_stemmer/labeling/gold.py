@@ -305,6 +305,8 @@ def build(corpus: Path, candidates, *, min_freq=5, per_kind=400, seed=None, qual
     paths = [candidates] if isinstance(candidates, Path) else list(candidates)
     corpus_digest = digest(corpus)
     by_id, hashes = load_candidates(paths)
+    if any(row.get("sampling_stratum", "").startswith("text_") for row in by_id.values()):
+        raise ValueError("raw-text candidates (from-text) have no ground truth; gold needs a lemmatised corpus")
     if any(row.get("corpus_sha256") != corpus_digest for row in by_id.values()):
         raise ValueError("the candidates were not prepared from this corpus (corpus_sha256 differs)")
     freq, lemmas_of = corpus_counts(corpus)

@@ -105,6 +105,9 @@ class Corpus(Base):
     sha256: Mapped[str] = mapped_column(String(64))
     source_uri: Mapped[str] = mapped_column(String(2048))
     license: Mapped[str] = mapped_column(String(512))
+    # The lexicon behind a raw-text corpus's suggestions (candidate schema 2; migration 006).
+    lexicon_uri: Mapped[str | None] = mapped_column(String(2048))
+    lexicon_license: Mapped[str | None] = mapped_column(String(512))
     labels_license: Mapped[str | None] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(16), server_default="draft")
     created_by: Mapped[UUID] = mapped_column(Uuid, ForeignKey("label_annotator.id"))

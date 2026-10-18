@@ -13,11 +13,13 @@ import hashlib
 import math
 import io
 import json
+import re
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
 from .candidates import is_reserve
+from .licenses import allowed
 from .scoring import OTHER, corpus_params, krippendorff_alpha, release_rule
 
 FILES = ("labels.tsv", "summary.tsv", "dataset-card.md", "params.json", "CHECKSUMS")
@@ -108,6 +110,9 @@ def build(export: Path, output: Path, released_on: date | None = None):
     run, corpus, items = read_export(export)
     if not run.get("pinned") or run.get("stale"):
         raise ValueError("a release is built from a pinned run that is not stale")
+    if corpus.get("labels_license") not in allowed(corpus["license"], corpus.get("lexicon_license")):
+        raise ValueError(f"labels licence {corpus.get('labels_license')!r} is not allowed by the source "
+                         f"({corpus['license']}) and lexicon ({corpus.get('lexicon_license')}) licences")
     output.mkdir(parents=True, exist_ok=False)
     released_on = released_on or date.today()
     rows = [item for item in items if releasable(item)]
@@ -148,7 +153,7 @@ def build(export: Path, output: Path, released_on: date | None = None):
         writer.writerow({"corpus_id": corpus["id"], "kind": kind, "measure": "krippendorff_alpha", "key": "nominal",
                          "value": "" if alpha is None else f"{alpha:.4f}"})
     provisional = sum(n for (_, state), n in states.items() if state == "provisional")
-    card = DATASET_CARD.format(
+    card = DATASET_CARD.format(attribution=attribution(corpus),
         name=corpus["name"], released=released_on.isoformat(), run=run["id"], version=run["scoring_version"],
         params=run["params_sha256"], source=corpus["source_uri"], license=corpus["license"],
         labels_license=corpus["labels_license"] or "", rows=len(rows), total=len(items), provisional=provisional)
@@ -160,6 +165,26 @@ def build(export: Path, output: Path, released_on: date | None = None):
                         for name, content in sorted(files.items()))
     (output / "CHECKSUMS").write_text(checksums, encoding="utf-8")
     return {"rows": len(rows), "items": len(items), "run_id": run["id"]}
+
+
+WIKIMEDIA = re.compile(r"^https://([a-z0-9-]+\.)*(wikimedia|wikipedia)\.org/")
+
+
+def attribution(corpus) -> str:
+    """The attribution a Wikimedia source asks for (CC BY-SA 4.0 section 3(a)): the authors,
+    a link to the material and a statement of the changes. Rows from `from-text` carry a
+    permanent link to the article revision in word_ref/other_word_ref."""
+    text = ""
+    if corpus.get("lexicon_uri"):
+        text += (f"\nThe lemma and part-of-speech suggestions (`proposed_lemma`, `other_proposed_lemma`, "
+                 f"`upos`) come from the lexicon {corpus['lexicon_uri']}, licence {corpus['lexicon_license']}; "
+                 "the labels are an adaptation of it too, and the labels licence is one both allow.")
+    if not WIKIMEDIA.match(corpus.get("source_uri") or ""):
+        return text
+    return text + ("\nThe sentences are from Wikipedia articles, written by Wikipedia contributors. Each row's "
+            "`word_ref` and `other_word_ref` is a permanent link to the article revision a sentence comes "
+            "from; its history lists the authors. Changes: wiki markup was removed and the text was split "
+            "into sentences; the sentences are otherwise unchanged.")
 
 
 DATASET_CARD = """# {name}: Croatian stemmer labels
@@ -179,7 +204,7 @@ Nothing here is per contributor: no identifiers, no individual answers, no vote 
 ## Licence and attribution
 
 Source sentences: {source}, licence {license}. This file contains them, so it is an adaptation
-licensed {labels_license}. Labels: contributors to the Croatian stemmer labeling project, who
+licensed {labels_license}.{attribution} Labels: contributors to the Croatian stemmer labeling project, who
 license their contributions under CC BY-SA 4.0 and waive any rights in the labels alone under
 CC0 1.0. Attribute both the source corpus and "contributors to the Croatian stemmer labeling
 project".

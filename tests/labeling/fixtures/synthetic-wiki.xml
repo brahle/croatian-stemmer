@@ -1,0 +1,74 @@
+<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.11/" version="0.11" xml:lang="hr">
+  <!-- Fully synthetic test data written for this repository; not taken from any wiki. -->
+  <siteinfo>
+    <sitename>Sintetika</sitename>
+    <dbname>hrwiki</dbname>
+    <base>https://wiki.example.org/wiki/Glavna_stranica</base>
+  </siteinfo>
+  <page>
+    <title>Kuća</title>
+    <ns>0</ns>
+    <id>1</id>
+    <revision>
+      <id>101</id>
+      <parentid>100</parentid>
+      <text bytes="1">{{Infookvir zgrada|ime=Kuća|slika=Kuca.jpg|opis={{malo|tekst}}}}
+'''Kuća''' je [[zgrada]] u kojoj ljudi žive.&lt;ref&gt;Izmišljeni izvor, str. 5.&lt;/ref&gt; Velika kuća ima mnogo soba i veliki vrt.
+[[Datoteka:Kuca.jpg|mini|Kuća s vrtom i [[ograda|ogradom]].]]
+
+== Povijest ==
+Prve kuće ljudi su gradili od drveta i kamena. Kasnije su kuće gradili od opeke, npr. u gradovima.&lt;ref name="b" /&gt;
+* Stare kuće imaju debele zidove od kamena.
+{| class="wikitable"
+|-
+! Vrsta !! Opis
+|-
+| kamena kuća || tablični tekst se ne smije pojaviti
+|}
+Danas ljudi grade kuće od betona i drveta.&lt;!-- skriveni komentar u kući --&gt;
+
+== Vanjske poveznice ==
+* [https://example.org/kuce Stranica o kućama]
+[[Kategorija:Zgrade]]
+[[en:House]]</text>
+    </revision>
+  </page>
+  <page>
+    <title>Kuca</title>
+    <ns>0</ns>
+    <id>2</id>
+    <redirect title="Kuća" />
+    <revision>
+      <id>102</id>
+      <text bytes="1">#PREUSMJERI [[Kuća]]</text>
+    </revision>
+  </page>
+  <page>
+    <title>Razgovor:Kuća</title>
+    <ns>1</ns>
+    <id>3</id>
+    <revision>
+      <id>103</id>
+      <text bytes="1">Razgovor o kući ne ulazi u korpus jer nije članak.</text>
+    </revision>
+  </page>
+  <page>
+    <title>Grad (razdvojba)</title>
+    <ns>0</ns>
+    <id>4</id>
+    <revision>
+      <id>104</id>
+      <text bytes="1">'''Grad''' može značiti više stvari u ovoj razdvojbi.
+{{razdvojba}}</text>
+    </revision>
+  </page>
+  <page>
+    <title>Grad</title>
+    <ns>0</ns>
+    <id>5</id>
+    <revision>
+      <id>105</id>
+      <text bytes="1">'''Grad''' je veliko naselje u kojem živi mnogo ljudi. Ljudi u gradu rade i žive u kućama. Grad ima ulice, trgove i parkove. U gradovima ljudi često grade visoke kuće. Ivan Horvat je živio u gradu i gradio kuće.</text>
+    </revision>
+  </page>
+</mediawiki>

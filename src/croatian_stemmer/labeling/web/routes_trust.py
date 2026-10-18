@@ -720,6 +720,7 @@ def register(app, ctx):
             "calibration": run.calibration, "inputs_changed": changed},
             "corpus": {"id": str(corpus.id), "name": corpus.name, "sha256": corpus.sha256,
                        "source_uri": corpus.source_uri, "license": corpus.license,
+                       "lexicon_uri": corpus.lexicon_uri, "lexicon_license": corpus.lexicon_license,
                        "labels_license": corpus.labels_license}}]
         for post, item in rows:
             votes = outputs["votes"].get(f"{corpus_id}/{item.id}", {"k": 2, "prior": [], "votes": []})

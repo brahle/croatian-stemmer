@@ -148,4 +148,4 @@ def test_003_on_an_empty_database(scratch_database):
     upgraded = alembic(scratch_database, "upgrade", "head")
     assert upgraded.returncode == 0, upgraded.stderr
     assert query(scratch_database, "SELECT count(*) FROM label_item_state")[0][0] == 0
-    assert query(scratch_database, "SELECT version_num FROM alembic_version")[0][0] == "005_gold_reserve"
+    assert query(scratch_database, "SELECT version_num FROM alembic_version")[0][0] == "006_lexicon_provenance"

@@ -31,6 +31,7 @@ class Caller:
 def corpus_json(corpus, counts=None):
     data = {"id": str(corpus.id), "name": corpus.name, "sha256": corpus.sha256,
             "source_uri": corpus.source_uri, "license": corpus.license,
+            "lexicon_uri": corpus.lexicon_uri, "lexicon_license": corpus.lexicon_license,
             "labels_license": corpus.labels_license, "status": corpus.status,
             "created_at": corpus.created_at.isoformat(),
             "published_at": corpus.published_at.isoformat() if corpus.published_at else None}

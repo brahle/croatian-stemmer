@@ -1,4 +1,5 @@
-"""Offline candidate preparation, human-label evaluation, gold building and checking,
+"""Offline candidate preparation (from CoNLL-U corpora or raw text), human-label
+evaluation, gold building and checking,
 replay of a scoring run from its restricted bundle, and public releases."""
 
 import argparse
@@ -32,6 +33,27 @@ def main(argv=None):
                             help="an earlier candidates file of this corpus: output only new items, never "
                                  "reusing its occurrences")
     candidates.add_argument("--output", required=True, type=Path)
+    text_ = commands.add_parser("from-text", help="prepare suggestions from raw text or a MediaWiki XML dump")
+    text_.add_argument("inputs", nargs="+", help="text files, directories of .txt files, - for standard input, "
+                                                 "or a MediaWiki dump (.xml or .xml.bz2)")
+    text_.add_argument("--lexicon", required=True, type=Path, action="append",
+                       help="a lemmatised CoNLL-U corpus giving each form's lemma and POS suggestion; repeatable")
+    text_.add_argument("--lexicon-source-uri", required=True,
+                       help="where the lexicon comes from (attribution), e.g. its repository record")
+    text_.add_argument("--lexicon-license", required=True, help="the lexicon's licence, e.g. 'CC BY-SA 4.0'")
+    text_.add_argument("--source-uri", help="required for plain text; for a dump, default "
+                                            "https://dumps.wikimedia.org/<dbname>/ (give the dated dump URL)")
+    text_.add_argument("--license", help="required for plain text; a dump is CC BY-SA 4.0 (the default; no "
+                                         "other licence is accepted for it)")
+    text_.add_argument("--format", choices=("auto", "text", "mediawiki"), default="auto")
+    text_.add_argument("--parser", choices=("builtin", "mwparserfromhell"), default="builtin",
+                       help="wikitext parser; mwparserfromhell needs the `wiki` extra")
+    text_.add_argument("--pairs", type=int, default=10000)
+    text_.add_argument("--word-items", type=int, default=1000)
+    text_.add_argument("--min-count", type=int, default=2, help="occurrences a form needs in the text")
+    text_.add_argument("--max-pages", type=int, help="stop after this many dump articles (a trial run)")
+    text_.add_argument("--seed", type=int, default=0)
+    text_.add_argument("--output", required=True, type=Path)
     scoring = commands.add_parser("evaluate", help="score versioned human annotation TSVs")
     scoring.add_argument("labels", nargs="+", type=Path)
     scoring.add_argument("--min-annotators", type=int, default=1)
@@ -82,6 +104,26 @@ def main(argv=None):
                                        supplement=supplement, reserve_secret=args.reserve_secret)
             # Never overwrite either the caller's source or an existing export.
             with args.output.open("x", encoding="utf-8") as handle:
+                for record in records:
+                    handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+            json.dump(receipt, sys.stdout, ensure_ascii=False)
+        elif args.command == "from-text":
+            from .text import from_text
+            wikipedia = {"auto": None, "text": False, "mediawiki": True}[args.format]
+            # Open the output first: never overwrite, and fail before a long run.
+            with args.output.open("x", encoding="utf-8") as handle:
+                try:
+                    records, receipt = from_text(args.inputs, lexicon_paths=args.lexicon,
+                                                 lexicon_uri=args.lexicon_source_uri,
+                                                 lexicon_license=args.lexicon_license, source_uri=args.source_uri,
+                                                 license=args.license, pair_count=args.pairs,
+                                                 word_count=args.word_items, seed=args.seed,
+                                                 min_count=args.min_count, wikipedia=wikipedia, parser=args.parser,
+                                                 max_pages=args.max_pages)
+                except BaseException:
+                    handle.close()
+                    args.output.unlink()
+                    raise
                 for record in records:
                     handle.write(json.dumps(record, ensure_ascii=False) + "\n")
             json.dump(receipt, sys.stdout, ensure_ascii=False)
