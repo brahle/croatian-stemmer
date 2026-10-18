@@ -66,10 +66,10 @@ async def test_startup_applies_every_rule(fresh_api):
         import asyncio
         for _ in range(50):
             await asyncio.sleep(0.1)
-            left = (await api.sql("SELECT count(*) FROM label_judgment WHERE elapsed_ms IS NOT NULL AND annotator_id = :a",
-                                  a=alice)).scalar_one()
-            if left == 0:
+            timing = (await api.sql("SELECT count(*) FROM label_judgment WHERE elapsed_ms IS NOT NULL "
+                                    "AND annotator_id = :a", a=alice)).scalar_one()
+            shown = (await api.sql("SELECT count(*) FROM label_assignment WHERE annotator_id = :a "
+                                   "AND current_revision = 0", a=alice)).scalar_one()
+            if (timing, shown) == (0, 0):
                 break
-    assert left == 0
-    assert (await api.sql("SELECT count(*) FROM label_assignment WHERE annotator_id = :a AND current_revision = 0",
-                          a=alice)).scalar_one() == 0
+    assert (timing, shown) == (0, 0)
