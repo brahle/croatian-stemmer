@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.3.3
+
+Labeling web app: privacy notice 1.4 and DPIA 2.1. No schema or scoring change.
+Deployments must set `LABELING_PRIVACY_VERSION=1.4` with this release; everyone
+accepts again before their next answer. People who accepted 1.3 stay in the
+profiling cohort.
+
+- Privacy notice 1.4 (hr/en) lists recipients by category and adds IT service
+  providers that help develop, operate and support the service, including
+  AI-assisted development and operations tools, as processors: only for those
+  purposes, on instructions, no training on the data, only what a task needs, and
+  no tool decides anything about a participant. The transfers section gives their
+  safeguard (an adequacy decision, such as the EU-U.S. Data Privacy Framework for a
+  certified provider, or the standard contractual clauses, Art. 46(2)(c)) and how to
+  get a copy. It now states the erasure list: the sign-in account identifier and
+  request date kept outside the database for 60 days so that erasures can be
+  re-applied after a backup restore. Data categories are described by kind rather
+  than field, and role-specific wording (the trusted list) is generalised to roles
+  the controller gives.
+- The DPIA (`docs/labeling-dpia.md`, version 2.1) describes data by category
+  (contributions, usage data, derived data, administration records, role lists,
+  erasure records) and states that new task types, fields, signals or derived values
+  within them do not reopen it. It adds the IT service provider category with its
+  conditions, a balancing test, the risk and its accepted residual, the transfer
+  safeguards and the erasure list's retention and legal basis. Single-curator and
+  single-expert wording is generalised to people the controller authorises. Section
+  7: adding a provider within an existing recipient category does not reopen the
+  assessment; a new category, a new kind of transfer, or any use of a language
+  model to decide about participants does. The conclusion is unchanged. Still a
+  draft for the controller's sign-off.
+- `docs/labeling-web.md` gains the operator rules for IT service providers;
+  `docs/trust.md` lists the erasure list among the stores.
+
 ## 0.3.2
 
 Labeling web app: documentation only. No code, schema or scoring change.

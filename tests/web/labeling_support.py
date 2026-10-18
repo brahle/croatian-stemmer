@@ -14,7 +14,7 @@ COMPLIANCE = {"controller_name": "Example Controller", "controller_email": "priv
               "hosting_summary": "Example Hosting Ltd, Germany", "edge_log_retention": "7 days",
               "backup_retention": "14 days"}
 # The document versions this release ships and requires (config defaults).
-REQUIRED = {"privacy": "1.3", "terms": "1.1", "participation": "1.0"}
+REQUIRED = {"privacy": "1.4", "terms": "1.1", "participation": "1.0"}
 
 
 def make_settings(database_url="postgresql+asyncpg://test@localhost/labeling_test", issuer=ISSUER, **changes):
@@ -204,7 +204,7 @@ async def profiled(api, name="alice", curator=False):
     await api.consent(name, curator)
     annotator = await api.annotator_id(name)
     await api.sql("INSERT INTO label_consent (annotator_id, document, version, locale, age_confirmed, age_threshold, "
-                  "ui_version) VALUES (:a, 'privacy', '1.3', 'hr', true, 18, 'test') ON CONFLICT DO NOTHING", a=annotator)
+                  "ui_version) VALUES (:a, 'privacy', '1.4', 'hr', true, 18, 'test') ON CONFLICT DO NOTHING", a=annotator)
     return annotator
 
 

@@ -28,7 +28,7 @@ async function acceptGate(page){
   await expect(page.locator('#gate')).toBeVisible();
   // The privacy notice is information, not a checkbox; terms, participation and age 18 each have their own.
   await expect(page.locator('#gate-privacy a')).toHaveAttribute('href', '/legal/privacy.hr');
-  await expect(page.locator('#gate-privacy')).toContainText('verzija 1.3');
+  await expect(page.locator('#gate-privacy')).toContainText('verzija 1.4');
   await expect(page.locator('#gate input[type=checkbox]')).toHaveCount(3);
   await expect(page.locator('#gate input[type=checkbox]:checked')).toHaveCount(0);
   await expect(page.locator('#gate')).toContainText('Imam najmanje 18 godina.');

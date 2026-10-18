@@ -477,6 +477,7 @@ Where each category of personal data lives:
 | events | `label_admin_event`, `label_trust_event` |
 | trusted list | `label_trusted_email` (email, its hash, a note of at most a first name) |
 | erasure requests | `label_erasure_request` (Keycloak user id until the curator confirms its deletion) |
+| erasure list | outside the database: Keycloak user id and request date, 60 days, for re-applying erasures after a restore |
 | edge logs | the reverse proxy only; the app runs uvicorn with `--no-access-log` |
 
 Retention mechanics: the retention task runs at startup and daily. It deletes
@@ -514,8 +515,8 @@ not close it.
 Security facts the assessment summarises: the browser uses PKCE S256; the backend accepts
 only RS256 access tokens checked for issuer, audience, expiry and client; restricted routes
 need the curator role; the container runs as a non-root user; the app keeps no IP
-addresses; scoring is pure Python with no external calls, so no third-party service sees
-the data; the audit key that decides which showings are checks never leaves the database
+addresses; scoring is pure Python with no external calls, so no third-party service or language
+model takes part in it; the audit key that decides which showings are checks never leaves the database
 and is not in any bundle.
 
 ## Where the code differs from the design
