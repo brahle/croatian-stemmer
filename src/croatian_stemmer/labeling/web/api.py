@@ -23,18 +23,23 @@ from sqlalchemy import exists, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from . import routes_annotator, routes_curator, routes_public
+from . import routes_annotator, routes_curator, routes_public, routes_trust
 from .auth import Authenticator
-from .common import Caller, failure
+from .common import Caller, failure, scoring_params
 from .config import MINIMUM_AGE, Settings
 from .erasure import erase_profile, pending_erasure
 from .legal import LegalDocuments
 from .limits import Limiter
 from .models import Annotator, Consent, ErasureRequest, Setting
+from .scoring_run import moderation_tx, scheduled_tick
 
 STATIC = Path(__file__).parent / "static"
 DOCUMENTS = Path(__file__).parent / "documents"  # legal templates; not under /static
 log = logging.getLogger("croatian_stemmer.labeling.web")
+
+
+# Routes whose bodies may be large (a corpus or a gold import); serialized per worker.
+LARGE_BODY_ROUTES = {("POST", "/api/import"), ("POST", "/api/admin/gold/import")}
 
 
 class RequestBounds:
@@ -46,7 +51,7 @@ class RequestBounds:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
-        importing = scope["path"] == "/api/import" and scope["method"] == "POST"
+        importing = (scope["method"], scope["path"]) in LARGE_BODY_ROUTES
         limit = 32 * 1024 * 1024 if importing else 16384
         headers = dict(scope.get("headers", []))
         try:
@@ -85,6 +90,9 @@ class Context:
         self.limiter = Limiter()
         self.legal = LegalDocuments(settings, DOCUMENTS)
         self._accepting = None  # (value, monotonic time)
+        self._serving = None  # (scoring params, monotonic time)
+        self.scoring_pause = None  # tests: an async callable awaited between scoring and publication
+        self.status_pause = None  # tests: awaited by the status route while it holds the annotator row
         self._build_dependencies()
 
     async def accepting_judgments(self, db) -> bool:
@@ -100,8 +108,18 @@ class Context:
         self._accepting = (accepting, now)
         return accepting
 
+    async def serving_params(self, db) -> dict:
+        """The scoring parameters the scheduler and admission read (5 s cache)."""
+        now = time.monotonic()
+        if self._serving is not None and now - self._serving[1] < 5:
+            return self._serving[0]
+        params = await scoring_params(db)
+        self._serving = (params, now)
+        return params
+
     def forget_settings(self):
         self._accepting = None
+        self._serving = None
 
     def consent_missing(self):
         return failure(403, "consent_required", required=self.settings.required_documents)
@@ -190,6 +208,7 @@ async def expire_unconsented_profiles(ctx, now: datetime | None = None, days=30)
         erased = []
         for annotator_id in candidates:
             async with db.begin():
+                await moderation_tx(db)
                 person = (await db.execute(select(Annotator).where(Annotator.id == annotator_id, *due)
                                            .with_for_update())).scalar_one_or_none()
                 # Recheck with the row locked: a consent committed meanwhile keeps the profile
@@ -230,7 +249,8 @@ def create_app(settings: Settings) -> FastAPI:
                     log.exception("%s failed", name)
                 await asyncio.sleep(seconds)
         tasks = [asyncio.create_task(every(6 * 3600, warn_overdue_erasures, "erasure reminder")),
-                 asyncio.create_task(every(24 * 3600, expire_unconsented_profiles, "unconsented profile expiry"))]
+                 asyncio.create_task(every(24 * 3600, expire_unconsented_profiles, "unconsented profile expiry")),
+                 asyncio.create_task(every(settings.scoring_interval_s, scheduled_tick, "scoring run"))]
         try:
             yield
         finally:
@@ -260,4 +280,5 @@ def create_app(settings: Settings) -> FastAPI:
     routes_public.register(app, ctx)
     routes_annotator.register(app, ctx)
     routes_curator.register(app, ctx)
+    routes_trust.register(app, ctx)
     return app

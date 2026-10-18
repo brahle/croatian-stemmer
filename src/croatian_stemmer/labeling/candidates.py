@@ -28,7 +28,16 @@ def tokens_from_conllu(path: Path) -> list[Token]:
     Lemmas are suggestions from the corpus, never human annotations imported
     into the new dataset. Missing lemmas and multiword/range tokens are skipped.
     """
-    tokens, context = {}, ""
+    tokens = {}
+    for token in occurrences(path):
+        tokens.setdefault((token.word, token.lemma, token.upos), token)
+    return sorted(tokens.values(), key=lambda t: (t.upos, t.lemma, t.word))
+
+
+def occurrences(path: Path):
+    """Every eligible token occurrence, in file order (the column handling of
+    tokens_from_conllu, which keeps the first occurrence of each form/lemma/POS)."""
+    context = ""
     columns = {"ID": 0, "FORM": 1, "LEMMA": 2, "UPOS": 3}
     with path.open(encoding="utf-8-sig") as handle:
         for line_number, line in enumerate(handle, 1):
@@ -54,9 +63,7 @@ def tokens_from_conllu(path: Path) -> list[Token]:
                 continue
             if len(form) > 128 or len(lemma) > 128:
                 continue
-            key = form, lemma, upos
-            tokens.setdefault(key, Token(form, lemma, upos, f"line:{line_number}", context))
-    return sorted(tokens.values(), key=lambda t: (t.upos, t.lemma, t.word))
+            yield Token(form, lemma, upos, f"line:{line_number}", context)
 
 
 def reservoir(values, size, rng):

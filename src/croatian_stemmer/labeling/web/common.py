@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import String, and_, cast, func, or_, select
+from sqlalchemy import String, and_, cast, func, insert, or_, select
 
 from ..scoring import validate_params
 from .auth import Principal
-from .models import AdminEvent, Annotator, Corpus, Judgment, Setting
+from .models import AdminEvent, Annotator, Corpus, Judgment, Setting, TrustEvent
 
 
 def failure(status, code, **values):
@@ -86,3 +86,10 @@ async def setting(db, key, default=None):
 async def scoring_params(db) -> dict:
     """The live scoring parameters (validated; written only through PUT scoring/params)."""
     return validate_params(await setting(db, "scoring_params"))
+
+
+async def trust_event(db, kind, *, actor_id=None, annotator_id=None, corpus_id=None, item_id=None, details=None) -> int:
+    """Append one trust event; its id is the journal position the trigger assigns."""
+    return (await db.execute(insert(TrustEvent).values(
+        actor_id=actor_id, kind=kind, annotator_id=annotator_id, corpus_id=corpus_id, item_id=item_id,
+        details=details or {}).returning(TrustEvent.id))).scalar_one()

@@ -14,7 +14,8 @@ every other trust table is a mirror for the request path or a run's output.
 from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Date, DateTime, Double, ForeignKey, ForeignKeyConstraint,
+from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Date, DateTime, Double, FetchedValue, ForeignKey,
+                        ForeignKeyConstraint,
                         Index, Integer, SmallInteger, String, Text, UniqueConstraint, Uuid, func, text)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -228,7 +229,7 @@ class TrustEvent(Base):
     the trigger (no default). `details` never holds an email, an email hash, a name or a
     label; erasing the subject may only redact it."""
     __tablename__ = "label_trust_event"
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False, server_default=FetchedValue())
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     actor_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("label_annotator.id"))  # NULL = a run
     kind: Mapped[str] = mapped_column(String(32))
@@ -314,6 +315,8 @@ class ScoringRun(Base):
     n_items: Mapped[int | None] = mapped_column(Integer)
     n_annotators: Mapped[int | None] = mapped_column(Integer)
     inputs_sha256: Mapped[str | None] = mapped_column(String(64))
+    # Per journal: rows and sha256, so a replay can say which journal changed since (4.6.6).
+    inputs_summary: Mapped[dict | None] = mapped_column(JSONB)
     outputs_sha256: Mapped[str | None] = mapped_column(String(64))
     calibration: Mapped[dict | None] = mapped_column(JSONB)
     readiness: Mapped[dict | None] = mapped_column(JSONB)

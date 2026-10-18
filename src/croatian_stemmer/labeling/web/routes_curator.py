@@ -17,10 +17,11 @@ from sqlalchemy import String, cast, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from ..schema import FIELDS
-from .common import Caller, corpus_json, excluded_annotators, failure, scoring_params
+from .common import Caller, corpus_json, excluded_annotators, failure, scoring_params, trust_event
 from .licenses import allowed
 from .models import AdminEvent, Annotator, Corpus, ErasureRequest, Item, ItemAudit, ItemState, Judgment, Setting
 from .scheduler import audit_key, item_bits
+from .scoring_run import moderation_tx
 from .requests import Candidate, ImportRequest, PublishRequest, SettingsRequest, StatusRequest
 
 
@@ -246,14 +247,22 @@ def register(app, ctx):
         if annotator_id == caller.id:
             raise failure(409, "own_status_change")
         async with db.begin():
+            # The moderation lock before the row lock: a publishing run cannot deadlock with this.
+            await moderation_tx(db)
             person = (await db.execute(select(Annotator).where(Annotator.id == annotator_id).with_for_update())).scalar_one_or_none()
             if person is None:
                 raise failure(404, "not_found")
             if person.status == "erased":
                 # Erasure is the data subject's action and cannot be undone or overridden.
                 raise failure(409, "annotator_erased")
+            if ctx.status_pause is not None:  # tests: hold the row lock to interleave a publication
+                await ctx.status_pause(person.id)
             previous, person.status = person.status, data.status
             event(db, caller, "annotator.status", person.id, {"from": previous, "to": data.status, "reason": data.reason})
+            if previous == "quarantined" and data.status == "active":
+                # Clearing moves `flags_since` forward: earlier answers no longer count towards flags.
+                await trust_event(db, "annotator.cleared", actor_id=caller.id, annotator_id=person.id,
+                                  details={"reason": data.reason})
         return {"id": str(annotator_id), "status": data.status}
 
     # ---- settings ------------------------------------------------------------

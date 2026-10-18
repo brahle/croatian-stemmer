@@ -83,6 +83,11 @@ class Settings:
     read_only: bool = False
     daily_cap: int = 3000
     target_votes: int = 3
+    # Trust scoring (4.6): how often the background job looks for new journal rows, how
+    # long one run may take, and the most judgments a run loads (memory bound of the pod).
+    scoring_interval_s: int = 600
+    scoring_run_timeout_s: int = 120
+    scoring_max_judgments: int = 2_000_000
     ui_version: str = field(default_factory=package_version)
 
     def __post_init__(self):
@@ -124,6 +129,12 @@ class Settings:
             raise ValueError("LABELING_DAILY_CAP must be a positive integer")
         if type(self.target_votes) is not int or self.target_votes < 1:
             raise ValueError("LABELING_TARGET_VOTES must be a positive integer")
+        if type(self.scoring_interval_s) is not int or not 60 <= self.scoring_interval_s <= 86400:
+            raise ValueError("LABELING_SCORING_INTERVAL must be 60 to 86400 seconds")
+        if type(self.scoring_run_timeout_s) is not int or not 10 <= self.scoring_run_timeout_s <= 3600:
+            raise ValueError("LABELING_SCORING_RUN_TIMEOUT must be 10 to 3600 seconds")
+        if type(self.scoring_max_judgments) is not int or not 1000 <= self.scoring_max_judgments <= 50_000_000:
+            raise ValueError("LABELING_SCORING_MAX_JUDGMENTS must be 1000 to 50000000")
 
     @classmethod
     def from_environment(cls):
@@ -150,7 +161,10 @@ class Settings:
                    backup_retention=get("LABELING_BACKUP_RETENTION", ""),
                    read_only=_bool("LABELING_READ_ONLY"),
                    daily_cap=_int("LABELING_DAILY_CAP", 3000),
-                   target_votes=_int("LABELING_TARGET_VOTES", 3))
+                   target_votes=_int("LABELING_TARGET_VOTES", 3),
+                   scoring_interval_s=_int("LABELING_SCORING_INTERVAL", 600),
+                   scoring_run_timeout_s=_int("LABELING_SCORING_RUN_TIMEOUT", 120),
+                   scoring_max_judgments=_int("LABELING_SCORING_MAX_JUDGMENTS", 2_000_000))
 
     @property
     def identity_origin(self):

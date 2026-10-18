@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 from .common import Caller, corpus_json, definite_votes, failure, judgment_json, visible_corpus
 from .config import MINIMUM_AGE
 from .erasure import erase_profile, still_present
+from .scoring_run import moderation_tx
 from .models import Annotator, Assignment, Consent, Corpus, ErasureRequest, Item, Judgment
 from .requests import AnswerRequest, Candidate, ConsentRequest, EraseRequest
 
@@ -131,6 +132,7 @@ def register(app, ctx):
     async def erase(data: EraseRequest, caller: Caller = Depends(annotator_any), db=Depends(session)):
         limiter.take("account", caller.id)
         async with db.begin():
+            await moderation_tx(db)
             person = (await db.execute(select(Annotator).where(Annotator.id == caller.id).with_for_update())).scalar_one()
             if person.status == "erased":
                 raise failure(409, "erasure_pending")

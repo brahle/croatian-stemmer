@@ -172,3 +172,48 @@ async def open_api(settings):
 async def close_api(api):
     await api.client.aclose()
     await api.app.state.engine.dispose()
+
+
+async def profiled(api, name="alice", curator=False):
+    """Consent through the gate, plus the privacy notice that announces profiling: the
+    annotator is in the scoring cohort (4.13.1). Returns the annotator id."""
+    await api.consent(name, curator)
+    annotator = await api.annotator_id(name)
+    await api.sql("INSERT INTO label_consent (annotator_id, document, version, locale, age_confirmed, age_threshold, "
+                  "ui_version) VALUES (:a, 'privacy', '1.3', 'hr', true, 18, 'test') ON CONFLICT DO NOTHING", a=annotator)
+    return annotator
+
+
+async def score_now(api, **kwargs):
+    """One scoring run (waiting for the scoring lock); returns [(run_id, status)]."""
+    from croatian_stemmer.labeling.web.scoring_run import run_now
+    return await run_now(api.app.state.ctx, wait=True, **kwargs)
+
+
+def gold_line(row, answer=None, pool="audit", lemma=None):
+    """A gold-builder line for a candidate (synthetic; never dataset gold)."""
+    kind = row["kind"]
+    answer = answer or {"pair": "same", "lemma": "confirmed", "stem": "accept"}[kind]
+    lemma = (row["proposed_lemma"] if lemma is None else lemma) if kind == "lemma" else ""
+    return {"gold_schema_version": 1, "corpus_id": row["corpus_id"], "item_id": row["item_id"], "kind": kind,
+            "pool": pool, "answer": answer, "lemma": lemma, "basis": "test", "source": "hr500k",
+            "corpus_sha256": row["corpus_sha256"], "batch": "test"}
+
+
+async def sampled(api, rows):
+    """The candidates whose keyed calibration bit is set (never gold)."""
+    found = {str(r[0]) for r in (await api.sql(
+        "SELECT item_id FROM label_item_audit WHERE corpus_id = :c AND audit_sample", c=rows[0]["corpus_id"])).all()}
+    return [row for row in rows if row["item_id"] in found]
+
+
+async def unsampled(api, rows):
+    held = {row["item_id"] for row in await sampled(api, rows)}
+    return [row for row in rows if row["item_id"] not in held]
+
+
+def unlimited(api):
+    """Lift the per-annotator rate limits (tests that answer many items quickly)."""
+    from croatian_stemmer.labeling.web.limits import Rate
+    api.app.state.ctx.limiter.rates = {name: Rate(10 ** 9, 10 ** 9) for name in ("answer", "read", "account")}
+    return api

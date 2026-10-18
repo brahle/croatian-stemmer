@@ -160,3 +160,90 @@ class EraseRequest(BaseModel):
 class SettingsRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     accepting_judgments: StrictBool
+
+
+Kind = Literal["pair", "lemma", "stem"]
+
+
+class ScoringParamsRequest(BaseModel):
+    """The whole parameter set; scoring.validate_params() checks every key and bound."""
+    model_config = ConfigDict(extra="forbid")
+    params: dict
+
+
+class ScoringSettingsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scoring_enabled: StrictBool
+
+
+class RedrawRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Kind
+    cell: Literal["agrees", "differs", "none"]
+
+
+def _reason(value):
+    if not value.strip() or "\x00" in value:
+        raise ValueError("a reason is required")
+    return value.strip()
+
+
+class GoldRow(BaseModel):
+    """One line of the gold builder's output; the server recomputes everything it can."""
+    model_config = ConfigDict(extra="forbid")
+    gold_schema_version: Literal[1]
+    corpus_id: UUID
+    item_id: UUID
+    kind: Kind
+    pool: Literal["qualification", "audit"]
+    answer: Literal["same", "different", "confirmed", "accept", "reject"]
+    lemma: StrictStr = Field(default="", max_length=128)
+    basis: StrictStr = Field(min_length=1, max_length=64)
+    source: Literal["hr500k"]
+    corpus_sha256: StrictStr = Field(pattern=r"^[0-9a-f]{64}$")
+    batch: StrictStr | None = Field(default=None, max_length=64)
+
+    @model_validator(mode="after")
+    def answer_fits_kind(self):
+        gold_answer(self.kind, self.answer, self.lemma)
+        if self.lemma:
+            self.lemma = word(self.lemma, "lemma")
+        return self
+
+
+def gold_answer(kind, answer, lemma):
+    """A gold answer must be a definite answer of its kind (schema.Annotation.validate)."""
+    allowed = {"pair": ("same", "different"), "lemma": ("confirmed",), "stem": ("accept", "reject")}[kind]
+    if answer not in allowed:
+        raise ValueError(f"{kind} gold must be one of {allowed}")
+    if (kind == "lemma") != bool(lemma):
+        raise ValueError("lemma gold needs the lemma; other kinds have none")
+    if lemma:
+        word(lemma, "lemma")
+
+
+class GoldImportRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    rows: list[GoldRow] = Field(min_length=1, max_length=5000)
+
+
+class GoldActionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    action: Literal["set", "retire", "reactivate", "retract", "disclose"]
+    pool: Literal["qualification", "audit"] | None = None
+    answer: Literal["same", "different", "confirmed", "accept", "reject"] | None = None
+    lemma: StrictStr = Field(default="", max_length=128)
+    reason: StrictStr = Field(min_length=1, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def meaningful(cls, value):
+        return _reason(value)
+
+    @model_validator(mode="after")
+    def complete(self):
+        if self.action == "set" and (self.pool is None or self.answer is None):
+            raise ValueError("set needs a pool and an answer")
+        if self.lemma:
+            self.lemma = word(self.lemma, "lemma")
+        return self

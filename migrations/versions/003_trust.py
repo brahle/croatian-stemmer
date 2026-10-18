@@ -141,6 +141,7 @@ def upgrade():
         Column("n_items", Integer, nullable=True),
         Column("n_annotators", Integer, nullable=True),
         Column("inputs_sha256", String(64), nullable=True),
+        Column("inputs_summary", JSONB, nullable=True),
         Column("outputs_sha256", String(64), nullable=True),
         Column("calibration", JSONB, nullable=True),
         Column("readiness", JSONB, nullable=True),
