@@ -284,42 +284,42 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
 });
 
 test('trust system: knowledge check, blind showing, dashboard tabs and adjudication', async ({browser}) => {
-  // Four more pairs for the gold file: a keyed tenth of items are calibration samples, which an
-  // import holds out, so a single gold line would fail now and then.
-  const base = candidates(), corpus = base[0].corpus_id;
-  const extra = [0, 1, 2, 3].map(n => ({...base[1], item_id: randomUUID(), word_ref: `test:x${n}`, context: `Dodatni primjer ${n}.`}));
-  const rows = [...base, ...extra];
+  const rows = candidates(), corpus = rows[0].corpus_id;
   const curatorContext = await browser.newContext(), annotatorContext = await browser.newContext();
   const cur = await curatorContext.newPage(), iva = await annotatorContext.newPage();
   const faults = [...[cur, iva].map(watch)];
   await signIn(cur, CURATOR, true);
   await expect(cur.locator('#workspace')).toBeVisible();  // accepted the gate in the test above
   await cur.locator('#nav-curator').click();
-  await cur.getByText('Uvoz prijedloga iz korpusa', {exact:true}).click();
-  await cur.locator('#name').fill('Sintetički V2 pregled');
-  await cur.locator('#file').setInputFiles({name:'v2.jsonl', mimeType:'application/jsonl', buffer:Buffer.from(rows.map(r => JSON.stringify(r)).join('\n'))});
-  await cur.getByRole('button', {name:'Uvezi prijedloge', exact:true}).click();
-  await expect(cur.locator('#message')).toContainText('Uvezeno 8 novih prijedloga');
-  await cur.locator(`tr[data-corpus="${corpus}"]`).getByRole('button', {name:'Objavi', exact:true}).click();
-  await expect(cur.locator(`tr[data-corpus="${corpus}"]`)).toContainText('objavljen');
 
-  // Parameters: a one-item knowledge check, every showing without the suggestion, one vote fills an item.
+  // Parameters first: an import decides each item's calibration and review sample from the rates
+  // in force, and a sampled item is held out of gold, so the rates are 0 here to keep the queue
+  // fixed. Also a one-item knowledge check, every showing without the suggestion, one vote fills an item.
   await cur.getByRole('tab', {name:'Bodovanje', exact:true}).click();
   await cur.getByText('Parametri', {exact:true}).click();
   await expect(cur.locator('#params')).not.toHaveValue('');  // the tab loads its data first
   const original = await cur.locator('#params').inputValue();
   const params = JSON.parse(original);
   params.readiness.qualification_pool = 1; params.blind_rate = 100; params.votes_low_cap = 1;
+  params.audit_sample_rate = 0; params.review_sample_rate = 0;
   await cur.locator('#params').fill(JSON.stringify(params));
   await cur.getByRole('button', {name:'Spremi parametre', exact:true}).click();
   await expect(cur.locator('#message')).toContainText('Parametri su spremljeni');
 
-  // Gold: one announced knowledge-check item for pairs.
+  await cur.getByRole('tab', {name:'Pregled', exact:true}).click();
+  await cur.getByText('Uvoz prijedloga iz korpusa', {exact:true}).click();
+  await cur.locator('#name').fill('Sintetički V2 pregled');
+  await cur.locator('#file').setInputFiles({name:'v2.jsonl', mimeType:'application/jsonl', buffer:Buffer.from(rows.map(r => JSON.stringify(r)).join('\n'))});
+  await cur.getByRole('button', {name:'Uvezi prijedloge', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Uvezeno 4 novih prijedloga');
+  await cur.locator(`tr[data-corpus="${corpus}"]`).getByRole('button', {name:'Objavi', exact:true}).click();
+  await expect(cur.locator(`tr[data-corpus="${corpus}"]`)).toContainText('objavljen');
+
+  // Gold: one announced knowledge-check item for pairs, which fills the pool (target 1).
   await cur.getByRole('tab', {name:'Zlatni primjeri', exact:true}).click();
-  // One knowledge-check item fills the pool (target 1); the rest become unannounced checks.
-  const gold = [rows[1], ...extra].map(r => JSON.stringify({gold_schema_version:1, corpus_id:corpus, item_id:r.item_id, kind:'pair',
-    pool:'qualification', answer:'same', lemma:'', basis:'browser-test', source:'hr500k', corpus_sha256:r.corpus_sha256, batch:'browser'}));
-  await cur.locator('#gold-file').setInputFiles({name:'gold.jsonl', mimeType:'application/jsonl', buffer:Buffer.from(gold.join('\n'))});
+  const gold = JSON.stringify({gold_schema_version:1, corpus_id:corpus, item_id:rows[1].item_id, kind:'pair',
+    pool:'qualification', answer:'same', lemma:'', basis:'browser-test', source:'hr500k', corpus_sha256:rows[1].corpus_sha256, batch:'browser'});
+  await cur.locator('#gold-file').setInputFiles({name:'gold.jsonl', mimeType:'application/jsonl', buffer:Buffer.from(gold)});
   await cur.getByRole('button', {name:'Uvezi zlatne primjere', exact:true}).click();
   await expect(cur.locator('#message')).toContainText('Prihvaćeno');
 
