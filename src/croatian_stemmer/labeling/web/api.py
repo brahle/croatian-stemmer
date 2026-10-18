@@ -23,18 +23,26 @@ from sqlalchemy import exists, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from . import routes_annotator, routes_curator, routes_public
+from . import routes_annotator, routes_curator, routes_public, routes_trust
 from .auth import Authenticator
-from .common import Caller, failure
+from .common import Caller, failure, scoring_params
 from .config import MINIMUM_AGE, Settings
 from .erasure import erase_profile, pending_erasure
 from .legal import LegalDocuments
 from .limits import Limiter
-from .models import Annotator, Consent, ErasureRequest, Setting
+from .models import Annotator, Consent, ErasureRequest, Gold, Setting
+from .retention import apply_retention
+from .scheduler import audit_key, live_readiness
+from .trusted import match_anchor
+from .scoring_run import moderation_tx, scheduled_tick
 
 STATIC = Path(__file__).parent / "static"
 DOCUMENTS = Path(__file__).parent / "documents"  # legal templates; not under /static
 log = logging.getLogger("croatian_stemmer.labeling.web")
+
+
+# Routes whose bodies may be large (a corpus or a gold import); serialized per worker.
+LARGE_BODY_ROUTES = {("POST", "/api/import"), ("POST", "/api/admin/gold/import")}
 
 
 class RequestBounds:
@@ -46,7 +54,9 @@ class RequestBounds:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
-        importing = scope["path"] == "/api/import" and scope["method"] == "POST"
+        importing = (scope["method"], scope["path"]) in LARGE_BODY_ROUTES or (
+            scope["method"] == "POST" and scope["path"].startswith("/api/admin/scoring/runs/")
+            and scope["path"].endswith("/release"))  # a release's item ids
         limit = 32 * 1024 * 1024 if importing else 16384
         headers = dict(scope.get("headers", []))
         try:
@@ -85,6 +95,12 @@ class Context:
         self.limiter = Limiter()
         self.legal = LegalDocuments(settings, DOCUMENTS)
         self._accepting = None  # (value, monotonic time)
+        self._serving = None  # (scoring params, monotonic time)
+        self._scheduling = {}  # corpus -> (trust scheduler on, monotonic time)
+        self._readiness = {}  # kind -> (readiness, monotonic time)
+        self._audit_key = None
+        self.scoring_pause = None  # tests: an async callable awaited between scoring and publication
+        self.status_pause = None  # tests: awaited by the status route while it holds the annotator row
         self._build_dependencies()
 
     async def accepting_judgments(self, db) -> bool:
@@ -100,8 +116,48 @@ class Context:
         self._accepting = (accepting, now)
         return accepting
 
+    async def serving_params(self, db) -> dict:
+        """The scoring parameters the scheduler and admission read (5 s cache)."""
+        now = time.monotonic()
+        if self._serving is not None and now - self._serving[1] < 5:
+            return self._serving[0]
+        params = await scoring_params(db)
+        self._serving = (params, now)
+        return params
+
+    async def audit_key(self, db) -> str:
+        """The audit key, read once (it never changes after migration 003)."""
+        if self._audit_key is None:
+            self._audit_key = await audit_key(db)
+        return self._audit_key
+
+    async def readiness(self, db, kind) -> dict:
+        """Live readiness of a kind from the gold mirror and the anchors (5 s cache)."""
+        now = time.monotonic()
+        cached = self._readiness.get(kind)
+        if cached is not None and now - cached[1] < 5:
+            return cached[0]
+        value = await live_readiness(db, await self.serving_params(db), kind)
+        self._readiness[kind] = (value, now)
+        return value
+
+    async def trust_scheduling(self, db, corpus_id) -> bool:
+        """/next uses the trust scheduler once scoring is enabled or the corpus has gold (5 s
+        cache); before that it keeps V1's coverage-first order with its target vote count."""
+        now = time.monotonic()
+        cached = self._scheduling.get(corpus_id)
+        if cached is not None and now - cached[1] < 5:
+            return cached[0]
+        enabled = (await db.execute(select(Setting.value).where(Setting.key == "scoring_enabled"))).scalar_one_or_none()
+        gold = (await db.execute(select(Gold.item_id).where(Gold.corpus_id == corpus_id).limit(1))).first() is not None
+        self._scheduling[corpus_id] = (enabled is True or gold, now)
+        return self._scheduling[corpus_id][0]
+
     def forget_settings(self):
         self._accepting = None
+        self._serving = None
+        self._scheduling = {}
+        self._readiness = {}
 
     def consent_missing(self):
         return failure(403, "consent_required", required=self.settings.required_documents)
@@ -119,11 +175,17 @@ class Context:
             async with sessions() as db:
                 yield db
 
+        # The caller's row and consent rows in one round trip (the gate needs both on every request).
+        consents = (select(func.array_agg(func.json_build_array(Consent.document, Consent.version,
+                                                                Consent.age_threshold)))
+                    .where(Consent.annotator_id == Annotator.id).scalar_subquery())
+
         async def annotator_any(request: Request, db=Depends(session)) -> Caller:
             principal = await auth.authenticate(request.headers.get("authorization"))
+            fresh = False  # a profile created or refreshed now: check the trusted list (4.7.2)
             async with db.begin():
                 row = (await db.execute(select(Annotator.id, Annotator.status, Annotator.last_seen_at,
-                                               func.now() - Annotator.last_seen_at)
+                                               func.now() - Annotator.last_seen_at, consents)
                                         .where(Annotator.subject == principal.subject))).one_or_none()
                 if row is None:
                     # An erased account keeps its Keycloak user for up to 30 days;
@@ -135,23 +197,26 @@ class Context:
                         subject=principal.subject, email=principal.email,
                         email_verified=principal.email_verified).on_conflict_do_nothing(index_elements=[Annotator.subject]))
                     row = (await db.execute(select(Annotator.id, Annotator.status, Annotator.last_seen_at,
-                                                   func.now() - Annotator.last_seen_at)
+                                                   func.now() - Annotator.last_seen_at, consents)
                                             .where(Annotator.subject == principal.subject))).one()
-                elif row[3].total_seconds() > 600 and not await refresh_profile(db, row[0], principal):
-                    # Erased since the SELECT above: never write the email back or go on as a stale caller.
-                    raise await pending_erasure(db, principal.subject) or failure(409, "erasure_pending")
-            return Caller(id=row[0], status=row[1], principal=principal)
+                    fresh = True
+                elif row[3].total_seconds() > 600:
+                    if not await refresh_profile(db, row[0], principal):
+                        # Erased since the SELECT above: never write the email back or go on as a stale caller.
+                        raise await pending_erasure(db, principal.subject) or failure(409, "erasure_pending")
+                    fresh = True
+            if fresh and principal.email:
+                await match_anchor(sessions, row[0], principal)
+            return Caller(id=row[0], status=row[1], principal=principal,
+                          consents=tuple(tuple(c) for c in row[4] or ()))
 
         async def annotator(caller: Caller = Depends(annotator_any)) -> Caller:
             if caller.status == "blocked":
                 raise failure(403, "account_blocked")
             return caller
 
-        async def consented(caller: Caller = Depends(annotator), db=Depends(session)) -> Caller:
-            async with db.begin():
-                rows = (await db.execute(select(Consent.document, Consent.version, Consent.age_threshold).where(
-                    Consent.annotator_id == caller.id))).all()
-            if not self.consent_complete(rows):
+        async def consented(caller: Caller = Depends(annotator)) -> Caller:
+            if not self.consent_complete(caller.consents):
                 raise self.consent_missing()
             return caller
 
@@ -190,6 +255,7 @@ async def expire_unconsented_profiles(ctx, now: datetime | None = None, days=30)
         erased = []
         for annotator_id in candidates:
             async with db.begin():
+                await moderation_tx(db)
                 person = (await db.execute(select(Annotator).where(Annotator.id == annotator_id, *due)
                                            .with_for_update())).scalar_one_or_none()
                 # Recheck with the row locked: a consent committed meanwhile keeps the profile
@@ -230,7 +296,9 @@ def create_app(settings: Settings) -> FastAPI:
                     log.exception("%s failed", name)
                 await asyncio.sleep(seconds)
         tasks = [asyncio.create_task(every(6 * 3600, warn_overdue_erasures, "erasure reminder")),
-                 asyncio.create_task(every(24 * 3600, expire_unconsented_profiles, "unconsented profile expiry"))]
+                 asyncio.create_task(every(24 * 3600, expire_unconsented_profiles, "unconsented profile expiry")),
+                 asyncio.create_task(every(24 * 3600, apply_retention, "retention")),
+                 asyncio.create_task(every(settings.scoring_interval_s, scheduled_tick, "scoring run"))]
         try:
             yield
         finally:
@@ -260,4 +328,5 @@ def create_app(settings: Settings) -> FastAPI:
     routes_public.register(app, ctx)
     routes_annotator.register(app, ctx)
     routes_curator.register(app, ctx)
+    routes_trust.register(app, ctx)
     return app

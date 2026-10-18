@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "croatian-stemmer"
-version = "0.2.3"
+version = "0.3.0"
 description = "Croatian language stemmer based on the Ljubešić-Pandžić algorithm"
 readme = "README.md"
 license = "LGPL-3.0-or-later"
@@ -72,3 +72,4 @@ exclude = ["tests/web"]
 # summary of everything except passes (-ra). Override with `-v`/`--tb=long`.
 addopts = "-q --tb=short --no-header -ra"
 testpaths = ["tests"]
+markers = ["slow: large synthetic workloads (50k-item scheduler, 100k-judgment run)"]

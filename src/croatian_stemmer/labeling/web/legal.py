@@ -12,7 +12,8 @@ import re
 from pathlib import Path
 from urllib.parse import urlsplit
 
-DOCUMENTS = ("privacy", "terms", "participation", "storage")
+# The trust page ("Kako radi pouzdanost") is information with its own version, not part of the gate.
+DOCUMENTS = ("privacy", "terms", "participation", "storage", "trust")
 LANGUAGES = ("hr", "en")
 PLACEHOLDERS = ("controller_name", "controller_address", "controller_email", "hosting_summary",
                 "edge_log_retention", "backup_retention", "app_host", "identity_host")

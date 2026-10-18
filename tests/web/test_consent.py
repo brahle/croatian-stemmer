@@ -47,7 +47,7 @@ async def test_gate_blocks_queue_and_answers_until_consent(api):
     rows = (await api.sql("SELECT document, version, locale, age_confirmed, age_threshold, ui_version FROM label_consent "
                           "WHERE annotator_id = :a ORDER BY document", a=await api.annotator_id("alice"))).all()
     assert [tuple(r) for r in rows] == [("participation", "1.0", "hr", True, 18, "0.2.0"),
-                                        ("privacy", "1.2", "hr", True, 18, "0.2.0"),
+                                        ("privacy", "1.3", "hr", True, 18, "0.2.0"),
                                         ("terms", "1.1", "hr", True, 18, "0.2.0")]
     # Repeating the consent is idempotent.
     assert (await api.request("POST", "/api/me/consent", "alice", json=consent_body(api.settings))).status_code == 200
@@ -59,7 +59,7 @@ async def test_participation_consent_is_required_separately(api):
     rows = await api.imported()
     assert (await api.request("GET", "/api/me", "alice")).status_code == 200
     # Notice and terms at the current versions, but no participation consent: refused.
-    await consent_rows(api, "alice", [("privacy", "1.2", 18), ("terms", "1.1", 18)])
+    await consent_rows(api, "alice", [("privacy", "1.3", 18), ("terms", "1.1", 18)])
     r = await api.request("POST", answer_path(rows[0]), "alice", json=answer())
     assert r.status_code == 403 and r.json()["detail"] == {"code": "consent_required", "required": REQUIRED}
     assert (await api.request("GET", "/api/me", "alice")).json()["consented"] is False
@@ -74,7 +74,7 @@ async def test_consent_confirmed_for_age_16_does_not_count(api):
     # Rows like the ones 0.2.2 wrote (16+, no age_threshold) at the current versions are not enough.
     rows = await api.imported()
     assert (await api.request("GET", "/api/me", "bob")).status_code == 200
-    await consent_rows(api, "bob", [("privacy", "1.2", None), ("terms", "1.1", None), ("participation", "1.0", None)])
+    await consent_rows(api, "bob", [("privacy", "1.3", None), ("terms", "1.1", None), ("participation", "1.0", None)])
     r = await api.request("POST", answer_path(rows[0]), "bob", json=answer())
     assert r.status_code == 403 and r.json()["detail"]["code"] == "consent_required"
     assert (await api.request("GET", "/api/me", "bob")).json()["consented"] is False
@@ -126,5 +126,5 @@ async def test_new_terms_version_regates_and_keeps_old_records(make_api, monkeyp
     assert (await bumped.request("POST", answer_path(rows[1]), "alice", json=answer(0, "unsure"))).status_code == 200
     versions = (await bumped.sql("SELECT document, version FROM label_consent WHERE annotator_id = :a "
                                  "ORDER BY document, version", a=await bumped.annotator_id("alice"))).all()
-    assert [tuple(v) for v in versions] == [("participation", "1.0"), ("privacy", "1.2"),
+    assert [tuple(v) for v in versions] == [("participation", "1.0"), ("privacy", "1.3"),
                                             ("terms", "1.1"), ("terms", "1.2")]

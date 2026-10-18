@@ -7,20 +7,26 @@ plus a non-blocked annotator record). Privileged actions write label_admin_event
 import csv
 import io
 import json
+from collections import defaultdict
 from typing import Literal
 from uuid import UUID
 
 from fastapi import Depends, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
-from sqlalchemy import String, cast, func, select, update
+from sqlalchemy import String, cast, exists, func, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 
 from ..schema import FIELDS
-from .common import Caller, corpus_json, excluded_annotators, failure
+from .common import Caller, corpus_json, excluded_annotators, failure, scoring_params, trust_event
 from .licenses import allowed
-from .models import AdminEvent, Annotator, Corpus, ErasureRequest, Item, Judgment, Setting
-from .requests import Candidate, ImportRequest, PublishRequest, SettingsRequest, StatusRequest
+from ..scoring import HARD_FLAGS, REPORTED_FLAGS
+from .models import (AdminEvent, Anchor, Annotator, AnnotatorScore, Corpus, ErasureRequest, Item, ItemAudit, ItemState,
+                     Judgment, Setting, TrustedEmail)
+from .scheduler import audit_key, item_bits
+from .scoring_run import latest_done, moderation_tx
+from .erasure import erase_profile
+from .requests import Candidate, ImportRequest, PublishRequest, ReapplyRequest, SettingsRequest, StatusRequest
 
 
 def register(app, ctx):
@@ -34,6 +40,25 @@ def register(app, ctx):
         if corpus is None:
             raise failure(404, "not_found")
         return corpus
+
+    async def item_rows(db, corpus_id, unique):
+        """Every imported item's queue row and its immutable membership row (with the
+        keyed sampling bits), in the import's transaction. A re-import keeps both."""
+        key = await audit_key(db)
+        params = await scoring_params(db)
+        ids = list(unique)
+        for start in range(0, len(ids), 1000):
+            chunk = ids[start:start + 1000]
+            await db.execute(insert(ItemState).values([
+                {"corpus_id": corpus_id, "item_id": item_id, "kind": unique[item_id].kind} for item_id in chunk])
+                .on_conflict_do_nothing())
+            audits = []
+            for item_id in chunk:
+                sample, review, rank = item_bits(key, corpus_id, item_id, params["audit_sample_rate"],
+                                                 params["review_sample_rate"])
+                audits.append({"corpus_id": corpus_id, "item_id": item_id, "audit_sample": sample,
+                               "review_sample": review, "audit_rank": rank})
+            await db.execute(insert(ItemAudit).values(audits).on_conflict_do_nothing())
 
     # ---- corpora -------------------------------------------------------------
 
@@ -76,6 +101,7 @@ def register(app, ctx):
                     batch.clear()
             if batch:
                 await db.execute(insert(Item), batch)
+            await item_rows(db, corpus.id, unique)
             event(db, caller, "corpus.import", corpus.id,
                   {"name": data.name, "added": added, "already_present": len(existing)})
         return {"corpus": corpus_json(corpus), "added": added, "already_present": len(existing)}
@@ -199,6 +225,9 @@ def register(app, ctx):
 
     @app.get("/api/admin/annotators")
     async def annotators(status: Literal["active", "quarantined", "blocked", "erased"] | None = None,
+                         flagged: bool = False, tier: Literal["new", "qualified", "established", "anchor",
+                                                             "quarantined"] | None = None,
+                         quarantine: Literal["open"] | None = None,
                          offset: int = Query(0, ge=0, le=2**31 - 1), caller: Caller = Depends(curator),
                          db=Depends(session)):
         counts = (select(Judgment.annotator_id, func.count().label("judgments"),
@@ -207,16 +236,52 @@ def register(app, ctx):
         reason = (select(AdminEvent.details["reason"].astext)
                   .where(AdminEvent.kind == "annotator.status", AdminEvent.target == cast(Annotator.id, String))
                   .order_by(AdminEvent.id.desc()).limit(1).scalar_subquery())
-        query = (select(Annotator, func.coalesce(counts.c.judgments, 0), func.coalesce(counts.c.item_count, 0), reason)
+        since = (select(func.max(AdminEvent.at))
+                 .where(AdminEvent.kind == "annotator.status", AdminEvent.target == cast(Annotator.id, String))
+                 .scalar_subquery())
+        query = (select(Annotator, func.coalesce(counts.c.judgments, 0), func.coalesce(counts.c.item_count, 0), reason,
+                        func.extract("day", func.now() - since))
                  .outerjoin(counts, counts.c.annotator_id == Annotator.id))
-        if status:
-            query = query.where(Annotator.status == status)
         async with db.begin():
-            rows = (await db.execute(query.order_by(Annotator.created_at.desc(), Annotator.id.desc()).offset(offset).limit(101))).all()
-        return {"items": [{"id": str(a.id), "email": a.email, "email_verified": a.email_verified, "status": a.status,
+            latest = await latest_done(db)
+            if status:
+                query = query.where(Annotator.status == status)
+            if quarantine == "open":
+                query = query.where(Annotator.status == "quarantined")
+            if flagged or tier:
+                score = select(AnnotatorScore.annotator_id).where(AnnotatorScore.run_id == latest,
+                                                                  AnnotatorScore.annotator_id == Annotator.id)
+                if tier:
+                    score = score.where(AnnotatorScore.tier == tier)
+                if flagged:
+                    score = score.where(text("EXISTS (SELECT 1 FROM jsonb_each(label_annotator_score.flags) f "
+                                             "WHERE f.key = ANY(:hard) AND f.value ->> 'on' = 'true')"))
+                query = query.where(exists(score))
+            rows = (await db.execute(query.order_by(Annotator.created_at.desc(), Annotator.id.desc())
+                                     .offset(offset).limit(101), {"hard": list(HARD_FLAGS)})).all()
+            ids = [a.id for a, *_ in rows[:100]]
+            scores = defaultdict(dict)
+            for row in (await db.execute(select(AnnotatorScore).where(
+                    AnnotatorScore.run_id == latest, AnnotatorScore.annotator_id.in_(ids)))).scalars():
+                scores[row.annotator_id][row.kind] = {
+                    "tier": row.tier, "base_tier": row.base_tier, "qualified": row.qualified, "theta": row.theta_mean,
+                    "weight": row.weight, "theta_lb_gold": row.theta_lb_gold,
+                    "gold": {"seen": row.gold_seen, "hits": row.gold_hits, "disc_seen": row.disc_seen,
+                             "disc_hits": row.disc_hits, "wrong_sugg_seen": row.wrong_sugg_seen,
+                             "wrong_sugg_hits": row.wrong_sugg_hits},
+                    "flags": sorted(name for name in HARD_FLAGS + REPORTED_FLAGS
+                                    if isinstance(row.flags.get(name), dict) and row.flags[name].get("on")),
+                    "signals": row.flags, "n_definite": row.n_definite}
+            anchors = dict((await db.execute(select(Anchor.annotator_id, TrustedEmail.label).join(
+                TrustedEmail, TrustedEmail.id == Anchor.trusted_id).where(Anchor.annotator_id.in_(ids)))).all())
+        return {"run_id": str(latest) if latest else None,
+                "items": [{"id": str(a.id), "email": a.email, "email_verified": a.email_verified, "status": a.status,
                            "created_at": a.created_at.isoformat(), "last_seen_at": a.last_seen_at.isoformat(),
-                           "counts": {"judgments": judgments, "items": items}, "status_reason": reason}
-                          for a, judgments, items, reason in rows[:100]],
+                           "counts": {"judgments": judgments, "items": items}, "status_reason": reason,
+                           "anchor": a.id in anchors, "trusted_label": anchors.get(a.id),
+                           "kinds": scores.get(a.id, {}),
+                           "quarantine_age_days": int(age) if a.status == "quarantined" and age is not None else None}
+                          for a, judgments, items, reason, age in rows[:100]],
                 "next_offset": offset + 100 if len(rows) > 100 else None}
 
     @app.put("/api/admin/annotators/{annotator_id}/status")
@@ -225,14 +290,22 @@ def register(app, ctx):
         if annotator_id == caller.id:
             raise failure(409, "own_status_change")
         async with db.begin():
+            # The moderation lock before the row lock: a publishing run cannot deadlock with this.
+            await moderation_tx(db)
             person = (await db.execute(select(Annotator).where(Annotator.id == annotator_id).with_for_update())).scalar_one_or_none()
             if person is None:
                 raise failure(404, "not_found")
             if person.status == "erased":
                 # Erasure is the data subject's action and cannot be undone or overridden.
                 raise failure(409, "annotator_erased")
+            if ctx.status_pause is not None:  # tests: hold the row lock to interleave a publication
+                await ctx.status_pause(person.id)
             previous, person.status = person.status, data.status
             event(db, caller, "annotator.status", person.id, {"from": previous, "to": data.status, "reason": data.reason})
+            if previous == "quarantined" and data.status == "active":
+                # Clearing moves `flags_since` forward: earlier answers no longer count towards flags.
+                await trust_event(db, "annotator.cleared", actor_id=caller.id, annotator_id=person.id,
+                                  details={"reason": data.reason})
         return {"id": str(annotator_id), "status": data.status}
 
     # ---- settings ------------------------------------------------------------
@@ -272,6 +345,23 @@ def register(app, ctx):
                            # The Keycloak user (id) the curator must delete; gone once completed.
                            "keycloak_user_id": (details or {}).get("keycloak_user_id"),
                            "reason": (details or {}).get("reason")} for e, details, age in rows]}
+
+    @app.post("/api/admin/erasures/reapply")
+    async def reapply_erasures(data: ReapplyRequest, caller: Caller = Depends(curator), db=Depends(session)):
+        """After a database restore: erase again every profile whose erasure was requested after
+        the backup, from the erasure list the curator keeps outside the database (4.13.4)."""
+        erased = []
+        for subject in dict.fromkeys(data.keycloak_user_ids):
+            async with db.begin():
+                await moderation_tx(db)
+                person = (await db.execute(select(Annotator).where(Annotator.subject == subject)
+                                           .with_for_update())).scalar_one_or_none()
+                if person is None or person.status == "erased":
+                    continue
+                await erase_profile(db, person, actor_id=caller.id,
+                                    details={"keycloak_user_id": subject, "reason": "restore_reapply"})
+                erased.append(str(person.id))
+        return {"erased": erased}
 
     @app.post("/api/admin/erasures/{erasure_id}/complete")
     async def complete_erasure(erasure_id: int, caller: Caller = Depends(curator), db=Depends(session)):

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 // Deliberately synthetic data. These answers never count toward human gold.
 const FIXTURE = 'http://127.0.0.1:55485';
 const RUN = randomUUID().slice(0, 8);
-const CURATOR = `curator-${RUN}`, ANA = `ana-${RUN}`;
+const CURATOR = `curator-${RUN}`, ANA = `ana-${RUN}`, IVA = `iva-${RUN}`;
 test.describe.configure({mode: 'serial'});
 
 function candidates(){
@@ -12,7 +12,7 @@ function candidates(){
     license:'CC BY-SA 4.0', item_id:randomUUID(), kind:'pair', word:'kuće', other_word:'kuća', proposed_lemma:'kuća', other_proposed_lemma:'kuća',
     proposed_stem:'', upos:'NOUN', context:'Sintetički primjer <img src=x onerror=alert(1)> kuće.', other_context:'Sintetički primjer kuća.',
     word_ref:'test:1', other_word_ref:'test:2', sampling_stratum:'synthetic-browser', algorithm_sha256:'b'.repeat(64)};
-  const second = {...base, item_id:randomUUID(), word_ref:'test:3'};
+  const second = {...base, item_id:randomUUID(), word_ref:'test:3', context:'Drugi sintetički primjer kuće.'};
   const lemma = {...base, item_id:randomUUID(), kind:'lemma', other_word:'', other_proposed_lemma:'', other_context:'', other_word_ref:''};
   return [base, second, lemma, {...lemma, item_id:randomUUID(), kind:'stem', proposed_stem:'kuć'}];
 }
@@ -28,7 +28,7 @@ async function acceptGate(page){
   await expect(page.locator('#gate')).toBeVisible();
   // The privacy notice is information, not a checkbox; terms, participation and age 18 each have their own.
   await expect(page.locator('#gate-privacy a')).toHaveAttribute('href', '/legal/privacy.hr');
-  await expect(page.locator('#gate-privacy')).toContainText('verzija 1.2');
+  await expect(page.locator('#gate-privacy')).toContainText('verzija 1.3');
   await expect(page.locator('#gate input[type=checkbox]')).toHaveCount(3);
   await expect(page.locator('#gate input[type=checkbox]:checked')).toHaveCount(0);
   await expect(page.locator('#gate')).toContainText('Imam najmanje 18 godina.');
@@ -132,10 +132,13 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
   await expect(ana.locator('#word')).toHaveText('kuće');
   await expect(ana.locator('#context')).toContainText('<img src=x onerror=alert(1)>');
   expect(await ana.locator('#context img').count()).toBe(0);
+  // Provenance fields (word refs, sampling stratum) never reach the annotator.
+  await expect(ana.locator('#question')).not.toContainText('test:1');
+  await expect(ana.locator('#question')).not.toContainText('synthetic-browser');
   // Skip: the next new item comes; the skipped one returns only after 30 minutes.
-  const skipped = await ana.locator('#word-ref').textContent();
+  const skipped = await ana.locator('#context').textContent();
   await ana.getByRole('button', {name:'Preskoči', exact:true}).click();
-  await expect(ana.locator('#word-ref')).not.toHaveText(skipped);
+  await expect(ana.locator('#context')).not.toHaveText(skipped);
   // Keyboard shortcut 1 = "Ista lema".
   await expect(ana.getByRole('button', {name:'Ista lema', exact:true})).toHaveAttribute('aria-keyshortcuts', '1');
   await ana.locator('#prompt').click();
@@ -206,6 +209,7 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
 
   // Curator: the status reason is shown as text, never as markup.
   await cur.locator('#nav-curator').click();
+  await cur.getByRole('tab', {name:'Suradnici', exact:true}).click();
   const annotatorRow = cur.locator('#annotators tr', {hasText:`${ANA}@example.org`});
   await annotatorRow.locator('select').selectOption('quarantined');
   await annotatorRow.getByRole('textbox').fill('<img src=x onerror=alert(1)> provjera');
@@ -219,6 +223,10 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
   await expect(ana.locator('#me-consents li')).toHaveCount(3);
   await expect(ana.locator('#me-consents')).toContainText('Izjava o sudjelovanju, verzija 1.0');
   await expect(ana.locator('#me-counts')).toContainText('Odgovora ukupno: 5');
+  // The reliability card; a quarantine is never shown to the person (the curator set one above).
+  await expect(ana.locator('#trust')).toBeVisible();
+  await expect(ana.locator('#trust')).not.toContainText('izdvoj');
+  await expect(ana.locator('#me a[data-doc="trust"]')).toHaveAttribute('href', '/legal/trust.hr');
   const pending = ana.waitForEvent('download');
   await ana.getByRole('button', {name:'Preuzmi moje podatke', exact:true}).click();
   let exported = '';
@@ -227,6 +235,7 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
   expect(data.annotator.email).toBe(`${ANA}@example.org`);
   expect(data.judgments).toHaveLength(5);
   expect(data.judgments.every(j => j.client_version && j.elapsed_ms !== undefined)).toBe(true);
+  expect(Object.keys(data.trust)).toEqual(['runs', 'events', 'meanings', 'not_included']);
   // No cookie and no persistent storage on the app origin, signed in or not.
   expect(await annotatorContext.cookies()).toEqual([]);
   const stored = await storage(ana);
@@ -255,6 +264,7 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
 
   // Curator completes the Keycloak side: the request names only the Keycloak user id, never the email.
   await cur.locator('#nav-curator').click();
+  await cur.getByRole('tab', {name:'Pregled', exact:true}).click();
   await expect(cur.locator('#erasures')).not.toContainText(`${ANA}@example.org`);
   const erasure = cur.locator('#erasures li', {hasText:`Keycloak ID ${anaSubject}`});
   await expect(erasure).toBeVisible();
@@ -269,6 +279,98 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
   }
   expect(await annotatorContext.cookies()).toEqual([]);
   expect(await curatorContext.cookies()).toEqual([]);
+  expect(faults.flat()).toEqual([]);
+  await curatorContext.close(); await annotatorContext.close();
+});
+
+test('trust system: knowledge check, blind showing, dashboard tabs and adjudication', async ({browser}) => {
+  // Four more pairs for the gold file: a keyed tenth of items are calibration samples, which an
+  // import holds out, so a single gold line would fail now and then.
+  const base = candidates(), corpus = base[0].corpus_id;
+  const extra = [0, 1, 2, 3].map(n => ({...base[1], item_id: randomUUID(), word_ref: `test:x${n}`, context: `Dodatni primjer ${n}.`}));
+  const rows = [...base, ...extra];
+  const curatorContext = await browser.newContext(), annotatorContext = await browser.newContext();
+  const cur = await curatorContext.newPage(), iva = await annotatorContext.newPage();
+  const faults = [...[cur, iva].map(watch)];
+  await signIn(cur, CURATOR, true);
+  await expect(cur.locator('#workspace')).toBeVisible();  // accepted the gate in the test above
+  await cur.locator('#nav-curator').click();
+  await cur.getByText('Uvoz prijedloga iz korpusa', {exact:true}).click();
+  await cur.locator('#name').fill('Sintetički V2 pregled');
+  await cur.locator('#file').setInputFiles({name:'v2.jsonl', mimeType:'application/jsonl', buffer:Buffer.from(rows.map(r => JSON.stringify(r)).join('\n'))});
+  await cur.getByRole('button', {name:'Uvezi prijedloge', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Uvezeno 8 novih prijedloga');
+  await cur.locator(`tr[data-corpus="${corpus}"]`).getByRole('button', {name:'Objavi', exact:true}).click();
+  await expect(cur.locator(`tr[data-corpus="${corpus}"]`)).toContainText('objavljen');
+
+  // Parameters: a one-item knowledge check, every showing without the suggestion, one vote fills an item.
+  await cur.getByRole('tab', {name:'Bodovanje', exact:true}).click();
+  await cur.getByText('Parametri', {exact:true}).click();
+  await expect(cur.locator('#params')).not.toHaveValue('');  // the tab loads its data first
+  const original = await cur.locator('#params').inputValue();
+  const params = JSON.parse(original);
+  params.readiness.qualification_pool = 1; params.blind_rate = 100; params.votes_low_cap = 1;
+  await cur.locator('#params').fill(JSON.stringify(params));
+  await cur.getByRole('button', {name:'Spremi parametre', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Parametri su spremljeni');
+
+  // Gold: one announced knowledge-check item for pairs.
+  await cur.getByRole('tab', {name:'Zlatni primjeri', exact:true}).click();
+  // One knowledge-check item fills the pool (target 1); the rest become unannounced checks.
+  const gold = [rows[1], ...extra].map(r => JSON.stringify({gold_schema_version:1, corpus_id:corpus, item_id:r.item_id, kind:'pair',
+    pool:'qualification', answer:'same', lemma:'', basis:'browser-test', source:'hr500k', corpus_sha256:r.corpus_sha256, batch:'browser'}));
+  await cur.locator('#gold-file').setInputFiles({name:'gold.jsonl', mimeType:'application/jsonl', buffer:Buffer.from(gold.join('\n'))});
+  await cur.getByRole('button', {name:'Uvezi zlatne primjere', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Prihvaćeno');
+
+  // Annotator: the knowledge-check banner and a showing without the suggestion.
+  await signIn(iva, IVA);
+  await acceptGate(iva);
+  await iva.locator('#corpus').selectOption(corpus);
+  await expect(iva.locator('#qualification')).toContainText('Provjera znanja 0/12');
+  await expect(iva.locator('#blind')).toBeVisible();
+  await expect(iva.locator('#hints')).toBeHidden();
+  await iva.getByRole('button', {name:'Ista lema', exact:true}).click();
+  // The second pair (an ordinary item) is shown without the suggestion too (blind rate 100 here).
+  await expect(iva.locator('#qualification')).toBeHidden();
+  await expect(iva.locator('#blind')).toBeVisible();
+  await iva.getByRole('button', {name:'Ista lema', exact:true}).click();
+  await expect(iva.locator('#empty')).toBeVisible();
+  await iva.locator('#kind').selectOption('lemma');
+  await expect(iva.locator('#lemma-field')).toBeVisible();
+  await expect(iva.locator('#lemma')).toHaveValue('');
+  await expect(iva.locator('#blind')).toBeVisible();
+  await iva.locator('#nav-me').click();
+  await expect(iva.locator('#trust')).toBeVisible();
+
+  // The curator runs scoring: the answered item needs an expert and is adjudicated.
+  await cur.getByRole('tab', {name:'Bodovanje', exact:true}).click();
+  await cur.getByRole('button', {name:'Pokreni izračun', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Izračun je završen');
+  await cur.getByRole('tab', {name:'Sporni primjeri', exact:true}).click();
+  await cur.locator('#dispute-state').selectOption('needs_expert');
+  const disputed = cur.locator(`#disputes li[data-item="${rows[0].item_id}"]`);
+  await expect(disputed).toBeVisible();
+  await disputed.getByRole('textbox', {name:'Razlog'}).fill('pregledano');
+  await disputed.getByRole('button', {name:'Presudi', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Odluka je zapisana');
+  await expect(cur.locator(`#disputes li[data-item="${rows[0].item_id}"]`)).toHaveCount(0);
+
+  // Every tab fits a phone.
+  await cur.setViewportSize({width: 390, height: 844});
+  for (const tab of ['Pregled', 'Suradnici', 'Karantena', 'Zlatni primjeri', 'Sporni primjeri', 'Pouzdane adrese', 'Bodovanje']) {
+    await cur.getByRole('tab', {name:tab, exact:true}).click();
+    await expect(cur.locator('#message')).not.toHaveAttribute('data-error', 'true');
+    expect(await cur.evaluate(() => document.documentElement.scrollWidth <= innerWidth), tab).toBe(true);
+  }
+  await cur.screenshot({path: 'test-results/labeling-dashboard-mobile.png', fullPage: true});
+
+  // Restore the parameters for whatever runs next on this database.
+  await cur.getByRole('tab', {name:'Bodovanje', exact:true}).click();
+  if (!(await cur.locator('#params').isVisible())) await cur.getByText('Parametri', {exact:true}).click();
+  await cur.locator('#params').fill(original);
+  await cur.getByRole('button', {name:'Spremi parametre', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Parametri su spremljeni');
   expect(faults.flat()).toEqual([]);
   await curatorContext.close(); await annotatorContext.close();
 });

@@ -339,7 +339,7 @@ def test_policy_and_compliance_from_environment(monkeypatch):
 
 def test_document_versions_from_environment(monkeypatch):
     compliance_environment(monkeypatch)
-    assert Settings.from_environment().required_documents == {"privacy": "1.2", "terms": "1.1", "participation": "1.0"}
+    assert Settings.from_environment().required_documents == {"privacy": "1.3", "terms": "1.1", "participation": "1.0"}
     monkeypatch.setenv("LABELING_PARTICIPATION_VERSION", "2.0")
     assert Settings.from_environment().participation_version == "2.0"
     for value in ("2 0", "x" * 33):

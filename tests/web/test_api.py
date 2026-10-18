@@ -277,10 +277,31 @@ async def test_reimport_preserves_items(api):
     r = await api.request("POST", "/api/import", "curator", True, json={"name": "Again", "candidates": changed})
     assert r.json()["added"] == 0 and r.json()["already_present"] == 3
     await api.consent("alice")
-    assert (await next_item(api, rows[0]))["candidate"]["algorithm_sha256"] == "b" * 64
+    assert "algorithm_sha256" not in (await next_item(api, rows[0]))["candidate"]  # provenance stays server-side
+    stored = await api.sql("SELECT payload ->> 'algorithm_sha256' FROM label_item WHERE id = :i", i=rows[0]["item_id"])
+    assert stored.scalar_one() == "b" * 64
     more = rows + [dict(rows[0], item_id=str(uuid4()), word_ref="test:3")]
     assert (await api.request("POST", "/api/import", "curator", True, json={"name": "More", "candidates": more})).json()["added"] == 1
     assert (await api.request("GET", root(rows[0]) + "/progress", "alice")).json()["kinds"]["pair"]["total"] == 2
+
+
+async def test_import_writes_queue_and_membership_rows_once(api):
+    """Every imported item gets its label_item_state row and its journaled label_item_audit
+    row in the import's transaction; a re-import keeps both as they are."""
+    rows = await api.imported()
+    corpus = rows[0]["corpus_id"]
+    state = "SELECT item_id::text, kind, state, n_low FROM label_item_state WHERE corpus_id = :c ORDER BY item_id"
+    audit = ("SELECT item_id::text, seq, audit_sample, review_sample, audit_rank FROM label_item_audit "
+             "WHERE corpus_id = :c ORDER BY item_id")
+    first = (await api.sql(state, c=corpus)).all()
+    assert sorted((r.item_id, r.kind) for r in first) == sorted((r["item_id"], r["kind"]) for r in rows)
+    bits = (await api.sql(audit, c=corpus)).all()
+    assert len(bits) == len(rows) and all(r.seq is not None for r in bits)
+    await api.sql("UPDATE label_item_state SET n_low = 4 WHERE corpus_id = :c", c=corpus)
+    again = await api.request("POST", "/api/import", "curator", True, json={"name": "Again", "candidates": rows})
+    assert again.status_code == 200
+    assert {r.n_low for r in (await api.sql(state, c=corpus)).all()} == {4}
+    assert (await api.sql(audit, c=corpus)).all() == bits
 
 
 @pytest.mark.parametrize("parameter", ["offset", "after"])

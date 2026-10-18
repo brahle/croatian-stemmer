@@ -8,7 +8,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.2">
+<meta name="document-version" content="1.3">
 <title>Obavijest o privatnosti — označavanje hrvatskih lema</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -16,7 +16,7 @@
 <main>
 <p class="crumbs"><a href="/?lang=hr">Natrag na označavanje</a> · <a href="/legal/privacy.en" hreflang="en" lang="en">English</a></p>
 <h1>Obavijest o privatnosti</h1>
-<p class="meta">Verzija 1.2 (18. listopada 2026.). Ova obavijest vrijedi za stranicu {{app_host}} na kojoj dobrovoljci označavaju hrvatske riječi (leme, parove riječi i korijene) za otvoreni jezični skup podataka.</p>
+<p class="meta">Verzija 1.3 (18. listopada 2026.). Ova obavijest vrijedi za stranicu {{app_host}} na kojoj dobrovoljci označavaju hrvatske riječi (leme, parove riječi i korijene) za otvoreni jezični skup podataka.</p>
 
 <p>Ovdje objašnjavamo koje osobne podatke obrađujemo kada sudjelujete, zašto, na kojoj pravnoj osnovi, koliko dugo ih čuvamo i koja su Vaša prava prema Općoj uredbi o zaštiti podataka (Uredba (EU) 2016/679, „GDPR”).</p>
 
@@ -33,10 +33,11 @@
 <h3>Podaci koje unosite ili koji nastaju dok sudjelujete</h3>
 <ul>
 <li>Vaši odgovori (oznake): odgovor na pitanje, upisana lema, oznaka nepravilnog oblika, redni broj izmjene odgovora i vrijeme spremanja.</li>
-<li>Vrijeme potrebno za odgovor na pojedini primjer (u milisekundama) te koji su Vam primjeri prikazani, kada i koliko puta.</li>
+<li>Vrijeme potrebno za odgovor na pojedini primjer (u milisekundama), koji su Vam primjeri prikazani, kada i koliko puta, te je li primjer bio prikazan bez prijedloga iz korpusa.</li>
 <li>Vaše prihvaćanje uvjeta sudjelovanja i izjave o sudjelovanju te verzija ove obavijesti koja Vam je prikazana: verzija dokumenta, vrijeme prihvaćanja, jezik sučelja, verzija aplikacije i Vaša potvrda da imate najmanje 18 godina.</li>
 <li>Nasumična oznaka sudionika (pseudonim) koju dodjeljujemo Vašem profilu. Svi Vaši odgovori vezani su uz tu oznaku, a ne uz Vaše ime ili adresu e-pošte.</li>
 <li>Status profila (aktivan, privremeno izdvojen, blokiran ili izbrisan) i, ako ga promijenimo, razlog promjene.</li>
+<li>Procjene pouzdanosti koje aplikacija izračunava iz gornjih podataka (odjeljak 9).</li>
 </ul>
 <h3>Podaci koji nastaju automatski na rubu mreže</h3>
 <p>Obrnuti posrednik (reverse proxy) ispred aplikacije bilježi za svaki zahtjev IP adresu, vrijeme, zatraženu adresu stranice i podatke o pregledniku (user agent). Sustav za zaštitu od napada na istoj infrastrukturi koristi te zapise kako bi otkrio i blokirao zlonamjerni promet. Aplikacija za označavanje sama ne vodi zapise o pristupu i ne vidi Vašu IP adresu.</p>
@@ -46,7 +47,8 @@
 <ul>
 <li><strong>Stvaranje Vašeg profila pri prvoj prijavi, prije prihvaćanja</strong>: radnje poduzete na Vaš zahtjev prije sudjelovanja prema uvjetima sudjelovanja (članak 6. stavak 1. točka (b) GDPR-a).</li>
 <li><strong>Vođenje Vašeg profila i bilježenje odgovora radi izrade jezičnog skupa podataka</strong>: Vaša privola (članak 6. stavak 1. točka (a) GDPR-a), koju dajete zasebno na početku sudjelovanja prihvaćanjem <a href="/legal/participation.hr">izjave o sudjelovanju</a>. Privolu možete povući u svakom trenutku brisanjem profila (odjeljak 7).</li>
-<li><strong>Procjena pouzdanosti odgovora, otkrivanje zlouporabe, ograničavanje broja zahtjeva i blokiranje računa</strong>: legitimni interes (članak 6. stavak 1. točka (f)) da javni istraživački skup podataka bude točan i zaštićen od lažnih ili automatiziranih unosa. Pri odvagivanju smo uzeli u obzir da te procjene nemaju nikakav učinak izvan ove stranice i da podaci ne napuštaju voditelja obrade.</li>
+<li><strong>Zadržavanje odgovora u skupu podataka nakon brisanja profila</strong>: legitimni interes (članak 6. stavak 1. točka (f)) u znanstvenom skupu podataka, uz iznimku za znanstvena istraživanja iz članka 17. stavka 3. točke (d) i zaštitne mjere iz članka 89. stavka 1. (odjeljak 7).</li>
+<li><strong>Procjena pouzdanosti odgovora (profiliranje), otkrivanje zlouporabe, ograničavanje broja zahtjeva i blokiranje računa</strong>: legitimni interes (članak 6. stavak 1. točka (f)) da javni istraživački skup podataka bude točan i zaštićen od lažnih ili automatiziranih unosa. Što procjenjujemo, kako smo odvagnuli taj interes i kako možete uložiti prigovor objašnjava odjeljak 9.</li>
 <li><strong>Sigurnosni zapisi na rubu mreže</strong>: legitimni interes (članak 6. stavak 1. točka (f)) u zaštiti usluge od napada.</li>
 <li><strong>Čuvanje zapisa o pristancima</strong>: pravna obveza da možemo dokazati privolu (članak 7. stavak 1. u vezi s člankom 6. stavkom 1. točkom (c)).</li>
 </ul>
@@ -55,7 +57,8 @@
 <ul>
 <li><strong>Google</strong> (Google Ireland Limited i Google LLC) kao pružatelj prijave. Google je samostalni voditelj obrade za Vaš Google račun; njegova pravila privatnosti dostupna su na <a href="https://policies.google.com/privacy?hl=hr" rel="noopener noreferrer">policies.google.com/privacy</a>.</li>
 <li><strong>Pružatelj smještaja</strong> na kojem rade aplikacija, baza podataka, poslužitelj za prijavu i obrnuti posrednik: {{hosting_summary}}.</li>
-<li><strong>Javnost</strong>, kada objavimo skup podataka: objavljene datoteke sadrže tekstove primjera i samo zbirne oznake (za svaki primjer rezultat objedinjen iz svih odgovora na njega), nikada oznaku sudionika, ime ili adresu e-pošte.</li>
+<li><strong>Javnost</strong>, kada objavimo skup podataka: skup objavljujemo samo kao datoteke uz izdanja (releases) repozitorija croatian-stemmer na GitHubu. Objavljene datoteke sadrže tekstove primjera i samo zbirne oznake (za svaki primjer rezultat objedinjen iz svih odgovora na njega), nikada oznaku sudionika, ime ili adresu e-pošte, ni broj odgovora, vrijeme odgovora ili procjene pouzdanosti.</li>
+<li><strong>Istraživači</strong>, samo ako s njima sklopimo pisani ugovor o dijeljenju podataka: ograničeni paket podataka za provjeru i ponavljanje izračuna pouzdanosti. Sadrži odgovore, vremena odgovora i zapise o statusu profila pod nasumičnim oznakama sudionika, bez imena i adrese e-pošte. Ugovor zabranjuje pokušaje ponovne identifikacije i dopušta čuvanje paketa najdulje godinu dana. Kada izbrišete profil, tražimo od primatelja da izbriše retke s Vašom dotadašnjom oznakom.</li>
 </ul>
 <p>Ne koristimo usluge analitike ni oglašavanja i nemamo drugih izvršitelja obrade.</p>
 
@@ -66,34 +69,64 @@
 <ul>
 <li>Profil u aplikaciji (tehnička oznaka računa, adresa e-pošte): dok ne izbrišete profil. Ako se prijavite, a nikada ne prihvatite uvjete i izjavu o sudjelovanju, aplikacija automatski briše profil 30 dana nakon Vaše prve prijave; ranije ga možete izbrisati sa zaslona za prihvaćanje.</li>
 <li>Korisnički račun na poslužitelju za prijavu (ime, prezime, adresa e-pošte): dok ne izbrišete profil; nakon zahtjeva za brisanje, uključujući gore opisano automatsko brisanje, račun brišemo u roku od 30 dana. Do tada aplikacija uz zahtjev za brisanje čuva oznaku tog računa, samo kako bismo ga mogli pronaći i izbrisati.</li>
-<li>Odgovori: trajno, kao dio skupa podataka. Kada izbrišete profil, premještaju se pod novu nasumičnu oznaku koja nije povezana ni s Vama ni s Vašom dotadašnjom oznakom, a od vremena svakog odgovora čuva se samo dan. Ako je Vaš profil u trenutku brisanja blokiran ili privremeno izdvojen, Vaši se odgovori umjesto toga brišu.</li>
-<li>Vrijeme potrebno za odgovor i popis prikazanih primjera: dok ne izbrišete profil.</li>
+<li>Odgovori: trajno, kao dio skupa podataka. Kada izbrišete profil, premještaju se pod novu nasumičnu oznaku koja nije povezana ni s Vama ni s Vašom dotadašnjom oznakom, a od vremena svakog odgovora čuva se samo dan (odjeljak 7). Ako je Vaš profil u trenutku brisanja blokiran ili privremeno izdvojen, Vaši se odgovori umjesto toga brišu.</li>
+<li>Vrijeme potrebno za odgovor: 90 dana od svakog odgovora, nakon čega ga brišemo; kada izbrišete profil, odmah.</li>
+<li>Popis prikazanih primjera: zapise o primjerima na koje niste odgovorili brišemo 30 dana nakon posljednjeg prikaza, a zapise o primjerima na koje ste odgovorili čuvamo dok ne izbrišete profil.</li>
+<li>Procjene pouzdanosti (Vaše procjene i rezultati izračunati za pojedine primjere): 30 dana nakon izračuna u kojem su nastale. Rezultate posljednjeg izračuna čuvamo dok ih ne zamijeni novi izračun.</li>
+<li>Zapisi o promjenama statusa profila i razine pouzdanosti: dok čuvamo odgovore, radi odgovornosti i mogućnosti ponavljanja izračuna. Kada izbrišete profil, iz njih uklanjamo razloge, znakove zlouporabe i njihove vrijednosti, pa ostaje samo vrsta promjene.</li>
 <li>Zapisi o pristancima: dok god čuvamo odgovore dane na temelju tih pristanaka; pri brisanju profila premještaju se zajedno s odgovorima pod novu oznaku i čuva se samo dan (ili se brišu zajedno s njima).</li>
+<li>Ako ste na popisu pouzdanih stručnjaka (odjeljak 9): Vaša adresa e-pošte i bilješka s imenom na tom popisu, dok Vas s njega ne uklonimo ili dok ne izbrišete profil.</li>
+<li>Datoteke koje voditelj obrade preuzme iz aplikacije radi uređivanja skupa podataka: brišu se najkasnije 30 dana nakon preuzimanja, a odmah kada je dovršeno brisanje profila čija se oznaka u njima nalazi. Paketi podijeljeni s istraživačima: prema ugovoru, najdulje godinu dana.</li>
 <li>Sigurnosne kopije baze podataka: {{backup_retention}}. Podaci izbrisani iz aplikacije nestaju iz sigurnosnih kopija nakon tog razdoblja.</li>
 <li>Zapisi obrnutog posrednika na rubu mreže: {{edge_log_retention}}.</li>
+<li>Objavljena izdanja skupa podataka (samo zbirne oznake): trajno; objavljena izdanja ne mijenjamo.</li>
 </ul>
 
 <h2 id="prava">7. Vaša prava</h2>
 <ul>
-<li><strong>Pristup i prenosivost</strong>: na stranici „Moji podaci” možete sami preuzeti sve podatke vezane uz Vaš profil u strojno čitljivom obliku (JSON).</li>
+<li><strong>Pristup i prenosivost</strong>: na stranici „Moji podaci” možete sami preuzeti sve podatke vezane uz Vaš profil u strojno čitljivom obliku (JSON), uključujući procjene pouzdanosti i sve promjene statusa profila (odjeljak 9).</li>
 <li><strong>Ispravak</strong>: svoje odgovore možete izmijeniti u aplikaciji; za ostalo nam pišite.</li>
-<li><strong>Brisanje</strong>: na stranici „Moji podaci” možete sami izbrisati profil. Aplikacija odmah briše Vašu adresu e-pošte, vremena odgovora i popis prikazanih primjera te uklanja vezu između profila i Vašeg računa za prijavu. Vaš korisnički račun na poslužitelju za prijavu (s imenom i prezimenom) brišemo u roku od 30 dana od zahtjeva; do tada aplikacija uz zahtjev za brisanje čuva oznaku tog računa, a ponovna prijava prikazat će obavijest umjesto da otvori novi profil. Vaši odgovori i zapisi o pristancima ostaju u skupu podataka pod novom nasumičnom oznakom, samo s danom svakog odgovora, koja se ne može povezati ni s Vama ni s Vašom dotadašnjom oznakom; ako je Vaš profil u tom trenutku blokiran ili privremeno izdvojen, umjesto toga se brišu.</li>
-<li><strong>Ograničenje obrade i prigovor</strong>: pišite nam na adresu iz odjeljka 1.</li>
+<li><strong>Brisanje</strong>: na stranici „Moji podaci” možete sami izbrisati profil. Aplikacija odmah briše Vašu adresu e-pošte, vremena odgovora, popis prikazanih primjera i Vaše procjene pouzdanosti, iz zapisa o Vašem profilu uklanja razloge i vrijednosti te uklanja vezu između profila i Vašeg računa za prijavu. Vaš korisnički račun na poslužitelju za prijavu (s imenom i prezimenom) brišemo u roku od 30 dana od zahtjeva; do tada aplikacija uz zahtjev za brisanje čuva oznaku tog računa, a ponovna prijava prikazat će obavijest umjesto da otvori novi profil. Vaši odgovori i zapisi o pristancima ostaju u skupu podataka pod novom nasumičnom oznakom, samo s danom svakog odgovora, koja se ne može povezati ni s Vama ni s Vašom dotadašnjom oznakom; ako je Vaš profil u tom trenutku blokiran ili privremeno izdvojen, umjesto toga se brišu. Odgovore zadržavamo na temelju iznimke za znanstvena istraživanja (članak 17. stavak 3. točka (d) GDPR-a) uz zaštitne mjere iz članka 89. stavka 1. (pseudonimizacija, brisanje identiteta, samo dan odgovora, bez vremena potrebnog za odgovor, objava samo zbirnih oznaka), a daljnja obrada temelji se na našem legitimnom interesu u znanstvenom skupu podataka (članak 6. stavak 1. točka (f)). Preostali rizik: tko ima kopiju Vaših odgovora iz vremena prije brisanja zajedno s Vašim identitetom (lokalnu datoteku voditelja obrade dok se ne izbriše, sigurnosnu kopiju dok ne istekne ili paket istraživača koji se ne pridržava zahtjeva za brisanje) mogao bi ih po primjerima, odgovorima i danima povezati s novom oznakom.</li>
+<li><strong>Ograničenje obrade i prigovor</strong>: pišite nam na adresu iz odjeljka 1. Prigovor na procjenu pouzdanosti i njegove posljedice opisani su u odjeljku 9.</li>
 <li><strong>Povlačenje privole</strong>: u svakom trenutku, brisanjem profila (vidi izjavu o sudjelovanju). Povlačenje ne utječe na zakonitost obrade prije povlačenja.</li>
 <li><strong>Pritužba nadzornom tijelu</strong>: Agencija za zaštitu osobnih podataka (AZOP), Selska cesta 136, 10000 Zagreb, <a href="mailto:azop@azop.hr">azop@azop.hr</a>, <a href="https://azop.hr" rel="noopener noreferrer">azop.hr</a>. Pritužbu možete podnijeti i nadzornom tijelu države članice u kojoj živite ili radite.</li>
 </ul>
 <p>Na zahtjeve odgovaramo bez nepotrebnog odgađanja, a najkasnije u roku od mjesec dana.</p>
 
 <h2 id="automatizirano">8. Automatizirano odlučivanje</h2>
-<p>Ne donosimo odluke koje se temelje isključivo na automatiziranoj obradi i koje za Vas imaju pravne ili slično značajne učinke (članak 22. GDPR-a). Aplikacija može procjenjivati pouzdanost odgovora (na primjer usporedbom s primjerima poznatog odgovora), prema tome im davati veću ili manju težinu u skupu podataka te privremeno zanemariti odgovore profila ili ograničiti njegovo sudjelovanje. Te procjene nemaju nikakav učinak izvan ove stranice. Ako se ne slažete s odlukom o svom profilu, pišite nam na adresu iz odjeljka 1 i čovjek će je preispitati.</p>
+<p>Aplikacija automatski izračunava procjene pouzdanosti (odjeljak 9) i prema njima određuje težinu Vaših odgovora, koliko ćete primjera s poznatim odgovorom dobivati i, kada se u jednom izračunu pojave dva različita znaka moguće zlouporabe, stanku za pregled u kojoj se Vaši odgovori privremeno ne uzimaju u obzir. Smatramo da nijedna od tih odluka nema pravne ili slično značajne učinke na Vas u smislu članka 22. GDPR-a: sudjelovanje je dobrovoljno i neplaćeno, procjene nisu javne i nemaju nikakav učinak izvan ove stranice, a tijekom stanke možete činiti sve kao i prije (prijaviti se, označavati, preuzeti podatke i izbrisati profil); mijenja se samo težina Vaših odgovora u skupu podataka. Stanku na stranici ne najavljujemo i ne prikazujemo jer je može izazvati i iskrena pogreška, pa stranica nikoga ne želi tako obilježiti; vidi se u datoteci koju preuzimate na stranici „Moji podaci”. Stanka traje najviše 14 dana, osim ako voditelj obrade nakon pregleda odluči da je zadrži, što je tada odluka čovjeka. Blokiranje nikada nije automatsko: odlučuje čovjek, uz razlog koji Vam se prikazuje. Svatko nam može pisati na adresu iz odjeljka 1 i uložiti prigovor ili zatražiti da čovjek preispita odluku o njegovu profilu.</p>
 
-<h2 id="djeca">9. Najniža dob</h2>
+<h2 id="pouzdanost">9. Procjena pouzdanosti (profiliranje)</h2>
+<p>Da bi skup podataka bio točan, aplikacija procjenjuje koliko su pouzdani odgovori svakog sudionika. To je profiliranje u smislu članka 4. točke 4. GDPR-a. Procjenjujemo samo osobe koje su prihvatile ovu obavijest u verziji 1.3 (ili novijoj), uvjete sudjelovanja i izjavu o sudjelovanju. Odgovori dani prije toga spremljeni su, ali se ne procjenjuju i ne uzimaju u obzir dok to ne učinite; zatim ih uključuje sljedeći izračun.</p>
+<h3>Što izračunavamo</h3>
+<ul>
+<li>Za svaku vrstu zadatka (parovi riječi, leme, korijeni): procjenu točnosti Vaših odgovora i razinu (nova, kvalificirana, etablirana, stručnjak).</li>
+<li>Težinu koju Vaši odgovori imaju kada se objedinjuju odgovori na pojedini primjer.</li>
+<li>Znakove moguće zlouporabe: na primjer vrlo brzo odgovaranje, dug niz jednakih odgovora, slabo slaganje s primjerima poznatog odgovora ili odgovaranje koje samo ponavlja prijedlog iz korpusa.</li>
+</ul>
+<h3>Iz čega</h3>
+<p>Iz Vaših odgovora i njihovih izmjena, vremena potrebnog za odgovor, odgovora na primjere čiji je točan odgovor unaprijed poznat (primjeri s poznatim odgovorom, umiješani bez najave), podatka je li primjer bio prikazan bez prijedloga, slaganja Vaših odgovora s odgovorima drugih sudionika te statusa Vašeg profila. Voditelj obrade vodi i popis pouzdanih stručnjaka (adresa e-pošte i bilješka s imenom); odgovori osoba s tog popisa imaju višu početnu procjenu.</p>
+<h3>Učinci</h3>
+<ul>
+<li>Težina: odgovori s višom procjenom više vrijede pri objedinjavanju.</li>
+<li>Više primjera s poznatim odgovorom za sudionike na nižim razinama i za one u stanci za pregled.</li>
+<li>Automatska stanka za pregled (status „privremeno izdvojen”): kada se u jednom izračunu pojave dva različita znaka moguće zlouporabe, Vaši se odgovori privremeno ne uzimaju u obzir, a dobivate više primjera s poznatim odgovorom. I dalje možete označavati. Stanka se na stranici ne najavljuje i ne prikazuje; vidi se, s razlozima, u datoteci koju preuzimate na stranici „Moji podaci”. Traje najviše 14 dana, osim ako voditelj obrade nakon pregleda odluči da je zadrži.</li>
+<li>Blokiranje: samo odlukom čovjeka, uz navedeni razlog, koji Vam se prikazuje na stranici „Moji podaci”.</li>
+</ul>
+<h3>Pravna osnova i odvagivanje interesa</h3>
+<p>Pravna osnova je legitimni interes (članak 6. stavak 1. točka (f) GDPR-a) da javni istraživački skup podataka bude točan i zaštićen od lažnih ili automatiziranih unosa. Bez procjene ne bismo mogli razlikovati pažljive odgovore od nasumičnih ili automatiziranih. Pri odvagivanju smo uzeli u obzir da se procjena temelji samo na tome kako odgovarate na primjere, a ne na tome tko ste; da procjene nisu javne i nemaju nikakav učinak izvan ove stranice; da ih dijelimo samo pod uvjetima iz odjeljka 4; da ih čuvamo kratko (odjeljak 6) i da ih uvijek možete vidjeti. Procjena se ne uključuje prije nego što je izrađena procjena učinka na zaštitu podataka (članak 35. GDPR-a).</p>
+<h3>Kako radi</h3>
+<p>Logiku procjene, razine i formule objašnjava stranica <a href="/legal/trust.hr">Kako radi pouzdanost</a>. Pojednostavljeni prikaz Vaše procjene nalazi se na stranici „Moji podaci” u odjeljku „Pouzdanost”, a potpuni podaci u datoteci koju tamo možete preuzeti. Datoteka ne navodi koji su od Vaših odgovora bili provjere na primjerima koji se još koriste, jer bi inače otkrila te primjere; na zahtjev poslan e-poštom te primjere povlačimo iz upotrebe i šaljemo Vam pojedinosti u roku od mjesec dana.</p>
+<h3>Prigovor</h3>
+<p>Protiv procjene možete u svakom trenutku uložiti prigovor (članak 21. GDPR-a) e-poštom na adresu iz odjeljka 1. Bez procjene ne možemo koristiti Vaše odgovore u skupu podataka, pa je posljedica prigovora da Vaše odgovore više ne koristimo: Vaš profil blokiramo s razlogom „prigovor” i tako Vam to i prikazujemo, kao posljedicu prigovora, a ne kao kaznu. Ponudit ćemo Vam i brisanje profila; ako ga tada izbrišete, Vaši se odgovori brišu (odjeljak 7).</p>
+
+<h2 id="djeca">10. Najniža dob</h2>
 <p>Usluga je namijenjena osobama koje imaju najmanje 18 godina i nije usmjerena djeci ni maloljetnicima. Na početku sudjelovanja tražimo potvrdu da imate najmanje 18 godina; datum rođenja ne prikupljamo. Profile mlađih osoba brišemo čim za njih saznamo.</p>
 
-<h2 id="izmjene">10. Izmjene ove obavijesti</h2>
+<h2 id="izmjene">11. Izmjene ove obavijesti</h2>
 <p>Obavijest ima broj verzije i datum na vrhu. Kada objavimo novu verziju, prije sljedećeg odgovora prikazat ćemo Vam je i tražiti da ponovno potvrdite korak prihvaćanja. Zapisi o ranijim verzijama ostaju sačuvani.</p>
 
-<p class="meta">Povezano: <a href="/legal/terms.hr">Uvjeti sudjelovanja i licencija</a> · <a href="/legal/participation.hr">Izjava o sudjelovanju</a> · <a href="/legal/storage.hr">Kolačići i pohrana u pregledniku</a></p>
+<p class="meta">Povezano: <a href="/legal/terms.hr">Uvjeti sudjelovanja i licencija</a> · <a href="/legal/participation.hr">Izjava o sudjelovanju</a> · <a href="/legal/storage.hr">Kolačići i pohrana u pregledniku</a> · <a href="/legal/trust.hr">Kako radi pouzdanost</a></p>
 </main>
 </body>
 </html>

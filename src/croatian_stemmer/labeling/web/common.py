@@ -4,10 +4,11 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import String, and_, cast, func, or_, select
+from sqlalchemy import String, and_, cast, func, insert, or_, select
 
+from ..scoring import validate_params
 from .auth import Principal
-from .models import AdminEvent, Annotator, Corpus, Judgment
+from .models import AdminEvent, Annotator, Corpus, Judgment, Setting, TrustEvent
 
 
 def failure(status, code, **values):
@@ -20,6 +21,7 @@ class Caller:
     id: UUID
     status: str
     principal: Principal
+    consents: tuple = ()  # (document, version, age_threshold) rows when the request began
 
     @property
     def curator(self):
@@ -74,3 +76,21 @@ def definite_votes(corpus_id):
               .order_by(Judgment.item_id, Judgment.annotator_id, Judgment.revision.desc())).subquery()
     return (select(latest.c.item_id, func.count().filter(latest.c.answer != "unsure").label("n"))
             .group_by(latest.c.item_id)).subquery()
+
+
+async def setting(db, key, default=None):
+    """A label_setting value (inside the caller's transaction)."""
+    value = (await db.execute(select(Setting.value).where(Setting.key == key))).scalar_one_or_none()
+    return default if value is None else value
+
+
+async def scoring_params(db) -> dict:
+    """The live scoring parameters (validated; written only through PUT scoring/params)."""
+    return validate_params(await setting(db, "scoring_params"))
+
+
+async def trust_event(db, kind, *, actor_id=None, annotator_id=None, corpus_id=None, item_id=None, details=None) -> int:
+    """Append one trust event; its id is the journal position the trigger assigns."""
+    return (await db.execute(insert(TrustEvent).values(
+        actor_id=actor_id, kind=kind, annotator_id=annotator_id, corpus_id=corpus_id, item_id=item_id,
+        details=details or {}).returning(TrustEvent.id))).scalar_one()

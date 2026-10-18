@@ -15,16 +15,21 @@ The pieces:
   `annotator_id`.
 - **Curators** (Keycloak group `curator`) import candidate files, publish a
   corpus under a labels licence, export judgments, set an annotator's status
-  (`active`, `quarantined`, `blocked`), pause intake, and complete erasures.
+  (`active`, `quarantined`, `blocked`), pause intake, and complete erasures. From
+  0.3.0 they also run the trust system: the trusted list, known-answer items,
+  disputed items, scoring runs and releases (see "Trust system").
 - **Corpora** are shared: one copy per corpus id for everybody. A corpus is a
   `draft` until published; annotators see published corpora only.
 - **Judgments** are per annotator per item, with revisions. Each row records
   who (pseudonym), when (server clock), the item revision, the UI version
   (`client_version`), how it arrived (`source`) and the time taken
-  (`elapsed_ms`, curator-only, removed on erasure). Database triggers keep
-  `label_judgment`, `label_consent` and `label_admin_event` append-only apart
-  from what erasure does (see "Consent, legal documents and data-subject
-  rights").
+  (`elapsed_ms`, curator-only, removed after 90 days and on erasure), and from
+  0.3.0 whether the item was shown with or without the suggestion
+  (`presentation`) and whether the answer was admitted as a vote. Database
+  triggers keep `label_judgment`, `label_consent`, `label_admin_event`,
+  `label_trust_event` and `label_item_audit` append-only apart from what erasure
+  and the timing retention do (see "Consent, legal documents and data-subject
+  rights" and "Trust system").
 
 ## Local development
 
@@ -84,9 +89,12 @@ Optional:
 | `LABELING_OIDC_IDP_HINT` | unset | Keycloak identity-provider alias, e.g. `google`; the sign-in button then goes straight to it |
 | `LABELING_OIDC_CLIENT_ID` | `croatian-stemmer-labeling-web` | public browser client |
 | `LABELING_OIDC_AUDIENCE` | `croatian-stemmer-labeling-api` | required token audience |
-| `LABELING_PRIVACY_VERSION`, `LABELING_TERMS_VERSION`, `LABELING_PARTICIPATION_VERSION` | `1.2`, `1.1`, `1.0` | document versions people must accept; must equal the versions the shipped documents declare |
+| `LABELING_PRIVACY_VERSION`, `LABELING_TERMS_VERSION`, `LABELING_PARTICIPATION_VERSION` | `1.3`, `1.1`, `1.0` | document versions people must accept; must equal the versions the shipped documents declare. Privacy 1.3 (0.3.0) describes trust scoring; only people who accepted it are scored |
 | `LABELING_DAILY_CAP` | `3000` | judgments per annotator per 24 hours |
-| `LABELING_TARGET_VOTES` | `3` | `/next` stops serving an item once this many people gave a definite answer |
+| `LABELING_TARGET_VOTES` | `3` | before scoring is enabled and while a corpus has no known-answer items, `/next` stops serving an item once this many people gave a definite answer; afterwards the trust scheduler's vote budgets apply instead |
+| `LABELING_SCORING_INTERVAL` | `600` | seconds between scheduled scoring runs (60 to 86400); a tick does nothing while scoring is off |
+| `LABELING_SCORING_RUN_TIMEOUT` | `120` | seconds a scoring run may take before it fails (10 to 3600) |
+| `LABELING_SCORING_MAX_JUDGMENTS` | `2000000` | a run fails with `too_many_judgments` above this many judgments (1000 to 50,000,000); lower it to fit the pod's memory (about 400 bytes per judgment) |
 | `LABELING_READ_ONLY` | `false` | `true` pauses intake regardless of the curator's setting |
 | `LABELING_ALLOW_LOCAL_HTTP` | `false` | test-only: allows a loopback HTTP issuer; never set it in a deployment |
 | `LABELING_MIGRATION_ALLOW_DROP` | unset | see "Migrations" |
@@ -131,17 +139,21 @@ expires, with a ten-second shared cooldown after a failed fetch.
 
 Each route declares its authorization in code (`api.py` lists the dependencies):
 public (`/`, `/static`, `/legal/*`, `/api/config`, probes); any signed-in
-annotator including a blocked one (`/api/me`, `/api/me/export.json`,
-`/api/me/erase`); a non-blocked annotator; one who accepted the current
-documents (`/next`, `/items`, `/answer`); and curator (`/api/import`, publish,
-unpublish, archive, exports, `/api/admin/*`).
+annotator including a blocked one (`/api/me`, `/api/me/trust`,
+`/api/me/export.json`, `/api/me/erase`); a non-blocked annotator; one who
+accepted the current documents (`/next`, `/api/next`, `/items`, `/answer`); and
+curator (`/api/import`, publish, unpublish, archive, exports, the resolved
+exports, `/api/admin/*`).
 
 ## Consent, legal documents and data-subject rights
 
 `/legal/{privacy,terms,participation,storage}.{hr,en}` serve the privacy notice,
 the terms of participation and licence, the participation statement (the
 consent to recording answers) and the cookie and storage notice, with the
-controller values substituted from configuration. The templates are in
+controller values substituted from configuration. `/legal/trust.{hr,en}` ("Kako
+radi pouzdanost", 0.3.0) explains the trust system to participants, with the
+formulas of [trust.md](trust.md) in an appendix; it has its own version and is
+not part of the gate. The templates are in
 `src/croatian_stemmer/labeling/web/documents/`; the controller reviews and
 publishes them (there is no external legal review). Each declares
 `<meta name="document-version">`. Publishing a new version means editing the
@@ -154,7 +166,12 @@ contributions and a CC0 waiver for labels alone), the participation statement,
 and age 18 or over. `POST /api/me/consent` records one row per document
 (privacy, terms, participation) with `age_threshold = 18`. Without all three at
 the configured versions and age 18, `/next`, `/items` and `/answer` return 403
-`consent_required`.
+`consent_required`. 0.3.0 ships privacy notice 1.3, which adds the section on
+trust scoring (profiling), so everyone is asked again before their next answer.
+Scoring uses only the profiling cohort: people with privacy 1.3 or later, terms
+1.1 and participation 1.0, all with age 18. Answers of anyone else are stored but
+not scored or counted until they pass the 1.3 gate; the next run then includes
+their earlier answers.
 
 A profile is created at the first sign-in, before the gate. A daily background
 task erases active profiles that have no consent row 30 days after they were
@@ -175,6 +192,17 @@ rows. Requests authenticated just before an erasure commits cannot write to
 the erased profile (409 `erasure_pending`), and a profile refresh never writes
 an email back onto an erased row.
 
+From 0.3.0 the same transaction also covers the trust system's stores: the
+details of every other admin and trust event about the old id are reduced to
+kind, from, to and run id (no reasons, flags or signal values); known-answer
+items the person supported as an anchor are retracted (`gold.retracted`, reason
+`erasure`) and their support is redacted to `{"redacted": true}`; their anchor
+status is revoked; a trusted-list entry matching their verified email loses its
+email, hash and label; and their score rows are deleted from every run, pinned
+runs included. The new id starts with no tier memory and no anchor status and is
+scored from the moved answers at the next run, so their answers keep counting;
+earlier public releases are never rewritten.
+
 Until the curator has deleted the Keycloak user, signing in again returns 409
 `erasure_pending` rather than creating a new profile. The curator panel lists
 pending requests with the Keycloak user id (the token's `sub`) to delete; after
@@ -182,7 +210,7 @@ deleting the user in the Keycloak admin console, the curator confirms, which
 removes the stored id. The app logs a warning (with the request id only) for
 requests older than 14 days, so the 30-day limit is not missed. If a database
 backup taken before an erasure is ever restored, re-apply the erasures
-requested after it.
+requested after it (see "Erasure and restore" under "Trust system").
 
 The app origin sets no cookies and no persistent storage; the adapter's
 short-lived `kc-callback-*` record is removed when sign-in completes. The
@@ -191,16 +219,28 @@ storage notice and that test first.
 
 ## Labeling, limits and the kill switch
 
-`GET /api/corpora/{id}/next?kind=` returns one item the caller has not answered,
-not shown to them in the last 30 minutes, and with fewer than
-`LABELING_TARGET_VOTES` definite answers (fewest first). Skipped items come back
+`GET /api/corpora/{id}/next?kind=` returns one item the caller has not answered
+and that was not shown to them in the last 30 minutes. Until scoring is enabled
+and while the corpus has no known-answer items, it keeps the V1 order: items with
+fewer than `LABELING_TARGET_VOTES` definite answers, fewest first. After that the
+trust scheduler decides (see "Trust system"): the announced qualification items,
+unannounced known-answer checks, the anchors' expert queues, then items by
+priority within the per-item vote budgets. `GET /api/next?kind=` does the same
+across published corpora, starting with the one with the lowest share of
+resolved items; the UI calls it "Bilo koji korpus". Skipped items come back
 after 30 minutes. `/items?state=mine_labelled|mine_unsure` are the caller's own
-review queues. No response contains another person's answers.
+review queues. No response contains another person's answers, and no response
+differs between a known-answer item and another item except in the item itself.
 
 An answer carries the last revision (`base_revision`), a request UUID,
-`client_version` and optionally `elapsed_ms`. Concurrent edits by the same
-person get 409 and reload; different people never block each other. A lost
-response is retried with the same UUID and payload, which is idempotent.
+`client_version` and optionally `elapsed_ms`. From 0.3.0 an answer is accepted
+only for an item that `/next` served to the caller (or one they already
+answered); anything else gets 409 `not_assigned` and writes nothing. Concurrent
+edits by the same person get 409 and reload; different people never block each
+other. A lost response is retried with the same UUID and payload, which is
+idempotent. A first answer beyond an item's vote budget, or from someone whose
+votes are not counted, is still stored and gets the same 200; it is simply not
+counted as a vote.
 
 Limits per annotator: 15 answers burst and 30 per minute, 120 queue reads per
 minute, 10 consent/export/erasure calls per hour (in process; they reset on
@@ -216,7 +256,174 @@ CC0/public domain as any of the three; NC, ND or unknown licences are refused.
 Exports (curator): `export.tsv` is schema v1 and feeds the offline evaluator
 unchanged; `export.jsonl` has every judgment column plus the candidate and the
 annotator status. Judgments of blocked annotators (also after they erase their
-account) are left out unless `?include_excluded=true`.
+account) are left out unless `?include_excluded=true`. These are the raw,
+unweighted judgments; the trust-weighted labels are in the resolved exports
+described under "Trust system".
+
+## Trust system
+
+From 0.3.0 every counted answer is a vote weighted by its author's demonstrated
+accuracy. Scoring runs compute, per annotator and kind, an accuracy θ, a tier, a
+weight and abuse flags, and per item a posterior and a state; the model is in
+[trust.md](trust.md) and the data-protection assessment in
+[labeling-dpia.md](labeling-dpia.md). This section is for operators.
+
+### Turning scoring on
+
+Migration 003 sets `scoring_enabled` to false, so deploying 0.3.0 runs no scoring
+and profiles nobody. Switch it on in the dashboard only when all of these hold:
+
+1. The DPIA ([labeling-dpia.md](labeling-dpia.md)) has been read by the owner.
+2. The owner is on the trusted list ("Pouzdane adrese"), has signed in and passed
+   the 1.3 gate, and the anchor badge shows in "Suradnici".
+3. The hr500k known-answer items are imported ("Zlatni primjeri", below).
+
+Then switch scoring on ("Pregled") and verify: one `done` run in "Bodovanje";
+readiness shows qualification on and promotion off for `pair` and `lemma`, and
+`stem` not ready. The owner then works the expert queues as time allows. Keep
+watching: quarantines reviewed within 14 days, contested known-answer items,
+calibration per cell, inter-annotator agreement and superseded runs. Switching
+scoring off stops runs without a deploy; the existing pause switch still stops
+intake.
+
+### The curator dashboard
+
+- "Pregled": intake, scoring on or off, the last run, alerts, readiness per kind,
+  item states, import, corpora and erasures.
+- "Suradnici": annotators with tiers, θ, flags and the anchor badge.
+- "Karantena": open quarantines with their evidence; release, keep or block, each
+  with a reason.
+- "Zlatni primjeri": import of known-answer items, the pools, and retire,
+  reactivate, retract or disclose per item.
+- "Sporni primjeri": the queue of `contested`, `needs_expert` and `provisional`
+  items; adjudicate, mark ambiguous, or reopen with or without discarding earlier
+  answers.
+- "Pouzdane adrese": the trusted list, an email and a note of at most a first
+  name per entry. A verified sign-in with a listed email becomes an anchor; removing
+  the entry revokes it. The list never leaves the dashboard.
+- "Bodovanje": run now, calibration per cell with redraw, the runs with pin, bundle
+  download and "Zabilježi izdanje", Krippendorff's alpha per corpus, and the
+  parameter editor.
+
+### Runs
+
+A run is a pure function of the append-only journals up to a commit-safe
+watermark and of the parameter set copied into its row. While scoring is on, a
+background task checks every `LABELING_SCORING_INTERVAL` seconds and starts a run
+if the journals have grown or the UTC day has changed since the last done run;
+"run now" starts one at once (409 `scoring_busy` if one is running). Only one run
+runs at a time. A run ends `done`, `failed` (with the error, never row contents;
+three failures in a row raise an alert) or `superseded`: if a moderation event
+(a status change, an erasure, a trusted-list or anchor change, a clear, a
+known-answer or item decision by the curator, a parameter change or a calibration
+redraw) committed after the watermark, the run is discarded and rerun at once, up
+to three times in a row. Publication takes a lock that moderation writers share,
+so a run can never publish over a block, a clear or an erasure it did not see. A
+published run whose watermark is followed by a moderation event is stale: its
+exports carry `X-Labeling-Run-Stale: true` and it cannot be pinned (409
+`run_stale`).
+
+Automatic quarantines and releases are applied when a run publishes. Blocking,
+releasing, revoking an anchor, retracting or correcting a known answer and item
+decisions take effect at the next run, because every run recomputes from the
+journals; "run now" applies them at once.
+
+Parameters: the editor replaces the whole parameter set, which is validated (every
+key present, every number within bounds) and journaled with its hash and a diff.
+Changing anything that can alter a vote, weight, tier or state draws new
+calibration sets at the next run, reusing references the owner already gave.
+
+### Known-answer items and the owner's expert work
+
+Build the hr500k known-answer file offline with `croatian-stemmer-labels gold` (see
+[labeling.md](labeling.md)) from the same candidates file the corpus was imported
+from, and import it in "Zlatni primjeri". The import skips calibration-sample items
+(reported as `held_out`), fills each kind's qualification pool up to 60 and puts the
+rest in the audit pool; a row that conflicts with an existing valid answer fails the
+whole import with 409 `gold_conflict`. If fewer than 60 qualification items remain,
+build a top-up with `--exclude` and a new seed.
+
+Known answers that differ from the suggestion, and every `stem` known answer, come
+only from anchors. The owner is the only anchor today, and their answers on seed,
+reference and review items are final. With "Rad za urednike" on (the default),
+the owner's `/next` serves, in order: `needs_expert` items; the seed queue while a
+pool is below its target (for `pair` and `lemma`, items where the crowd disagrees
+with the suggestion first, shown without the suggestion; for `stem`, sampled stem
+items), each answer becoming a known answer at the next run; calibration items still
+waiting for a reference; review-sample items resolved without an anchor vote, oldest
+first; then normal work. Switching it off gives the owner the normal queue. Expect
+about 365 answers (2 to 2.5 hours) for the first round; later the review sample asks
+about 20 answers per 1,000 further resolved items. If the owner's time runs out,
+nothing breaks: the affected kind stays without promotion or its cells stay
+`provisional`, and the dashboard shows what is missing.
+
+### Quarantine review
+
+Two different hard flags in one run quarantine an active, non-anchor annotator
+automatically. The person is not told: their status shows as active, they keep
+labeling, and their votes stop counting. Their self-service export shows the
+quarantine with its flags. "Karantena" lists open quarantines with their age, the
+flags with their signal values and the known-answer counts by type; the dashboard
+alerts at 7 days. Decide within 14 days: release (the flags
+start again from zero), keep (a human decision from then on) or block (the person
+sees the reason). Without a decision, the first run after 14 days releases the
+quarantine. Anchors are never quarantined automatically, and nothing is blocked
+automatically. An objection by email is handled as a block with reason `objection`,
+and erasure is offered.
+
+### Restricted exports and downloads
+
+From the latest done run, or `?run_id=` within the 30-day retention:
+`resolved.tsv` (schema version 2: one row per item with its state, resolution
+source, cell, answer, confidence, classes and counts), `resolved.jsonl` (the same
+plus per-vote rows with pseudonymous ids; this is the run export a release is built
+from, "Izračun za izdanje (JSONL)"), the annotators export (score rows and status,
+no email) and the run bundle (journal rows up to the watermark, including answer
+timing; never the secret key).
+
+Every one of these files holds pseudonymous data. Keep downloads on the curator's
+machine only, delete them within 30 days, and delete them at once when an erasure is
+completed for a pseudonym they contain. Share a bundle with a third party only under
+a written data-sharing agreement, for at most one year, and tell the recipient to
+delete an erased person's rows.
+
+### Releases
+
+Public releases are built offline from a pinned, non-stale run with
+`croatian-stemmer-labels release` and `release-check` ([labeling.md](labeling.md)
+has the procedure) and published only as GitHub release assets of
+github.com/brahle/croatian-stemmer. They are never rewritten and contain no
+annotator ids, counts or timestamps other than the release date.
+
+### Retention
+
+A retention task runs at startup and daily, independently of scoring, so data
+expire even without runs and right after a restore. It deletes score and item
+posterior rows 30 days after their run finished (pinned runs included; the latest
+done run is kept while it is the latest), sets `elapsed_ms` to NULL 90 days after
+the answer, and deletes unanswered showings 30 days after they were last shown. Run
+rows, which hold no personal data, are kept. The daily task for never-consented
+profiles is unchanged.
+
+### Erasure and restore
+
+When an erasure request appears in the panel, add its Keycloak user id and request
+date to the erasure list kept outside the database, and delete each entry after 60 days
+(backup retention plus margin). Complete the Keycloak deletion within 30 days as
+before, and delete local downloads that contain the pseudonym.
+
+If a backup is restored:
+
+1. Pause intake and switch scoring off before the app serves again.
+2. For every entry on the erasure list requested after the backup was taken, erase
+   that profile again: `POST /api/admin/erasures/reapply` with
+   `{"keycloak_user_ids": [...]}` (curator). It erases each restored profile exactly
+   as the person's own erasure did and skips ids that are unknown or already erased.
+3. The re-applied erasures appear as pending requests. Their Keycloak users were
+   usually deleted already; check in the Keycloak admin console, delete any that
+   remain, and confirm each request.
+4. Switch scoring and intake back on. The retention task has already applied its
+   rules at startup.
 
 ## Verification
 
@@ -266,7 +473,19 @@ The application is one stateless container plus a PostgreSQL database:
   (0.2.3) is forward-only: it adds the participation consent and the confirmed
   age, clears any email left on an erased profile and lets erasure move or
   delete a person's rows. Take a backup before deploying it.
-- One replica. Rate limits are in process and migrations run per pod.
+- Migration 003 (0.3.0) is forward-only too. It adds the journal sequence and
+  its triggers, the trust tables and nullable columns, replaces the append-only
+  functions (adding the 90-day timing retention and the erasure redaction),
+  stores the default parameters, `scoring_enabled = false` and a random
+  `audit_key`, and backfills an item state and the calibration and review sample
+  bits for every existing item. It writes no known-answer items, trusted list or
+  runs, so deploying it scores nobody. It waits at most 5 seconds for table locks;
+  on a timeout the init container exits non-zero and the pod retries. Take a
+  manual CNPG backup immediately before deploying it.
+- One replica. Rate limits are in process and migrations run per pod. The
+  scoring and retention tasks also run in the app process; a scoring run uses a
+  worker thread and holds about 400 bytes per judgment in memory (see
+  `LABELING_SCORING_MAX_JUDGMENTS`).
 - Probes: `/healthz` for liveness and `/readyz` for readiness, on port 8000.
 - The container runs as a non-root user with a read-only root filesystem. It
   needs outbound HTTPS to the issuer for JWKS and inbound HTTP on 8000 from your
@@ -275,5 +494,10 @@ The application is one stateless container plus a PostgreSQL database:
 
 Roll back the application image first. From 0.2.3 a rollback is the previous
 image plus a restore of the pre-deploy backup; `alembic downgrade` refuses to
-undo 002a. Downgrading 002 recreates the 0.1 tables empty and is only for a
-database with nothing worth keeping.
+undo 002a and 003. For 0.3.0: set the image tag back to the previous version,
+then restore the backup taken before 003, in that order, accepting the loss of
+anything written since the deploy; then follow "Erasure and restore" above. An
+older image started against the 003 schema fails at its init container with
+Alembic's unknown-revision error and never serves. Downgrading 002 recreates the
+0.1 tables empty and is only for a database with nothing worth keeping. Scoring
+can be stopped without any deploy by switching `scoring_enabled` off.

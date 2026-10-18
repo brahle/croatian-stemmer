@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.3.0
+
+Labeling web app: the trust system (version 2 of the labeling design). Deploy with
+a pre-deploy database backup: migration 003 is forward-only (rollback is the
+previous image plus a restore). Scoring is off after the migration; nobody is
+profiled until the curator turns it on, which should follow reading the DPIA
+(`docs/labeling-dpia.md`).
+
+- Journals and runs. One journal sequence orders judgments, consents, admin
+  events, trust events and item membership; a scoring run is a pure function
+  of the journals up to a commit-safe watermark and its parameters, published
+  only if no moderation event arrived meanwhile (otherwise it is superseded and
+  rerun), and replayable offline from its restricted bundle
+  (`croatian-stemmer-labels score --bundle`).
+- The model. One-coin Dawid-Skene posteriors per item; per person and task kind
+  an accuracy with gold-only promotion (`new`, `qualified`, `established`,
+  `anchor`), weight ceilings, capped peer evidence and a calibration gate per
+  kind and cell: items that meet the 0.95 rule stay `provisional` until 30
+  sampled reference items show the rule holds there. One anchor answer never
+  resolves an item alone; the owner's answer on a checked item is final.
+- Gold. `croatian-stemmer-labels gold` builds bootstrap gold where the corpus is
+  unambiguous; the curator imports it, sets, retires, retracts and discloses
+  gold in the dashboard; the anchors' seed answers become consensus gold.
+  Gold is invisible to annotators.
+- Scheduling and admission. The announced knowledge check (first 12 items of a
+  kind, without the suggestion), unannounced known-answer checks at a keyed
+  rate, 20 % of pair and lemma showings without the suggestion, the experts'
+  queues, and per-item budgets (5 low, 3 expert) applied at answer time. Answers
+  need an item served by `/next` (409 `not_assigned`); annotator responses no
+  longer carry word refs, the sampling stratum or the algorithm hash.
+- Abuse resistance. Signals (fast, straight, accuracy, copy, review loss, burst)
+  quarantine an account automatically at two hard flags; the quarantine is
+  silent to the person, visible in their export, reviewed by the curator within
+  14 days and lifted by the next run if nobody decides. Blocking stays a
+  person's decision with a reason.
+- Trusted list. Managed in the dashboard; a verified email on it makes the
+  account an anchor; removal or erasure revokes it retroactively.
+- People's view. "Moji podaci" shows a reliability card (tier and band per
+  kind); the self-service export gains the complete trust section.
+- Curator dashboard in tabs: overview and readiness, contributors, quarantine
+  review, gold, disputed items (adjudicate, ambiguous, reopen), trusted
+  addresses, scoring (runs, calibration, pins, bundles, agreement, parameters).
+- Exports and releases. `resolved.tsv` and `resolved.jsonl` per run; public
+  releases (`croatian-stemmer-labels release` and `release-check`) contain
+  aggregate labels only, from items with at least three crowd voters and no
+  pivotal one, and are published as GitHub release assets only.
+- Data protection. Privacy notice 1.3 (hr/en) describes the profiling;
+  everyone is asked to accept again. New public page "Kako radi pouzdanost"
+  (`/legal/trust.hr`, `/legal/trust.en`, version 1.0, not part of the gate).
+  Only people who accepted 1.3 are scored. Erasure also revokes anchors,
+  deletes trusted-list identity, retracts consensus gold the person supported,
+  deletes their scores and redacts their events. A daily retention job removes
+  scores and computed item results 30 days after their run, answer timing after
+  90 days and unanswered showings after 30 days. The DPIA is in
+  `docs/labeling-dpia.md`; the model is described in `docs/trust.md`.
+- New settings: `LABELING_SCORING_INTERVAL` (default 600 s),
+  `LABELING_SCORING_RUN_TIMEOUT` (120 s), `LABELING_SCORING_MAX_JUDGMENTS`
+  (2,000,000), each checked at startup. Deployments must set
+  `LABELING_PRIVACY_VERSION=1.3`.
+
 ## 0.2.3
 
 Labeling web app follow-ups to 0.2.2. Deploy with a pre-deploy database backup:
