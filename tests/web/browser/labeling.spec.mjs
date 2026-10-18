@@ -283,7 +283,7 @@ test('curator publishes; annotator gate, labeling, data rights and erasure', asy
   await curatorContext.close(); await annotatorContext.close();
 });
 
-test('trust system: knowledge check, blind showing, dashboard tabs and adjudication', async ({browser}) => {
+test('trust system: knowledge check, corpus choice, blind showing, dashboard tabs and adjudication', async ({browser}) => {
   const rows = candidates(), corpus = rows[0].corpus_id;
   const curatorContext = await browser.newContext(), annotatorContext = await browser.newContext();
   const cur = await curatorContext.newPage(), iva = await annotatorContext.newPage();
@@ -294,13 +294,15 @@ test('trust system: knowledge check, blind showing, dashboard tabs and adjudicat
 
   // Parameters first: an import decides each item's calibration and review sample from the rates
   // in force, and a sampled item is held out of gold, so the rates are 0 here to keep the queue
-  // fixed. Also a one-item knowledge check, every showing without the suggestion, one vote fills an item.
+  // fixed. Also a one-item knowledge check that one right answer passes, every showing without the
+  // suggestion, one vote fills an item.
   await cur.getByRole('tab', {name:'Bodovanje', exact:true}).click();
   await cur.getByText('Parametri', {exact:true}).click();
   await expect(cur.locator('#params')).not.toHaveValue('');  // the tab loads its data first
   const original = await cur.locator('#params').inputValue();
   const params = JSON.parse(original);
-  params.readiness.qualification_pool = 1; params.blind_rate = 100; params.votes_low_cap = 1;
+  params.readiness.qualification_pool = 1; params.qualification_n = 1; params.qualification_hits = 1;
+  params.blind_rate = 100; params.votes_low_cap = 1;
   params.audit_sample_rate = 0; params.review_sample_rate = 0;
   await cur.locator('#params').fill(JSON.stringify(params));
   await cur.getByRole('button', {name:'Spremi parametre', exact:true}).click();
@@ -323,16 +325,36 @@ test('trust system: knowledge check, blind showing, dashboard tabs and adjudicat
   await cur.getByRole('button', {name:'Uvezi zlatne primjere', exact:true}).click();
   await expect(cur.locator('#message')).toContainText('Prihvaćeno');
 
-  // Annotator: the knowledge-check banner and a showing without the suggestion.
+  // Annotator: before the knowledge check, pairs come from "any corpus" only; the check itself comes
+  // from the corpus with gold, shown without the suggestion.
   await signIn(iva, IVA);
   await acceptGate(iva);
-  await iva.locator('#corpus').selectOption(corpus);
-  await expect(iva.locator('#qualification')).toContainText('Provjera znanja 0/12');
+  await expect(iva.locator('#corpus')).toBeDisabled();
+  await expect(iva.locator('#corpus')).toHaveValue('*');
+  await expect(iva.locator('#corpus-lock')).toContainText('Korpus ćete moći odabrati kad položite provjeru znanja');
+  await expect(iva.locator('#qualification')).toContainText('Provjera znanja 0/1');
   await expect(iva.locator('#blind')).toBeVisible();
   await expect(iva.locator('#hints')).toBeHidden();
+  // Other tests' corpora share this database: until she picks this test's corpus, "any corpus" serves nothing more.
+  const anyCorpus = url => url.pathname === '/api/next';
+  await iva.route(anyCorpus, route => route.fulfill({json:{item:null, qualification:null}}));
   await iva.getByRole('button', {name:'Ista lema', exact:true}).click();
-  // The second pair (an ordinary item) is shown without the suggestion too (blind rate 100 here).
+  await expect(iva.locator('#empty')).toBeVisible();
   await expect(iva.locator('#qualification')).toBeHidden();
+  await iva.locator('#language').click();
+  await expect(iva.locator('#corpus-lock')).toContainText('You can choose a corpus once you pass the knowledge check');
+  await iva.locator('#language').click();
+  // A run qualifies her for pairs: the corpus choice opens.
+  await cur.getByRole('tab', {name:'Bodovanje', exact:true}).click();
+  await cur.getByRole('button', {name:'Pokreni izračun', exact:true}).click();
+  await expect(cur.locator('#message')).toContainText('Izračun je završen');
+  await iva.locator('#nav-label').click();
+  await expect(iva.locator('#corpus')).toBeEnabled();
+  await expect(iva.locator('#corpus-lock')).toBeHidden();
+  await iva.locator('#corpus').selectOption(corpus);
+  await iva.unroute(anyCorpus);
+  // The second pair (an ordinary item) is shown without the suggestion too (blind rate 100 here).
+  await expect(iva.locator('#question')).toBeVisible();
   await expect(iva.locator('#blind')).toBeVisible();
   await iva.getByRole('button', {name:'Ista lema', exact:true}).click();
   await expect(iva.locator('#empty')).toBeVisible();

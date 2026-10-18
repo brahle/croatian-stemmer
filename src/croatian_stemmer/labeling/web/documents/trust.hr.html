@@ -11,7 +11,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="2.0">
+<meta name="document-version" content="2.1">
 <title>Kako radi pouzdanost — označavanje hrvatskih lema</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -19,7 +19,7 @@
 <main>
 <p class="crumbs"><a href="/?lang=hr">Natrag na označavanje</a> · <a href="/legal/trust.en" hreflang="en" lang="en">English</a></p>
 <h1>Kako radi pouzdanost</h1>
-<p class="meta">Verzija 2.0 (18. listopada 2026.). Voditelj obrade: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+<p class="meta">Verzija 2.1 (18. listopada 2026.). Voditelj obrade: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
 
 <p>Ova stranica objašnjava kako stranica {{app_host}} procjenjuje pouzdanost odgovora i kako iz njih nastaju oznake u skupu podataka. Služi kao informacija; ne tražimo da je prihvatite. Pravni opis te obrade, pravnu osnovu i Vaša prava navodi <a href="/legal/privacy.hr#pouzdanost">obavijest o privatnosti</a> (odjeljak 9).</p>
 <p>Stranica opisuje pravila koja se ne mijenjaju. Točni pragovi i postavke povremeno se podešavaju; njihove trenutačne vrijednosti navodi <a href="https://github.com/brahle/croatian-stemmer/blob/main/docs/trust.md" rel="noopener noreferrer">tehnički opis modela</a> u repozitoriju croatian-stemmer na GitHubu (na engleskom).</p>
@@ -29,13 +29,13 @@
 <p>Procjena utječe samo na tri stvari: koliko se Vaši odgovori broje, koje primjere dobivate i jesu li Vaši odgovori privremeno izdvojeni radi pregleda (odjeljak 7). Izvan ove stranice nema nikakav učinak, a o Vama kao sudioniku nikada se ništa ne objavljuje.</p>
 
 <h2 id="provjere">2. Primjeri s poznatim odgovorom</h2>
-<p>Među primjere su bez najave umiješani primjeri čiji je točan odgovor unaprijed poznat. Sudionici na nižim razinama i oni u stanci za pregled dobivaju ih češće, a etablirani sudionici rjeđe. Neke od tih provjera su primjeri na kojima je prijedlog iz korpusa pogrešan. Odgovor na takav primjer uzima se u obzir tek od sljedećeg dana. Koji su od Vaših odgovora bili provjere na primjerima koji se još koriste ne pokazuju ni stranica ni datoteka s Vašim podacima, jer bi inače otkrile te primjere; na zahtjev poslan e-poštom te primjere povlačimo iz upotrebe i šaljemo Vam pojedinosti u roku od mjesec dana.</p>
+<p>Među primjere su bez najave umiješani primjeri čiji je točan odgovor unaprijed poznat. Sudionici na nižim razinama i oni u stanci za pregled dobivaju ih češće, a etablirani sudionici rjeđe. Provjere mogu doći iz bilo kojeg objavljenog korpusa, a ne samo iz onoga koji ste odabrali. Neke od tih provjera su primjeri na kojima je prijedlog iz korpusa pogrešan. Odgovor na takav primjer uzima se u obzir tek od sljedećeg dana. Koji su od Vaših odgovora bili provjere na primjerima koji se još koriste ne pokazuju ni stranica ni datoteka s Vašim podacima, jer bi inače otkrile te primjere; na zahtjev poslan e-poštom te primjere povlačimo iz upotrebe i šaljemo Vam pojedinosti u roku od mjesec dana.</p>
 
 <h2 id="bez-prijedloga">3. Primjeri bez prijedloga</h2>
 <p>Dio primjera parova riječi i lema prikazuje se bez prijedloga iz korpusa: redak s prijedlogom ne prikazuje se, a polje za lemu je prazno. Tako vidimo procjenjujete li sami ili samo potvrđujete prijedlog. Udio je isti za primjere s poznatim odgovorom i za ostale, pa se iz prikaza bez prijedloga ne može zaključiti koji je primjer provjera.</p>
 
 <h2 id="provjera-znanja">4. Provjera znanja</h2>
-<p>Prvi primjeri svake vrste zadatka čine najavljenu provjeru znanja; zaslon to navodi i pokazuje dokle ste stigli. Ti se primjeri uvijek prikazuju bez prijedloga. Broje se odgovori kojima ste se odlučili; „Nisam siguran/na” se ne broji. Ako na dovoljno njih odgovorite točno, postajete kvalificirani za tu vrstu. Provjera se ne ponavlja. Ako je ne položite, sudjelujete dalje na razini „nova”, a etabliranu razinu i dalje možete doseći preko primjera s poznatim odgovorom.</p>
+<p>Prvi primjeri svake vrste zadatka čine najavljenu provjeru znanja; zaslon to navodi i pokazuje dokle ste stigli. Ti se primjeri uvijek prikazuju bez prijedloga. Broje se odgovori kojima ste se odlučili; „Nisam siguran/na” se ne broji. Ako na dovoljno njih odgovorite točno, postajete kvalificirani za tu vrstu. Provjera se ne ponavlja. Ako je ne položite, sudjelujete dalje na razini „nova”, a etabliranu razinu i dalje možete doseći preko primjera s poznatim odgovorom. Dok je provjera znanja za neku vrstu u upotrebi, primjere te vrste dobivate iz bilo kojeg korpusa; korpus možete sami odabrati od razine „kvalificirana” naviše.</p>
 
 <h2 id="razine">5. Razine</h2>
 <p>Razina se određuje zasebno za svaku vrstu zadatka:</p>

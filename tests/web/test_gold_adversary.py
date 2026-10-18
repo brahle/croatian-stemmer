@@ -39,10 +39,9 @@ async def test_a_copying_client_never_reaches_established_and_is_flagged(fresh_a
                               json={"params": params})).status_code == 200
     await scoring_on(api)
     await profiled(api, "bot")
-    corpus = rows[0]["corpus_id"]
     blind = 0
-    for _ in range(220):
-        served = (await api.request("GET", f"/api/corpora/{corpus}/next", "bot")).json()["item"]
+    for _ in range(220):  # "any corpus": below qualified a chosen corpus is refused
+        served = (await api.request("GET", "/api/next", "bot")).json()["item"]
         assert served is not None
         shown = served["candidate"]
         if served["presentation"] == "blind":

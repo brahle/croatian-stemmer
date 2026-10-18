@@ -10,7 +10,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="2.0">
+<meta name="document-version" content="2.1">
 <title>How reliability works — Croatian lemma labeling</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -18,7 +18,7 @@
 <main>
 <p class="crumbs"><a href="/?lang=en">Back to labeling</a> · <a href="/legal/trust.hr" hreflang="hr" lang="hr">Hrvatski</a></p>
 <h1>How reliability works</h1>
-<p class="meta">Version 2.0 (18 October 2026). Controller: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+<p class="meta">Version 2.1 (18 October 2026). Controller: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
 
 <p>This page explains how the site {{app_host}} assesses how reliable answers are and how the labels in the dataset are made from them. It is information; we do not ask you to accept it. The legal description of this processing, its legal basis and your rights are in the <a href="/legal/privacy.en#reliability">privacy notice</a> (section 9).</p>
 <p>The page describes the rules that stay the same. The exact thresholds and settings are tuned from time to time; their current values are in the <a href="https://github.com/brahle/croatian-stemmer/blob/main/docs/trust.md" rel="noopener noreferrer">technical description of the model</a> in the croatian-stemmer repository on GitHub.</p>
@@ -28,13 +28,13 @@
 <p>The estimate affects only three things: how much your answers count, which items you are shown, and whether your answers are set aside for review (section 7). It has no effect outside this site, and nothing about you as a participant is ever published.</p>
 
 <h2 id="checks">2. Known-answer items</h2>
-<p>Items whose correct answer is known in advance are mixed in with the others, unannounced. Participants at the lower levels and those in a review pause get them more often, established participants less often. Some of these checks are items where the corpus suggestion is wrong. An answer on such an item is taken into account only from the following day. Which of your answers were checks on items still in use is shown neither on the site nor in the file with your data, because it would otherwise reveal those items; on request by email we retire those items and send you the details within one month.</p>
+<p>Items whose correct answer is known in advance are mixed in with the others, unannounced. Participants at the lower levels and those in a review pause get them more often, established participants less often. Checks can come from any published corpus, not only the one you chose. Some of these checks are items where the corpus suggestion is wrong. An answer on such an item is taken into account only from the following day. Which of your answers were checks on items still in use is shown neither on the site nor in the file with your data, because it would otherwise reveal those items; on request by email we retire those items and send you the details within one month.</p>
 
 <h2 id="no-suggestion">3. Items without a suggestion</h2>
 <p>Some word-pair and lemma items are shown without the corpus suggestion: the suggestion line is not shown and the lemma field is empty. This shows us whether you judge for yourself or only confirm the suggestion. The share is the same for known-answer items and for the others, so an item shown without a suggestion does not tell you whether it is a check.</p>
 
 <h2 id="qualification">4. Knowledge check</h2>
-<p>The first items of each kind of task are an announced knowledge check; the screen says so and shows how far you are. They are always shown without the suggestion. Answers where you made a choice are counted; "Not sure" is not counted. If you answer enough of them correctly, you become qualified for that kind. The check cannot be retaken. If you do not pass it, you go on at the level "new", and you can still reach the established level through known-answer items.</p>
+<p>The first items of each kind of task are an announced knowledge check; the screen says so and shows how far you are. They are always shown without the suggestion. Answers where you made a choice are counted; "Not sure" is not counted. If you answer enough of them correctly, you become qualified for that kind. The check cannot be retaken. If you do not pass it, you go on at the level "new", and you can still reach the established level through known-answer items. While the knowledge check for a kind is in use, you get items of that kind from any corpus; you can choose the corpus yourself from the qualified level up.</p>
 
 <h2 id="levels">5. Levels</h2>
 <p>The level is set separately for each kind of task:</p>

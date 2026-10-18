@@ -86,10 +86,12 @@ def register(app, ctx):
                 latest[row.document] = row.version
             reason = await trust_view.block_reason(db, caller.id, caller.status)
             anchor, _ = await scheduler.standing(db, caller.id, "pair")
+            choice = {kind: "open" if await scheduler.corpus_choice(ctx, db, caller.id, kind) else "locked"
+                      for kind in KINDS}
         # A quarantine is silent (4.8.2): the person's view says `active`.
         return {"annotator_id": str(caller.id), "status": trust_view.shown_status(caller.status),
                 "status_reason": reason, "trust_url": "/api/me/trust", "curator": caller.curator, "anchor": anchor,
-                "consent": latest, "required": required,
+                "consent": latest, "required": required, "corpus_choice": choice,
                 "consented": ctx.consent_complete((row.document, row.version, row.age_threshold) for row in consents),
                 "consents": [{"document": row.document, "version": row.version, "locale": row.locale,
                               "accepted_at": row.accepted_at.isoformat()} for row in consents],
@@ -238,9 +240,10 @@ def register(app, ctx):
         return {"kinds": kinds, "revision_events": events}
 
     async def serve(db, caller, corpus_ids, kind, expert_work):
-        """The next item of corpus_ids (one corpus), shown (assignment upserted), as /next returns it."""
+        """The next item for work in corpus_ids (one corpus), shown (assignment upserted), as /next
+        returns it. A qualification item or known-answer check may belong to another corpus."""
         params, key = await ctx.serving_params(db), await ctx.audit_key(db)
-        if await ctx.trust_scheduling(db, corpus_ids[0]):
+        if await ctx.trust_scheduling(db, kind):
             chosen = await scheduler.pick(ctx, db, caller, corpus_ids, kind, expert_work)
             if chosen is None:
                 return None
@@ -267,10 +270,14 @@ def register(app, ctx):
     @app.get("/api/corpora/{corpus_id}/next")
     async def next_item(corpus_id: UUID, kind: Kind = "pair", expert: bool = True,
                         caller: Caller = Depends(consented), db=Depends(session)):
+        """Work from a corpus the caller chose. While the kind's knowledge check is served, only
+        from the qualified tier up (403 corpus_choice_locked below it; /api/next stays open)."""
         limiter.take("read", caller.id)
         async with db.begin():
             await still_present(db, caller)
             await visible_corpus(db, caller, corpus_id, labeling=True)
+            if not await scheduler.corpus_choice(ctx, db, caller.id, kind):
+                raise failure(403, "corpus_choice_locked")
             served = await serve(db, caller, [corpus_id], kind, expert)
         return served or {"item": None, "qualification": None}
 

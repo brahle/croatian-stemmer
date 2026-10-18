@@ -184,6 +184,16 @@ showings are checks, which are blind and the order of picks are keyed hashes
 bundle does not contain it. An item stops being served as a check after
 `gold_max_serves` (150) showings.
 
+Qualification items and known-answer checks of a kind are drawn from every published
+corpus with active gold of the kind, whichever corpus the other work comes from, so a
+corpus without gold (raw text, Wikipedia) still gets checks; the keyed showing count n
+counts the person's showings of the kind in every corpus, and the live readiness the
+scheduler reads counts only the gold of published corpora. The other work stays in the
+chosen corpus. While the kind's knowledge check is served (qualification ready),
+a person whose base tier for the kind is below `qualified` (`new`, or no run yet) gets work
+only from "any corpus" (`/api/next`); `/api/corpora/{id}/next` refuses them with 403
+`corpus_choice_locked`. The base tier is used so that a quarantine stays silent.
+
 Readiness, per kind, from the active valid gold pools at the watermark:
 
 | capability | on when |

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.1
+
+Known-answer checks for every corpus, and corpus choice from the qualified level up.
+Web app only; no migration and no scoring change. Deployments need the new image.
+
+- Qualification items and unannounced known-answer checks of a kind are drawn from every
+  published corpus with active gold of that kind, whichever corpus the other work comes
+  from (`/api/corpora/{id}/next` or "Bilo koji korpus"). A corpus without gold, such as
+  one made with `from-text` or from Wikipedia, now gets checks; the ordinary work stays in
+  the chosen corpus. The keyed check rate counts a person's showings of the kind in every
+  corpus. The trust scheduler is on for a kind once scoring is enabled or a published
+  corpus has gold of the kind, and the live readiness that serving reads counts only the
+  gold of published corpora.
+- While a kind's knowledge check is served, a person below the qualified level for the
+  kind (new, or no run yet) gets work only from "Bilo koji korpus": a chosen corpus answers
+  403 `corpus_choice_locked`. `/api/me` reports `corpus_choice` per kind, and the UI keeps
+  the selector on "Bilo koji korpus" with a line saying why. Qualified, established and the
+  anchor choose freely; a quarantine does not lock (it stays silent). Without a served
+  knowledge check nobody is locked. The person's own items stay reachable by corpus.
+- The trust page "Kako radi pouzdanost" is version 2.1: checks may come from any published
+  corpus, and corpus choice opens at the qualified level.
+
 ## 0.4.0
 
 Candidates from raw Croatian text and Wikipedia dumps. Web app: candidate schema 2 and

@@ -16,7 +16,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from ..scoring import corpus_params, count_first_answers, in_profiling_cohort, readiness
 from .common import trust_event
-from .models import (Anchor, Annotator, Assignment, Consent, Gold, Item, ItemAudit, ItemState, Judgment,
+from .models import (Anchor, Annotator, Assignment, Consent, Corpus, Gold, Item, ItemAudit, ItemState, Judgment,
                      Setting)
 
 
@@ -66,11 +66,17 @@ def blind_by_rule(key_hex, params, annotator_id, corpus_id, item_id, kind) -> bo
     return kind in SUGGESTED and keyed(key_hex, f"blind:{annotator_id}:{corpus_id}:{item_id}") % 100 < params["blind_rate"]
 
 
-async def gold_pools(db, kind):
-    """Live pool counts from the label_gold mirror, in the shape scoring.readiness() takes."""
+def published():
+    """Known-answer items are drawn from every published corpus, whichever corpus the work comes from."""
+    return exists(select(Corpus.id).where(Corpus.id == Gold.corpus_id, Corpus.status == "published"))
+
+
+async def gold_pools(db, kind, served=False):
+    """Live pool counts from the label_gold mirror, in the shape scoring.readiness() takes.
+    With `served`, only the gold /next can serve: that of published corpora."""
     pools = {"qualification": {}, "audit": {}, "wrong": 0}
     rows = await db.execute(select(Gold.pool, Gold.answer, Gold.suggestion_agrees, func.count())
-                            .where(Gold.kind == kind, Gold.status == "active")
+                            .where(Gold.kind == kind, Gold.status == "active", *([published()] if served else []))
                             .group_by(Gold.pool, Gold.answer, Gold.suggestion_agrees))
     for pool, answer, agrees, n in rows:
         bucket = answer if kind == "stem" else "all"
@@ -80,9 +86,9 @@ async def gold_pools(db, kind):
     return pools
 
 
-async def live_readiness(db, params, kind):
+async def live_readiness(db, params, kind, served=False):
     anchors = (await db.execute(select(func.count()).select_from(Anchor))).scalar_one()
-    return readiness(kind, await gold_pools(db, kind), anchors, params)
+    return readiness(kind, await gold_pools(db, kind, served), anchors, params)
 
 
 async def eligible_now(db, annotator_ids):
@@ -149,18 +155,33 @@ class Pick:
         self.presentation, self.qualification = presentation, qualification
 
 
-async def standing(db, annotator_id, kind):
-    """(anchor, tier) of an annotator for a kind: the anchor mirror and the latest done run."""
-    row = (await db.execute(text("""
+async def standing(db, annotator_id, kind, base=False):
+    """(anchor, tier) of an annotator for a kind: the anchor mirror and the latest done run.
+    With `base`, the tier ignoring a quarantine (the one the person's card shows)."""
+    column = "base_tier" if base else "tier"
+    row = (await db.execute(text(f"""
         SELECT EXISTS (SELECT 1 FROM label_anchor WHERE annotator_id = :a) AS anchor,
-               (SELECT s.tier FROM label_annotator_score s JOIN label_scoring_run r ON r.id = s.run_id
+               (SELECT s.{column} FROM label_annotator_score s JOIN label_scoring_run r ON r.id = s.run_id
                 WHERE s.annotator_id = :a AND s.kind = :k AND r.status = 'done'
                 ORDER BY r.finished_at DESC LIMIT 1) AS tier"""), {"a": annotator_id, "k": kind})).one()
     return row.anchor, "anchor" if row.anchor else (row.tier or "new")
 
 
+CHOOSING = ("qualified", "established", "anchor")
+
+
+async def corpus_choice(ctx, db, annotator_id, kind) -> bool:
+    """Whether the person may label the kind in a corpus of their choice. While the kind's knowledge
+    check is served (trust scheduling on and qualification ready), only from the qualified tier up;
+    below it work comes from "any corpus". The base tier: a quarantine stays silent (4.8.2)."""
+    if not await ctx.trust_scheduling(db, kind) or not (await ctx.readiness(db, kind))["qualification"]:
+        return True
+    return (await standing(db, annotator_id, kind, base=True))[1] in CHOOSING
+
+
 async def pick(ctx, db, caller, corpus_ids, kind, expert_work=True):
-    """The next item for the caller among corpus_ids (4.9.1), or None."""
+    """The next item for the caller (4.9.1), or None. Qualification items and known-answer checks
+    come from every published corpus with gold of the kind; all other work from corpus_ids."""
     params, key = await ctx.serving_params(db), await ctx.audit_key(db)
     a = caller.id
     anchor, tier = await standing(db, a, kind)
@@ -183,7 +204,7 @@ async def pick(ctx, db, caller, corpus_ids, kind, expert_work=True):
                                      .join(Item, (Item.corpus_id == Gold.corpus_id) & (Item.id == Gold.item_id))
                                      .outerjoin(Assignment, join)
                                      .where(Gold.kind == kind, Gold.pool == "qualification", Gold.status == "active",
-                                            Gold.corpus_id.in_(corpus_ids), Item.status == "active",
+                                            published(), Item.status == "active",
                                             # An unanswered check comes back at once: the knowledge
                                             # check is announced and must be answered to finish.
                                             or_(Assignment.annotator_id.is_(None),
@@ -192,19 +213,19 @@ async def pick(ctx, db, caller, corpus_ids, kind, expert_work=True):
                 corpus_id, item_id = min(rows, key=lambda r: keyed(key, f"qual:{a}:{kind}:{r[1]}"))
                 return Pick(corpus_id, item_id, blind_forced, qualification)
 
-    # 2. Unannounced known-answer checks at the tier's rate.
+    # 2. Unannounced known-answer checks at the tier's rate; n counts the kind's showings in every corpus.
     rate = params["gold_rate"].get(tier, 10)
     if ready["audit"] and rate:
         n = (await db.execute(select(func.count()).select_from(Assignment).join(
             Item, (Item.corpus_id == Assignment.corpus_id) & (Item.id == Assignment.item_id))
-            .where(Assignment.annotator_id == a, Item.kind == kind, Item.corpus_id.in_(corpus_ids)))).scalar_one()
+            .where(Assignment.annotator_id == a, Item.kind == kind))).scalar_one()
         if keyed(key, f"audit:{a}:{kind}:{n}") % 100 < rate:
             shown = select(Assignment.item_id).where(Assignment.annotator_id == a, Assignment.corpus_id == Gold.corpus_id,
                                                      Assignment.item_id == Gold.item_id)
             rows = (await db.execute(select(Gold.corpus_id, Gold.item_id, Gold.answer, Gold.suggestion_agrees)
                                      .join(Item, (Item.corpus_id == Gold.corpus_id) & (Item.id == Gold.item_id))
                                      .where(Gold.kind == kind, Gold.pool == "audit", Gold.status == "active",
-                                            Gold.corpus_id.in_(corpus_ids), Item.status == "active",
+                                            published(), Item.status == "active",
                                             ~exists(shown)))).all()
             sub = keyed(key, f"sub:{a}:{kind}:{n}")
             if kind == "stem":
