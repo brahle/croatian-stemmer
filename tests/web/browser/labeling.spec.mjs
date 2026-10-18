@@ -302,6 +302,7 @@ test('trust system: knowledge check, blind showing, dashboard tabs and adjudicat
   // Parameters: a one-item knowledge check, every showing without the suggestion, one vote fills an item.
   await cur.getByRole('tab', {name:'Bodovanje', exact:true}).click();
   await cur.getByText('Parametri', {exact:true}).click();
+  await expect(cur.locator('#params')).not.toHaveValue('');  // the tab loads its data first
   const original = await cur.locator('#params').inputValue();
   const params = JSON.parse(original);
   params.readiness.qualification_pool = 1; params.blind_rate = 100; params.votes_low_cap = 1;
