@@ -5,7 +5,7 @@ import asyncio
 import pytest
 pytest.importorskip("sqlalchemy")
 pytest.importorskip("asyncpg")
-from labeling_support import answer, answer_path, candidates, make_anchor, profiled, score_now, unlimited
+from labeling_support import answer, answer_path, candidates, make_anchor, profiled, score_now, unlimited, unsampled
 
 pytestmark = pytest.mark.asyncio
 
@@ -49,9 +49,10 @@ async def test_a_moderation_event_during_a_run_supersedes_it(fresh_api, action):
     if action == "revoke":
         await make_anchor(api, "owner")
     entry = (await api.sql("SELECT id FROM label_trusted_email ORDER BY id DESC LIMIT 1")).scalar()
+    target = (await unsampled(api, [r for r in rows if r["kind"] == "pair"]))[0]  # a calibration item cannot be gold
     moves = {"block": lambda: status(api, "bob", "blocked"), "clear": lambda: status(api, "bob", "active"),
              "erase": lambda: api.request("POST", "/api/me/erase", "bob", json={"confirm": "DELETE"}),
-             "gold": lambda: api.request("PUT", f'/api/admin/gold/{rows[0]["corpus_id"]}/{rows[0]["item_id"]}',
+             "gold": lambda: api.request("PUT", f'/api/admin/gold/{target["corpus_id"]}/{target["item_id"]}',
                                          "curator", True, json={"action": "set", "pool": "audit", "answer": "same",
                                                                 "reason": "fence"}),
              "revoke": lambda: api.request("DELETE", f"/api/admin/trusted/{entry}", "curator", True,
@@ -78,10 +79,8 @@ async def test_a_moderation_event_during_a_run_supersedes_it(fresh_api, action):
         assert voters == 6  # the discarded item's two votes are gone
     else:
         gold = (await api.sql("SELECT gold_status FROM label_item_posterior WHERE run_id = :r AND item_id = :i",
-                              r=done, i=rows[0]["item_id"])).scalar_one_or_none()
-        sampled_now = (await api.sql("SELECT audit_sample FROM label_item_audit WHERE item_id = :i",
-                                     i=rows[0]["item_id"])).scalar_one()
-        assert gold == ("active" if not sampled_now else None)
+                              r=done, i=target["item_id"])).scalar_one_or_none()
+        assert gold == "active"
 
 
 async def test_a_clear_during_a_run_is_never_overwritten(fresh_api):

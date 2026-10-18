@@ -16,7 +16,8 @@ from sqlalchemy.exc import IntegrityError
 
 from ..scoring import corpus_params
 from . import scheduler
-from .common import Caller, corpus_json, definite_votes, failure, judgment_json, visible_corpus
+from . import trust_view
+from .common import Caller, corpus_json, definite_votes, failure, judgment_json, trust_event, visible_corpus
 from .config import MINIMUM_AGE
 from .erasure import erase_profile, still_present
 from .scoring_run import moderation_tx
@@ -67,11 +68,15 @@ def register(app, ctx):
                                           .where(Judgment.annotator_id == caller.id))).scalar_one()
             items = (await db.execute(select(func.count()).select_from(Assignment).where(
                 Assignment.annotator_id == caller.id, Assignment.current_revision > 0))).scalar_one()
-        required = settings.required_documents
-        latest = {document: None for document in required}
-        for row in consents:
-            latest[row.document] = row.version
-        return {"annotator_id": str(caller.id), "status": caller.status, "curator": caller.curator,
+            required = settings.required_documents
+            latest = {document: None for document in required}
+            for row in consents:
+                latest[row.document] = row.version
+            reason = await trust_view.block_reason(db, caller.id, caller.status)
+            anchor, _ = await scheduler.standing(db, caller.id, "pair")
+        # A quarantine is silent (4.8.2): the person's view says `active`.
+        return {"annotator_id": str(caller.id), "status": trust_view.shown_status(caller.status),
+                "status_reason": reason, "trust_url": "/api/me/trust", "curator": caller.curator, "anchor": anchor,
                 "consent": latest, "required": required,
                 "consented": ctx.consent_complete((row.document, row.version, row.age_threshold) for row in consents),
                 "consents": [{"document": row.document, "version": row.version, "locale": row.locale,
@@ -94,6 +99,14 @@ def register(app, ctx):
                 index_elements=[Consent.annotator_id, Consent.document, Consent.version]))
         return {"consented": True, "required": required}
 
+    @app.get("/api/me/trust")
+    async def my_trust(lang: Literal["hr", "en"] = "hr", caller: Caller = Depends(annotator_any), db=Depends(session)):
+        """The trust card: tier and band per kind, rounded counts. Complete data are in the export."""
+        limiter.take("read", caller.id)
+        async with db.begin():
+            anchor, _ = await scheduler.standing(db, caller.id, "pair")
+            return await trust_view.card(db, caller, anchor, lang)
+
     @app.get("/api/me/export.json")
     async def export_mine(caller: Caller = Depends(annotator_any), db=Depends(session)):
         limiter.take("account", caller.id)
@@ -107,6 +120,12 @@ def register(app, ctx):
                                             .order_by(Assignment.first_shown_at))).scalars().all()
             erasures = (await db.execute(select(ErasureRequest).where(ErasureRequest.annotator_id == caller.id)
                                          .order_by(ErasureRequest.id))).scalars().all()
+            trust = await trust_view.export_section(db, caller.id)
+            checked = await trust_view.checked_items(db, caller.id)
+        if checked:
+            # Answers on known-answer items no longer in use are marked; the marks disclose those
+            # answers, so later revisions never count as skill on them (4.3.5).
+            await disclose(db, checked)
         iso = lambda value: value.isoformat() if value else None
         body = {
             "format": "croatian-stemmer-labeling-personal-export/1",
@@ -124,7 +143,8 @@ def register(app, ctx):
                            "irregular": j.irregular, "item_revision": j.item_revision,
                            "client_version": j.client_version, "source": j.source,
                            "elapsed_ms": j.elapsed_ms, "created_at": iso(j.created_at),
-                           "presentation": j.presentation or "shown"} for j in judgments],
+                           "presentation": j.presentation or "shown",
+                           "checked_against_known_answer": (j.corpus_id, j.item_id) in checked} for j in judgments],
             "assignments": [{"corpus_id": str(a.corpus_id), "item_id": str(a.item_id),
                              "first_shown_at": iso(a.first_shown_at), "last_shown_at": iso(a.last_shown_at),
                              "shown_count": a.shown_count, "current_revision": a.current_revision,
@@ -133,9 +153,19 @@ def register(app, ctx):
             "erasure_requests": [{"id": e.id, "requested_at": iso(e.requested_at),
                                   "app_erased_at": iso(e.app_erased_at),
                                   "keycloak_deleted_at": iso(e.keycloak_deleted_at)} for e in erasures],
+            "trust": trust,
         }
         return JSONResponse(body, headers={"Content-Disposition":
                                            f'attachment; filename="my-labeling-data-{caller.id}.json"'})
+
+    async def disclose(db, items):
+        async with db.begin():
+            await moderation_tx(db)
+            known = {(r[0], r[1]) for r in (await db.execute(text(
+                "SELECT corpus_id, item_id FROM label_trust_event WHERE kind = 'gold.disclosed'"))).all()}
+            for corpus_id, item_id in sorted(items - known):
+                await trust_event(db, "gold.disclosed", corpus_id=corpus_id, item_id=item_id,
+                                  details={"reason": "access_export"})
 
     @app.post("/api/me/erase")
     async def erase(data: EraseRequest, caller: Caller = Depends(annotator_any), db=Depends(session)):
@@ -194,9 +224,9 @@ def register(app, ctx):
         return {"kinds": kinds, "revision_events": events}
 
     async def serve(db, caller, corpus_ids, kind, expert_work):
-        """The next item among corpus_ids, shown (assignment upserted), as /next returns it."""
+        """The next item of corpus_ids (one corpus), shown (assignment upserted), as /next returns it."""
         params, key = await ctx.serving_params(db), await ctx.audit_key(db)
-        if await ctx.trust_scheduling(db):
+        if await ctx.trust_scheduling(db, corpus_ids[0]):
             chosen = await scheduler.pick(ctx, db, caller, corpus_ids, kind, expert_work)
             if chosen is None:
                 return None

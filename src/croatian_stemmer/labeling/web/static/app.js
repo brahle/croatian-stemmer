@@ -25,7 +25,7 @@ const strings = {
     erasureExpired:'Ovaj profil je izbrisan jer u roku od 30 dana od prve prijave niste prihvatili uvjete i izjavu o sudjelovanju. Račun za prijavu bit će izbrisan u roku od 30 dana; nakon toga se možete ponovno prijaviti kao novi sudionik.',
     corpus:'Korpus', chooseCorpusOption:'Odaberite korpus', kind:'Vrsta', kindPair:'Par riječi', kindLemma:'Lema', kindStem:'Korijen',
     queue:'Red', queueNext:'Novi primjeri', queueLabelled:'Moji označeni', queueUnsure:'Moji nesigurni',
-    hintsTitle:'Prijedlozi iz korpusa i način uzorkovanja', lemmaLabel:'Potvrđena ili ispravljena lema', stemLabel:'Predloženi korijen:',
+    hintsTitle:'Prijedlozi iz korpusa', lemmaLabel:'Potvrđena ili ispravljena lema', stemLabel:'Predloženi korijen:',
     irregular:'Nepravilan oblik / iznimka', retry:'Ponovi spremanje istog odgovora', skip:'Preskoči', guidelines:'Smjernice za označavanje',
     pairs:'Parovi', lemmas:'Leme', stems:'Korijeni', progressLine:'{kind}: {definite} potvrđenih, {unsure} nesigurnih / {total} primjera',
     promptPair:'Pripadaju li ove riječi istoj lemi?', promptLemma:'Koja je rječnička lema ove riječi?', promptStem:'Je li predloženi korijen prihvatljiv?',
@@ -64,6 +64,42 @@ const strings = {
     footerPrivacy:'Privatnost', footerTerms:'Uvjeti i licencija', footerParticipation:'Sudjelovanje', footerStorage:'Kolačići i pohrana', legalMenu:'Pravne informacije',
     footerVersion:'Verzija aplikacije {v}', unavailable:'Prijava trenutačno nije dostupna. Osvježite stranicu i pokušajte ponovno.',
     genericError:'Zahtjev nije uspio. Pokušajte ponovno.', actionFailed:'Radnja nije uspjela. Pokušajte ponovno.',
+    anyCorpus:'Bilo koji korpus', expertWork:'Rad za urednike', qualification:'Provjera znanja {done}/{of}',
+    qualificationHelp:'Prvih {of} primjera ove vrste provjerava Vaše znanje i prikazuje se bez prijedloga. Rezultat ćete vidjeti u odjeljku „Pouzdanost”.',
+    blindNote:'Ovaj primjer prikazan je bez prijedloga iz korpusa.', footerTrust:'Pouzdanost',
+    trustTitle:'Pouzdanost', trustHow:'Kako radi pouzdanost', trustNone:'Pouzdanost još nije izračunata.',
+    trustLine:'{kind}: razina {tier}, procjena {band}; provjera s poznatim odgovorom oko {checks}{agreement}.',
+    trustAgreement:'; slaganje s riješenim primjerima oko {value} %', trustQualified:' (provjera znanja položena)',
+    trustBlocked:'Vaš profil je blokiran. Razlog: {reason}', trustAnchor:'Na popisu ste pouzdanih stručnjaka.',
+    trustRunAt:'Izračunato {date}.',
+    tier_new:'nova', tier_qualified:'kvalificirana', tier_established:'etablirana', tier_anchor:'stručnjak', tier_quarantined:'izdvojena',
+    band_visoka:'visoka', band_dobra:'dobra', band_treba_paznje:'treba pažnje', band_nedovoljno_podataka:'nedovoljno podataka',
+    tabOverview:'Pregled', tabPeople:'Suradnici', tabQuarantine:'Karantena', tabGold:'Zlatni primjeri', tabDisputes:'Sporni primjeri',
+    tabTrusted:'Pouzdane adrese', tabScoring:'Bodovanje',
+    scoringTitle:'Bodovanje pouzdanosti', scoringOn:'Bodovanje je uključeno; izračun se pokreće svakih {minutes} min.',
+    scoringOff:'Bodovanje je isključeno: nitko se ne profilira.', scoringEnable:'Uključi bodovanje', scoringDisable:'Isključi bodovanje',
+    lastRun:'Zadnji izračun: {date} ({status}).', noRun:'Još nema izračuna.', alertsTitle:'Upozorenja', noAlerts:'Nema upozorenja.',
+    readinessTitle:'Spremnost po vrsti', readinessLine:'{kind}: provjera znanja {q}, skrivene provjere {a}, napredovanje {p}; skupovi {pools}',
+    yes:'da', no:'ne', statesTitle:'Stanja primjera', colStates:'Stanja', colTiers:'Razine', colItem:'Primjer', colAnswer:'Odgovor',
+    colRun:'Izračun', colCounts:'Odgovori / primjeri / osobe', anchorBadge:'stručnjak',
+    state_open:'otvoreno', state_provisional:'privremeno', state_resolved:'riješeno', state_needs_expert:'traži stručnjaka',
+    state_contested:'sporno', state_ambiguous:'dvosmisleno', stateContested:'sporno', stateNeedsExpert:'traži stručnjaka', stateProvisional:'privremeno',
+    quarantineHelp:'Automatska karantena traje najdulje 14 dana; ako u tom roku ne odlučite, izračun je sam ukida. Osoba ne vidi obavijest.',
+    quarantineEmpty:'Nitko nije u karanteni.', quarantineLine:'{who} · {days} d · signali: {flags}', release:'Vrati u rad', keep:'Zadrži', block:'Blokiraj',
+    decisionDone:'Odluka je zapisana.',
+    goldFile:'Datoteka sa zlatnim primjerima (JSONL)', goldImportButton:'Uvezi zlatne primjere', goldPool:'Skup', all:'svi',
+    poolQualification:'provjera znanja', poolAudit:'skrivene provjere', goldImported:'Prihvaćeno {accepted}; izdvojeno za kalibraciju {held}; nepromijenjeno {same}.',
+    goldPools:'Aktivni skupovi: {pools}', retire:'Povuci', reactivate:'Vrati', retract:'Poništi', disclose:'Označi kao otkriven',
+    goldDone:'Promjena je zapisana.', noItems:'Nema primjera.',
+    adjudicate:'Presudi', markAmbiguous:'Dvosmisleno', reopen:'Ponovno otvori', discard:'odbaci ranije glasove', votesLine:'Glasovi: {votes}',
+    trustedEmail:'Adresa e-pošte', trustedLabel:'Bilješka (najviše ime)', trustedAdd:'Dodaj na popis', trustedRemove:'Ukloni',
+    trustedAdded:'Adresa je dodana.', trustedLine:'{label} · {email}{who}', trustedAnchor:' · stručnjak {id}', noTrusted:'Popis je prazan.',
+    runNow:'Pokreni izračun', runDone:'Izračun je završen ({status}).', calibrationTitle:'Kalibracija', runsTitle:'Izračuni',
+    calibrationLine:'{cell}: {correct}/{n} točno, Wilsonova granica {lb}; {state}{pending}', passed:'prošla', notPassed:'nije prošla',
+    pendingRefs:'; čeka {n} referentnih odgovora', redraw:'Novo izvlačenje', redrawDone:'Novo izvlačenje zatraženo.',
+    pin:'Prikvači', unpin:'Otkvači', bundle:'Paket za ponavljanje', stale:' · zastario', pinned:' · prikvačen',
+    iaaTitle:'Slaganje (Krippendorffova alfa)', iaaLine:'{kind}: alfa {alpha}, opaženo slaganje {observed}', paramsTitle:'Parametri',
+    paramsJson:'Parametri (JSON)', paramsSave:'Spremi parametre', paramsSaved:'Parametri su spremljeni.',
   },
   en: {
     skipLink:'Skip to content', brand:'Croatian stems', title:'Labeling language examples', menu:'Menu',
@@ -86,7 +122,7 @@ const strings = {
     erasureExpired:'This profile was erased because the terms and the participation statement were not accepted within 30 days of the first sign-in. The sign-in account will be deleted within 30 days; after that you can sign in again as a new participant.',
     corpus:'Corpus', chooseCorpusOption:'Choose a corpus', kind:'Kind', kindPair:'Word pair', kindLemma:'Lemma', kindStem:'Stem',
     queue:'Queue', queueNext:'New items', queueLabelled:'My labelled', queueUnsure:'My unsure',
-    hintsTitle:'Corpus suggestions and sampling', lemmaLabel:'Confirmed or corrected lemma', stemLabel:'Proposed stem:',
+    hintsTitle:'Corpus suggestions', lemmaLabel:'Confirmed or corrected lemma', stemLabel:'Proposed stem:',
     irregular:'Irregular form / exception', retry:'Retry saving the same answer', skip:'Skip', guidelines:'Labeling guidelines',
     pairs:'Pairs', lemmas:'Lemmas', stems:'Stems', progressLine:'{kind}: {definite} confirmed, {unsure} unsure / {total} items',
     promptPair:'Do these words share a lemma?', promptLemma:'What is the dictionary lemma of this word?', promptStem:'Is the proposed stem acceptable?',
@@ -125,6 +161,42 @@ const strings = {
     footerPrivacy:'Privacy', footerTerms:'Terms and licence', footerParticipation:'Participation', footerStorage:'Cookies and storage', legalMenu:'Legal information',
     footerVersion:'Application version {v}', unavailable:'Sign-in is unavailable right now. Reload the page and try again.',
     genericError:'The request failed. Please try again.', actionFailed:'The action failed. Please try again.',
+    anyCorpus:'Any corpus', expertWork:'Expert work', qualification:'Knowledge check {done}/{of}',
+    qualificationHelp:'The first {of} items of this kind check your knowledge and are shown without a suggestion. You will see the result under "Reliability".',
+    blindNote:'This item is shown without the corpus suggestion.', footerTrust:'Reliability',
+    trustTitle:'Reliability', trustHow:'How reliability works', trustNone:'Reliability has not been computed yet.',
+    trustLine:'{kind}: level {tier}, estimate {band}; known-answer checks about {checks}{agreement}.',
+    trustAgreement:'; agreement with resolved items about {value} %', trustQualified:' (knowledge check passed)',
+    trustBlocked:'Your profile is blocked. Reason: {reason}', trustAnchor:'You are on the list of trusted experts.',
+    trustRunAt:'Computed {date}.',
+    tier_new:'new', tier_qualified:'qualified', tier_established:'established', tier_anchor:'expert', tier_quarantined:'set aside',
+    band_visoka:'high', band_dobra:'good', band_treba_paznje:'needs attention', band_nedovoljno_podataka:'not enough data',
+    tabOverview:'Overview', tabPeople:'Contributors', tabQuarantine:'Quarantine', tabGold:'Gold items', tabDisputes:'Disputed items',
+    tabTrusted:'Trusted addresses', tabScoring:'Scoring',
+    scoringTitle:'Reliability scoring', scoringOn:'Scoring is on; a run starts every {minutes} min.',
+    scoringOff:'Scoring is off: nobody is profiled.', scoringEnable:'Turn scoring on', scoringDisable:'Turn scoring off',
+    lastRun:'Last run: {date} ({status}).', noRun:'No run yet.', alertsTitle:'Alerts', noAlerts:'No alerts.',
+    readinessTitle:'Readiness per kind', readinessLine:'{kind}: knowledge check {q}, hidden checks {a}, promotion {p}; pools {pools}',
+    yes:'yes', no:'no', statesTitle:'Item states', colStates:'States', colTiers:'Levels', colItem:'Item', colAnswer:'Answer',
+    colRun:'Run', colCounts:'Answers / items / people', anchorBadge:'expert',
+    state_open:'open', state_provisional:'provisional', state_resolved:'resolved', state_needs_expert:'needs an expert',
+    state_contested:'contested', state_ambiguous:'ambiguous', stateContested:'contested', stateNeedsExpert:'needs an expert', stateProvisional:'provisional',
+    quarantineHelp:'An automatic quarantine lasts at most 14 days; if you do not decide by then, the run lifts it. The person sees no notice.',
+    quarantineEmpty:'Nobody is in quarantine.', quarantineLine:'{who} · {days} d · signals: {flags}', release:'Release', keep:'Keep', block:'Block',
+    decisionDone:'The decision is recorded.',
+    goldFile:'Gold items file (JSONL)', goldImportButton:'Import gold items', goldPool:'Pool', all:'all',
+    poolQualification:'knowledge check', poolAudit:'hidden checks', goldImported:'Accepted {accepted}; held out for calibration {held}; unchanged {same}.',
+    goldPools:'Active pools: {pools}', retire:'Retire', reactivate:'Reactivate', retract:'Retract', disclose:'Mark disclosed',
+    goldDone:'The change is recorded.', noItems:'No items.',
+    adjudicate:'Adjudicate', markAmbiguous:'Ambiguous', reopen:'Reopen', discard:'discard earlier votes', votesLine:'Votes: {votes}',
+    trustedEmail:'Email address', trustedLabel:'Note (a first name at most)', trustedAdd:'Add to the list', trustedRemove:'Remove',
+    trustedAdded:'The address is added.', trustedLine:'{label} · {email}{who}', trustedAnchor:' · expert {id}', noTrusted:'The list is empty.',
+    runNow:'Run now', runDone:'The run finished ({status}).', calibrationTitle:'Calibration', runsTitle:'Runs',
+    calibrationLine:'{cell}: {correct}/{n} correct, Wilson bound {lb}; {state}{pending}', passed:'passed', notPassed:'not passed',
+    pendingRefs:'; waiting for {n} reference answers', redraw:'Draw again', redrawDone:'A new draw is requested.',
+    pin:'Pin', unpin:'Unpin', bundle:'Replay bundle', stale:' · stale', pinned:' · pinned',
+    iaaTitle:'Agreement (Krippendorff’s alpha)', iaaLine:'{kind}: alpha {alpha}, observed agreement {observed}', paramsTitle:'Parameters',
+    paramsJson:'Parameters (JSON)', paramsSave:'Save parameters', paramsSaved:'The parameters are saved.',
   },
 };
 const errors = {
@@ -137,7 +209,12 @@ const errors = {
     daily_cap_reached:'Dosegnut je dnevni broj odgovora. Hvala! Nastavite sutra.', curator_required:'Za ovu radnju potrebna je uloga kuratora.', item_retired:'Ovaj primjer je povučen i više se ne označava.',
     license_not_publishable:'Licencija izvornog korpusa ne dopušta objavu oznaka pod odabranom licencijom.', corpus_not_published:'Korpus nije objavljen.', corpus_already_published:'Korpus je već objavljen pod drugom licencijom oznaka.',
     invalid_corpus_status:'Ta promjena statusa korpusa nije moguća.', own_status_change:'Ne možete mijenjati status vlastitog profila.', annotator_erased:'Profil je izbrisan; status se više ne može mijenjati.',
-    erasure_not_pending:'Brisanje je već potvrđeno.'},
+    erasure_not_pending:'Brisanje je već potvrđeno.', gold_conflict:'Primjer već ima drukčiji zlatni odgovor. Uvoz je odbijen.',
+    unknown_item:'Primjer ne postoji u pohranjenom korpusu.', invalid_gold:'Redak ne odgovara formatu zlatnih primjera.', already_trusted:'Adresa je već na popisu.',
+    invalid_email:'Upišite ispravnu adresu e-pošte.', scoring_busy:'Izračun je već u tijeku. Pokušajte za koji trenutak.', params_invalid:'Parametri nisu ispravni.',
+    not_assigned:'Ovaj primjer Vam nije dodijeljen. Učitajte sljedeći primjer.', run_stale:'Nakon izračuna je bilo moderacije; pokrenite novi izračun.',
+    run_not_done:'Izračun nije završen.', not_adjudicable:'Presuditi se može samo spornom, privremenom ili primjeru koji traži stručnjaka.',
+    gold_disclosed:'Odgovor ovog primjera je otkriven; ne može se ponovno koristiti za provjere.', calibration_item:'Primjer je u kalibracijskom uzorku i ne može biti zlatni.'},
   en: {invalid_token:'Your sign-in has expired. Please sign in again.', annotator_role_required:'You are not allowed to label.', identity_unavailable:'Sign-in verification is unavailable right now.',
     invalid_candidates:'The file does not match the candidate import format.', body_too_large:'The file or request is too large.', corpus_provenance_conflict:'The corpus provenance differs from the corpus already imported.',
     immutable_item_conflict:'An existing item has different content. The import was refused.', invalid_judgment:'The answer does not fit this item. Check the lemma: one word, letters only.', request_id_conflict:'This save attempt was already used for a different answer.',
@@ -147,7 +224,12 @@ const errors = {
     daily_cap_reached:'You have reached the daily number of answers. Thank you! Continue tomorrow.', curator_required:'This action needs the curator role.', item_retired:'This item has been retired and is no longer labelled.',
     license_not_publishable:'The source corpus licence does not allow publishing labels under the chosen licence.', corpus_not_published:'The corpus is not published.', corpus_already_published:'The corpus is already published under a different labels licence.',
     invalid_corpus_status:'That corpus status change is not possible.', own_status_change:'You cannot change the status of your own profile.', annotator_erased:'The profile is erased; its status can no longer change.',
-    erasure_not_pending:'The deletion has already been confirmed.'},
+    erasure_not_pending:'The deletion has already been confirmed.', gold_conflict:'The item already has a different gold answer. The import was refused.',
+    unknown_item:'The item does not exist in the stored corpus.', invalid_gold:'A line does not match the gold item format.', already_trusted:'The address is already on the list.',
+    invalid_email:'Type a valid email address.', scoring_busy:'A run is already in progress. Try again in a moment.', params_invalid:'The parameters are not valid.',
+    not_assigned:'This item was not served to you. Load the next item.', run_stale:'There was moderation after this run; start a new run.',
+    run_not_done:'The run has not finished.', not_adjudicable:'Only a contested, provisional or needs-expert item can be adjudicated.',
+    gold_disclosed:'This item\'s answer has been disclosed; it cannot be used for checks again.', calibration_item:'The item is in the calibration sample and cannot be gold.'},
 };
 const LABEL_LICENCES = ['CC BY-SA 4.0', 'CC BY 4.0', 'CC0 1.0'];
 const CHOICES = {pair:['same','different','unsure'], lemma:['confirmed','unsure'], stem:['accept','reject','unsure']};
@@ -157,7 +239,8 @@ const $ = id => document.getElementById(id);
 let lang = initialLanguage();
 let config = null, keycloak = null, me = null;
 let current = null, cursor = -1, pending = null, busy = false, generation = 0, shownAt = 0, lastProgress = null;
-let annotatorOffset = 0;
+let annotatorOffset = 0, trustCard = null, qualifying = null, curatorTab = 'overview';
+const ANY = '*';
 
 // Croatian unless the address asks for English (?lang=en); the language switch keeps the address in step.
 function initialLanguage(){
@@ -212,6 +295,7 @@ function applyLanguage(){
   if (!$('file').files[0]) $('file-name').textContent = t('noFile');
   if (current) paint();
   if (lastProgress) paintProgress();
+  paintQualification();
   if (me && !$('me').hidden) paintMe();
 }
 
@@ -260,6 +344,7 @@ async function loadMe(){
   }
   for (const id of ['nav-label', 'nav-me', 'logout']) $(id).hidden = false;
   $('nav-curator').hidden = !me.curator;
+  $('expert-field').hidden = !me.anchor;
   if (!me.consented) { show('gate'); message(t('gateMessage')); return; }
   await openWorkspace();
 }
@@ -278,6 +363,7 @@ function showErased(text){
 async function openMe(){
   show('me');
   me = await json('me');
+  trustCard = await json('me/trust?lang=' + lang);
   paintMe();
   message(t('meTitle'));
 }
@@ -287,6 +373,27 @@ function paintMe(){
   const docs = {privacy: t('docPrivacy'), terms: t('docTerms'), participation: t('docParticipation')};
   $('me-consents').replaceChildren(...(me.consents.length ? me.consents.map(c => element('li', t('consentLine', {doc: docs[c.document], version: c.version, date: date(c.accepted_at)})))
                                                          : [element('li', t('noConsents'))]));
+  paintTrust();
+}
+// The reliability card: a band and rounded counts; the complete data are in the download.
+function paintTrust(){
+  const card = trustCard, lines = [];
+  if (!card) { $('trust').replaceChildren(); return; }
+  if (card.status === 'blocked') lines.push(element('p', t('trustBlocked', {reason: card.status_reason || '—'})));
+  if (card.anchor) lines.push(element('p', t('trustAnchor')));
+  if (!card.run) lines.push(element('p', t('trustNone')));
+  else {
+    lines.push(element('p', t('trustRunAt', {date: date(card.run_at)}), {class:'muted'}));
+    const names = {pair: t('pairs'), lemma: t('lemmas'), stem: t('stems')};
+    const list = element('ul');
+    for (const [kind, k] of Object.entries(card.kinds || {})) {
+      const agreement = k.agreement_approx === null ? '' : t('trustAgreement', {value: Math.round(k.agreement_approx * 100)});
+      list.append(element('li', t('trustLine', {kind: names[kind], tier: t('tier_' + k.tier), band: t('band_' + k.band),
+                                                 checks: k.checks_approx, agreement}) + (k.qualified ? t('trustQualified') : '')));
+    }
+    lines.push(list);
+  }
+  $('trust').replaceChildren(...lines);
 }
 
 // ---- labeling ------------------------------------------------------------------
@@ -303,13 +410,14 @@ async function allCorpora(){
 }
 async function loadCorpora(selected = ''){
   const rows = (await allCorpora()).filter(row => row.status === 'published');
-  $('corpus').replaceChildren(new Option(t('chooseCorpusOption'), ''), ...rows.map(row => new Option(row.name, row.id)));
-  $('corpus').value = rows.some(row => row.id === selected) ? selected : rows.length === 1 ? rows[0].id : '';
+  const any = rows.length > 1 ? [new Option(t('anyCorpus'), ANY)] : [];
+  $('corpus').replaceChildren(new Option(t('chooseCorpusOption'), ''), ...any, ...rows.map(row => new Option(row.name, row.id)));
+  $('corpus').value = selected === ANY && any.length ? ANY : rows.some(row => row.id === selected) ? selected : rows.length === 1 ? rows[0].id : '';
   if (!rows.length) { message(t('noCorpora')); }
   await chooseCorpus();
 }
 function resetQuestion(){
-  generation++; cursor = -1; current = null; pending = null; lastProgress = null;
+  generation++; cursor = -1; current = null; pending = null; lastProgress = null; qualifying = null; paintQualification();
   $('retry').hidden = true; $('question').hidden = true; $('skip').hidden = true; $('empty').hidden = true;
   $('progress').replaceChildren();
 }
@@ -320,7 +428,7 @@ async function chooseCorpus(){
   await load();
 }
 async function progress(){
-  if (!$('corpus').value) return;
+  if (!$('corpus').value || $('corpus').value === ANY) { $('progress').replaceChildren(); return; }
   lastProgress = await json(`corpora/${$('corpus').value}/progress`);
   paintProgress();
 }
@@ -331,11 +439,16 @@ function paintProgress(){
 }
 async function load(){
   const seq = ++generation, corpus = $('corpus').value, kind = $('kind').value, queue = $('queue').value;
-  let item;
-  if (queue === 'next') item = (await json(`corpora/${corpus}/next?kind=${kind}`)).item;
+  const expert = $('expert-field').hidden || $('expert').checked;
+  let item, served = null;
+  if (queue === 'next') {
+    served = await json(corpus === ANY ? `next?kind=${kind}&expert=${expert}` : `corpora/${corpus}/next?kind=${kind}&expert=${expert}`);
+    item = served.item;
+  } else if (corpus === ANY) { message(t('chooseCorpus')); return; }
   else item = (await json(`corpora/${corpus}/items?kind=${kind}&state=${queue}&after=${cursor}`)).items[0] || null;
   if (seq !== generation) return;
-  current = item; pending = null;
+  current = item; pending = null; qualifying = served ? served.qualification : null;
+  paintQualification();
   $('retry').hidden = true; $('question').hidden = !current; $('skip').hidden = !current; $('empty').hidden = !!current;
   if (current) {
     if (queue !== 'next') cursor = current.ordinal;
@@ -347,21 +460,29 @@ async function load(){
   }
 }
 function answerText(answer){ return t(answer === 'accept' ? 'accept_' : answer); }
+function paintQualification(){
+  // Announced: the first items of a kind check the person's knowledge (shown without a suggestion).
+  $('qualification').hidden = !qualifying;
+  if (qualifying) $('qualification').textContent = t('qualification', {done: qualifying.done, of: qualifying.of}) + ' ' + t('qualificationHelp', {of: qualifying.of});
+}
 function render(){
   const c = current.candidate, j = current.judgment;
   shownAt = performance.now();
   paint();
-  $('lemma').value = j?.lemma || c.proposed_lemma;
+  // A blind showing has no suggestion: the lemma field starts empty.
+  $('lemma').value = j?.lemma || (current.presentation === 'blind' ? '' : c.proposed_lemma);
   $('irregular').checked = j?.irregular || false;
 }
 function paint(){
   const c = current.candidate, j = current.judgment;
   $('revision').textContent = j ? t('revision', {n: current.assignment.current_revision, answer: answerText(j.answer)}) : t('noLabel');
   $('prompt').textContent = t({pair:'promptPair', lemma:'promptLemma', stem:'promptStem'}[c.kind]);
-  const texts = {word:c.word, context:c.context, 'word-ref':c.word_ref, 'other-word':c.other_word, 'other-context':c.other_context,
-                 'other-ref':c.other_word_ref, stem:c.proposed_stem, stratum:t('sampling') + c.sampling_stratum, license:t('licence') + c.license,
-                 hints:t('corpusLemma') + c.proposed_lemma + (c.other_proposed_lemma ? ' / ' + c.other_proposed_lemma : '')};
+  const blind = current.presentation === 'blind';
+  const texts = {word:c.word, context:c.context, 'other-word':c.other_word, 'other-context':c.other_context,
+                 stem:c.proposed_stem, license:t('licence') + c.license,
+                 hints:blind ? '' : t('corpusLemma') + c.proposed_lemma + (c.other_proposed_lemma ? ' / ' + c.other_proposed_lemma : '')};
   for (const [id, value] of Object.entries(texts)) $(id).textContent = value;
+  $('blind').hidden = !blind; $('hints').hidden = blind;
   $('second').hidden = c.kind !== 'pair'; $('lemma-field').hidden = c.kind !== 'lemma'; $('stem-field').hidden = c.kind !== 'stem';
   $('source').replaceChildren(document.createTextNode(t('source')));
   let url;
@@ -379,7 +500,7 @@ async function save(answer){
   const lemma = current.candidate.kind === 'lemma' && answer === 'confirmed' ? $('lemma').value.trim() : '';
   if (answer === 'confirmed' && !lemma) { message(t('typeLemma'), true); return; }
   const elapsed = Math.round(performance.now() - shownAt);
-  pending = {path:`corpora/${$('corpus').value}/items/${current.candidate.item_id}/answer`,
+  pending = {path:`corpora/${current.candidate.corpus_id}/items/${current.candidate.item_id}/answer`,
              body:{request_id:crypto.randomUUID(), base_revision:current.assignment.current_revision, answer, lemma,
                    irregular:$('irregular').checked, client_version:clientVersion,
                    elapsed_ms:elapsed >= 0 && elapsed <= 3600000 ? elapsed : null}};
@@ -418,13 +539,169 @@ document.addEventListener('keydown', event => {
 
 // ---- curator ---------------------------------------------------------------------
 
+const CURATOR_TABS = {
+  overview: async () => { await curatorSettings(); await curatorOverview(); await curatorCorpora(); await curatorErasures(); },
+  people: () => curatorAnnotators(true), quarantine: () => curatorQuarantine(), gold: () => curatorGold(),
+  disputes: () => curatorDisputes(), trusted: () => curatorTrusted(), scoring: () => curatorScoring(),
+};
 async function openCurator(){
   show('curator');
-  await curatorSettings();
-  await curatorCorpora();
-  await curatorAnnotators(true);
-  await curatorErasures();
+  await showTab(curatorTab);
   message(t('curatorTitle'));
+}
+async function showTab(name){
+  curatorTab = name;
+  for (const node of document.querySelectorAll('#curator-tabs [role=tab]')) node.setAttribute('aria-selected', String(node.dataset.tab === name));
+  for (const key of Object.keys(CURATOR_TABS)) $('tab-' + key).hidden = key !== name;
+  await CURATOR_TABS[name]();
+}
+// A table cell that keeps its column name, so a table can collapse to cards on a phone.
+function cell(label, ...content){
+  const td = element('td', null, {'data-label': label});
+  td.append(...content.map(c => typeof c === 'string' ? document.createTextNode(c) : c));
+  return td;
+}
+function reasonInput(){ return element('input', null, {'aria-label': t('reason'), placeholder: t('reason'), maxlength:'500'}); }
+function needReason(input){ const value = input.value.trim(); if (!value) throw new UserError(t('reasonRequired')); return value; }
+function yesNo(value){ return value ? t('yes') : t('no'); }
+async function curatorOverview(){
+  const [data, alerts, settings] = await Promise.all([json('admin/overview'), json('admin/alerts'), json('admin/scoring/settings')]);
+  $('scoring-state').textContent = data.scoring_enabled ? t('scoringOn', {minutes: Math.round(settings.interval_s / 60)}) : t('scoringOff');
+  $('scoring-toggle').textContent = data.scoring_enabled ? t('scoringDisable') : t('scoringEnable');
+  $('scoring-toggle').onclick = () => run(async () => {
+    await post('admin/scoring/settings', {scoring_enabled: !data.scoring_enabled}, 'PUT'); await curatorOverview();
+  });
+  $('last-run').textContent = data.last_run ? t('lastRun', {date: date(data.last_run.finished_at), status: data.last_run.status}) : t('noRun');
+  $('alerts').replaceChildren(...(alerts.items.length ? alerts.items.map(a => element('li', [a.code, a.kind, a.count ?? a.audit_pool, (a.missing || []).join(', ')]
+                                                                                       .filter(v => v !== undefined && v !== null && v !== '').join(' · ')))
+                                                       : [element('li', t('noAlerts'))]));
+  const names = {pair: t('pairs'), lemma: t('lemmas'), stem: t('stems')};
+  $('readiness').replaceChildren(...Object.entries(data.readiness).map(([kind, r]) => element('li', t('readinessLine', {
+    kind: names[kind], q: yesNo(r.qualification), a: yesNo(r.audit), p: yesNo(r.promotion),
+    pools: `${Object.values(r.pools.qualification).reduce((a, b) => a + b, 0)} / ${Object.values(r.pools.audit).reduce((a, b) => a + b, 0)}` +
+           (r.pools.wrong_suggestion !== undefined && kind !== 'stem' ? ` / ${r.pools.wrong_suggestion}` : '')}))));
+  const rows = [];
+  for (const corpus of data.corpora) for (const [kind, states] of Object.entries(corpus.kinds)) {
+    const tr = element('tr');
+    tr.append(cell(t('colName'), corpus.name), cell(t('kind'), names[kind]),
+              cell(t('colStates'), Object.entries(states).map(([state, n]) => `${t('state_' + state)} ${n}`).join(', ')));
+    rows.push(tr);
+  }
+  $('states').replaceChildren(...rows);
+}
+async function curatorQuarantine(){
+  const items = (await json('admin/annotators?quarantine=open')).items;
+  $('quarantine').replaceChildren(...(items.length ? items.map(row => {
+    const flags = Object.values(row.kinds).flatMap(k => k.flags);
+    const li = element('li', t('quarantineLine', {who: row.email || row.id, days: row.quarantine_age_days ?? '—',
+                                                  flags: [...new Set(flags)].join(', ') || '—'}), {'data-annotator': row.id});
+    const details = element('pre', JSON.stringify(Object.fromEntries(Object.entries(row.kinds).map(([k, v]) => [k, {gold: v.gold, signals: v.signals}])), null, 1));
+    const reason = reasonInput();
+    const decide = to => () => run(async () => {
+      await post(`admin/annotators/${row.id}/status`, {status: to, reason: needReason(reason)}, 'PUT');
+      await curatorQuarantine(); message(t('decisionDone'));
+    });
+    li.append(details, reason, button(t('release'), decide('active')), button(t('keep'), decide('quarantined')),
+              button(t('block'), decide('blocked'), {class:'danger'}));
+    return li;
+  }) : [element('li', t('quarantineEmpty'))]));
+}
+async function curatorGold(){
+  const pool = $('gold-pool').value;
+  const data = await json('admin/gold' + (pool ? '?pool=' + pool : ''));
+  $('gold-pools').textContent = t('goldPools', {pools: data.pools.filter(p => p.status === 'active')
+    .map(p => `${p.kind}/${p.pool}${p.suggestion_agrees === false ? '*' : ''}: ${p.n}`).join(', ') || '—'});
+  $('gold').replaceChildren(...(data.items.length ? data.items.map(g => {
+    const tr = element('tr', null, {'data-gold': g.item_id});
+    const reason = reasonInput();
+    const act = action => () => run(async () => {
+      await post(`admin/gold/${g.corpus_id}/${g.item_id}`, {action, reason: needReason(reason)}, 'PUT');
+      await curatorGold(); message(t('goldDone'));
+    });
+    const actions = cell(t('colActions'), reason);
+    for (const action of g.status === 'active' ? ['retire', 'retract', 'disclose'] : ['reactivate', 'retract'])
+      actions.append(button(t(action), act(action)));
+    tr.append(cell(t('colItem'), `${g.word || ''}${g.other_word ? ' / ' + g.other_word : ''}`),
+              cell(t('kind'), g.kind), cell(t('goldPool'), t(g.pool === 'audit' ? 'poolAudit' : 'poolQualification')),
+              cell(t('colAnswer'), g.answer + (g.lemma ? ' ' + g.lemma : '')), cell(t('colStatus'), `${g.status} (${g.served_count})`), actions);
+    return tr;
+  }) : [element('tr', null)]));
+}
+async function curatorDisputes(){
+  const state = $('dispute-state').value;
+  const data = await json('admin/items/queue?state=' + state);
+  $('disputes').replaceChildren(...(data.items.length ? data.items.map(item => {
+    const li = element('li', null, {'data-item': item.item_id});
+    li.append(element('strong', `${item.word}${item.other_word ? ' / ' + item.other_word : ''}`),
+              element('p', item.context || '', {class:'muted'}),
+              element('p', item.classes.map(c => `${c.answer}${c.lemma ? ' ' + c.lemma : ''}: ${Math.round(c.prob * 1000) / 10} %`).join(' · ')),
+              element('p', t('votesLine', {votes: item.votes.map(v => `${v.answer}${v.lemma ? ' ' + v.lemma : ''} (${t('tier_' + v.tier)})`).join(', ')}), {class:'muted'}));
+    const answer = element('select', null, {'aria-label': t('colAnswer')});
+    answer.append(...CHOICES[item.kind].filter(a => a !== 'unsure').map(a => new Option(answerText(a), a)));
+    const lemma = element('input', null, {'aria-label': t('lemmaLabel'), placeholder: t('lemmaLabel'), maxlength:'128'});
+    lemma.value = item.kind === 'lemma' ? item.proposed_lemma || '' : '';
+    if (item.kind !== 'lemma') lemma.hidden = true;
+    const reason = reasonInput();
+    const discard = element('input', null, {type:'checkbox', 'aria-label': t('discard')});
+    const path = `admin/items/${item.corpus_id}/${item.item_id}/`;
+    const done = async () => { await curatorDisputes(); message(t('decisionDone')); };
+    const discardLabel = element('label', null, {class:'check'});
+    discardLabel.append(discard, element('span', t('discard')));
+    li.append(answer, lemma, reason,
+              button(t('adjudicate'), () => run(async () => { await post(path + 'adjudicate', {answer: answer.value, lemma: item.kind === 'lemma' ? lemma.value.trim() : '', reason: needReason(reason)}); await done(); })),
+              button(t('markAmbiguous'), () => run(async () => { await post(path + 'ambiguous', {reason: needReason(reason)}); await done(); })),
+              discardLabel,
+              button(t('reopen'), () => run(async () => { await post(path + 'reopen', {reason: needReason(reason), discard_previous: discard.checked}); await done(); })));
+    return li;
+  }) : [element('li', t('noItems'))]));
+}
+async function curatorTrusted(){
+  const data = await json('admin/trusted');
+  $('trusted').replaceChildren(...(data.items.length ? data.items.map(entry => {
+    const li = element('li', t('trustedLine', {label: entry.label, email: entry.email,
+                                               who: entry.annotator_id ? t('trustedAnchor', {id: entry.annotator_id}) : ''}), {'data-trusted': String(entry.id)});
+    const reason = reasonInput();
+    li.append(element('br'), reason, button(t('trustedRemove'), () => run(async () => {
+      await json(`admin/trusted/${entry.id}`, {method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({reason: needReason(reason)})});
+      await curatorTrusted();
+    }), {class:'danger'}));
+    return li;
+  }) : [element('li', t('noTrusted'))]));
+}
+async function curatorScoring(){
+  const [runs, params, corpora] = await Promise.all([json('admin/scoring/runs'), json('admin/scoring/params'), allCorpora()]);
+  const latest = runs.items.find(r => r.status === 'done');
+  const detail = latest ? await json('admin/scoring/runs/' + latest.id) : null;
+  $('calibration').replaceChildren(...(detail ? Object.values(detail.calibration).map(c => {
+    const li = element('li', t('calibrationLine', {cell: `${c.kind}/${c.cell}`, correct: c.correct, n: c.n, lb: c.wilson_lb.toFixed(3),
+                                                   state: c.passed ? t('passed') : t('notPassed'),
+                                                   pending: c.pending.length ? t('pendingRefs', {n: c.pending.length}) : ''}));
+    li.append(' ', button(t('redraw'), () => run(async () => { await post('admin/scoring/calibration/redraw', {kind: c.kind, cell: c.cell}); message(t('redrawDone')); })));
+    return li;
+  }) : [element('li', t('noRun'))]));
+  $('runs').replaceChildren(...runs.items.map(r => {
+    const tr = element('tr', null, {'data-run': r.id});
+    const actions = cell(t('colActions'));
+    if (r.status === 'done') {
+      actions.append(button(r.pinned ? t('unpin') : t('pin'), () => run(async () => { await post(`admin/scoring/runs/${r.id}/${r.pinned ? 'unpin' : 'pin'}`, {}); await curatorScoring(); })),
+                     button(t('bundle'), () => run(async () => { await download(`admin/scoring/runs/${r.id}/bundle`, `run-${r.id}.json`); message(t('exported')); })));
+    }
+    tr.append(cell(t('colRun'), `${date(r.finished_at || r.started_at)} · ${r.id.slice(0, 8)}`),
+              cell(t('colStatus'), r.status + (r.stale ? t('stale') : '') + (r.pinned ? t('pinned') : '')),
+              cell(t('colCounts'), `${r.n_judgments ?? '—'} / ${r.n_items ?? '—'} / ${r.n_annotators ?? '—'}`), actions);
+    return tr;
+  }));
+  $('params').value = JSON.stringify(params.params, null, 1);
+  const selected = $('iaa-corpus').value;
+  $('iaa-corpus').replaceChildren(...corpora.map(c => new Option(c.name, c.id)));
+  if (corpora.some(c => c.id === selected)) $('iaa-corpus').value = selected;
+  await curatorAgreement();
+}
+async function curatorAgreement(){
+  if (!$('iaa-corpus').value) { $('iaa').replaceChildren(); return; }
+  const data = await json('admin/scoring/iaa?corpus=' + $('iaa-corpus').value);
+  const format = value => value === null || value === undefined ? '—' : value.toFixed(3);
+  $('iaa').replaceChildren(...Object.entries(data.kinds).map(([kind, k]) => element('li', t('iaaLine', {kind, alpha: format(k.alpha), observed: format(k.observed_agreement)}))));
 }
 async function curatorSettings(){
   const data = await json('admin/settings');
@@ -437,7 +714,7 @@ async function curatorSettings(){
 async function curatorCorpora(){
   const statusNames = {draft:t('statusDraft'), published:t('statusPublished'), archived:t('statusArchived')};
   $('corpora').replaceChildren(...(await allCorpora()).map(row => {
-    const actions = element('td');
+    const actions = cell(t('colActions'));
     if (row.status !== 'published') {
       const licence = element('select', null, {'aria-label': t('labelsLicence')});
       licence.append(...LABEL_LICENCES.map(name => new Option(name, name)));
@@ -451,8 +728,8 @@ async function curatorCorpora(){
     actions.append(button(t('exportTsv'), () => run(async () => { await download(`corpora/${row.id}/export.tsv`, `oznake-${row.id}.tsv`); message(t('exported')); })),
                    button(t('exportJsonl'), () => run(async () => { await download(`corpora/${row.id}/export.jsonl`, `odgovori-${row.id}.jsonl`); message(t('exported')); })));
     const tr = element('tr', null, {'data-corpus': row.id});
-    tr.append(element('td', row.name), element('td', statusNames[row.status] || row.status),
-              element('td', `${row.license} / ${row.labels_license || '—'}`), element('td', t('itemsLine', row.items)), actions);
+    tr.append(cell(t('colName'), row.name), cell(t('colStatus'), statusNames[row.status] || row.status),
+              cell(t('colLicence'), `${row.license} / ${row.labels_license || '—'}`), cell(t('colItems'), t('itemsLine', row.items)), actions);
     return tr;
   }));
 }
@@ -462,12 +739,13 @@ async function curatorAnnotators(reset){
   const statusNames = {active:t('statusActive'), quarantined:t('statusQuarantined'), blocked:t('statusBlocked'), erased:t('statusErased')};
   for (const row of page.items) {
     const tr = element('tr', null, {'data-annotator': row.id});
-    const who = element('td');
-    who.append(element('span', row.email || '—'), element('br'), element('small', row.id));
-    const status = element('td');
-    status.append(element('span', statusNames[row.status] || row.status));
+    const who = cell(t('colAnnotator'), element('span', row.email || '—'), element('br'), element('small', row.id));
+    if (row.anchor) who.append(' ', element('strong', t('anchorBadge')));
+    const status = cell(t('colStatus'), element('span', statusNames[row.status] || row.status));
     if (row.status_reason) status.append(element('br'), element('small', row.status_reason, {class:'reason'}));
-    const actions = element('td');
+    const tiers = cell(t('colTiers'), Object.entries(row.kinds || {}).map(([kind, k]) =>
+      `${kind}: ${t('tier_' + k.tier)} θ ${k.theta.toFixed(2)}${k.flags.length ? ' [' + k.flags.join(', ') + ']' : ''}`).join('; ') || '—');
+    const actions = cell(t('colActions'));
     const off = row.status === 'erased' || row.id === me?.annotator_id;
     const choice = element('select', null, {'aria-label': t('colStatus')});
     choice.append(...['active', 'quarantined', 'blocked'].map(value => new Option(statusNames[value], value)));
@@ -480,7 +758,7 @@ async function curatorAnnotators(reset){
     }));
     for (const node of [choice, reason, apply]) { if (off) { node.dataset.off = '1'; node.disabled = true; } }
     actions.append(choice, reason, apply);
-    tr.append(who, status, element('td', String(row.counts.judgments)), element('td', date(row.last_seen_at)), actions);
+    tr.append(who, status, tiers, cell(t('colJudgments'), String(row.counts.judgments)), cell(t('colSeen'), date(row.last_seen_at)), actions);
     $('annotators').append(tr);
   }
   annotatorOffset = page.next_offset ?? annotatorOffset;
@@ -505,6 +783,34 @@ for (const id of ['logout', 'gate-logout', 'erased-logout']) $(id).onclick = () 
 $('nav-label').onclick = () => run(async () => { me = await json('me'); if (me.consented) await openWorkspace(); else { show('gate'); message(t('gateMessage')); } });
 $('nav-me').onclick = $('gate-erase').onclick = () => run(openMe);
 $('nav-curator').onclick = () => run(openCurator);
+for (const node of document.querySelectorAll('#curator-tabs [role=tab]')) node.onclick = () => run(() => showTab(node.dataset.tab));
+$('gold-pool').onchange = () => run(curatorGold);
+$('dispute-state').onchange = () => run(curatorDisputes);
+$('iaa-corpus').onchange = () => run(curatorAgreement);
+$('run-now').onclick = () => run(async () => {
+  const result = await post('admin/scoring/run', {});
+  await curatorScoring(); message(t('runDone', {status: result.runs.map(r => r.status).join(', ')}));
+});
+$('params-save').onclick = () => run(async () => {
+  let params;
+  try { params = JSON.parse($('params').value); } catch { throw Object.assign(new UserError(), {code:'params_invalid'}); }
+  await post('admin/scoring/params', {params}, 'PUT'); message(t('paramsSaved'));
+});
+$('trusted-form').onsubmit = event => { event.preventDefault(); run(async () => {
+  await post('admin/trusted', {email: $('trusted-email').value.trim(), label: $('trusted-label').value.trim()});
+  $('trusted-email').value = ''; $('trusted-label').value = '';
+  await curatorTrusted(); message(t('trustedAdded'));
+}); };
+$('gold-import').onsubmit = event => { event.preventDefault(); run(async () => {
+  const file = $('gold-file').files[0];
+  if (!file || file.size > 32 * 1024 * 1024) throw Object.assign(new UserError(), {code:'body_too_large'});
+  let rows;
+  try { rows = (await file.text()).split(/\r?\n/).filter(line => line.trim()).map(line => JSON.parse(line)); }
+  catch { throw new UserError(t('badJson')); }
+  const data = await post('admin/gold/import', {rows});
+  const accepted = Object.entries(data.accepted).map(([kind, pools]) => `${kind} ${pools.qualification}/${pools.audit}`).join(', ') || '0';
+  await curatorGold(); message(t('goldImported', {accepted, held: data.held_out, same: data.unchanged}));
+}); };
 for (const id of GATE) $(id).onchange = gateReady;
 $('consent').onsubmit = event => { event.preventDefault(); run(async () => {
   await post('me/consent', {privacy_version: config.legal.privacy, terms_version: config.legal.terms,

@@ -45,11 +45,12 @@
 </section>
 
 <section id="workspace" hidden>
-<div class="toolbar"><label><span data-i18n="corpus">Korpus</span> <select id="corpus"></select></label><label><span data-i18n="kind">Vrsta</span> <select id="kind"><option value="pair" data-i18n="kindPair">Par riječi</option><option value="lemma" data-i18n="kindLemma">Lema</option><option value="stem" data-i18n="kindStem">Korijen</option></select></label><label><span data-i18n="queue">Red</span> <select id="queue"><option value="next" data-i18n="queueNext">Novi primjeri</option><option value="mine_labelled" data-i18n="queueLabelled">Moji označeni</option><option value="mine_unsure" data-i18n="queueUnsure">Moji nesigurni</option></select></label></div>
+<div class="toolbar"><label><span data-i18n="corpus">Korpus</span> <select id="corpus"></select></label><label><span data-i18n="kind">Vrsta</span> <select id="kind"><option value="pair" data-i18n="kindPair">Par riječi</option><option value="lemma" data-i18n="kindLemma">Lema</option><option value="stem" data-i18n="kindStem">Korijen</option></select></label><label><span data-i18n="queue">Red</span> <select id="queue"><option value="next" data-i18n="queueNext">Novi primjeri</option><option value="mine_labelled" data-i18n="queueLabelled">Moji označeni</option><option value="mine_unsure" data-i18n="queueUnsure">Moji nesigurni</option></select></label><label class="check" id="expert-field" hidden><input type="checkbox" id="expert" checked> <span data-i18n="expertWork">Rad za urednike</span></label></div>
 <div id="progress" class="progress" aria-live="polite"></div>
+<p id="qualification" class="banner" hidden></p>
 <article id="question" hidden>
-<p id="revision" class="muted"></p><h2 id="prompt"></h2><div class="words"><div><strong id="word"></strong><p id="context"></p><small id="word-ref"></small></div><div id="second"><strong id="other-word"></strong><p id="other-context"></p><small id="other-ref"></small></div></div>
-<p id="source"></p><details><summary data-i18n="hintsTitle">Prijedlozi iz korpusa i način uzorkovanja</summary><p id="hints"></p><p id="stratum"></p><p id="license"></p></details>
+<p id="revision" class="muted"></p><h2 id="prompt"></h2><div class="words"><div><strong id="word"></strong><p id="context"></p></div><div id="second"><strong id="other-word"></strong><p id="other-context"></p></div></div>
+<p id="source"></p><p id="blind" class="muted" hidden data-i18n="blindNote">Ovaj primjer prikazan je bez prijedloga iz korpusa.</p><details id="hints-box"><summary data-i18n="hintsTitle">Prijedlozi iz korpusa</summary><p id="hints"></p><p id="license"></p></details>
 <form id="answer"><label id="lemma-field" hidden><span data-i18n="lemmaLabel">Potvrđena ili ispravljena lema</span> <input id="lemma" maxlength="128" autocomplete="off"></label><p id="stem-field" hidden><span data-i18n="stemLabel">Predloženi korijen:</span> <strong id="stem"></strong></p><label class="check"><input type="checkbox" id="irregular"> <span data-i18n="irregular">Nepravilan oblik / iznimka</span></label><div id="choices" class="choices"></div><button id="retry" type="button" hidden data-i18n="retry">Ponovi spremanje istog odgovora</button></form>
 </article>
 <p id="empty" hidden></p>
@@ -62,6 +63,9 @@
 <p id="me-counts"></p>
 <h3 data-i18n="meConsents">Prihvaćeni dokumenti</h3>
 <ul id="me-consents"></ul>
+<h3 data-i18n="trustTitle">Pouzdanost</h3>
+<div id="trust"></div>
+<p><a data-doc="trust" href="/legal/trust.hr" target="_blank" rel="noopener" data-i18n="trustHow">Kako radi pouzdanost</a></p>
 <p><button id="download" type="button" data-i18n="download">Preuzmi moje podatke</button></p>
 <h3 data-i18n="eraseTitle">Izbriši moj račun</h3>
 <p data-i18n="eraseWhat">Brisanjem se odmah uklanjaju veza s Vašim računom za prijavu, adresa e-pošte, vremena odgovora i popis prikazanih primjera. Oznaku računa za prijavu čuvamo samo dok taj račun (s imenom i prezimenom) ne izbrišemo, najdulje 30 dana.</p>
@@ -71,18 +75,77 @@
 
 <section id="curator" hidden>
 <h2 data-i18n="curatorTitle">Kurator</h2>
+<div class="tabs" role="tablist" id="curator-tabs" data-i18n-aria="curatorTitle" aria-label="Kurator">
+<button type="button" role="tab" data-tab="overview" data-i18n="tabOverview">Pregled</button>
+<button type="button" role="tab" data-tab="people" data-i18n="tabPeople">Suradnici</button>
+<button type="button" role="tab" data-tab="quarantine" data-i18n="tabQuarantine">Karantena</button>
+<button type="button" role="tab" data-tab="gold" data-i18n="tabGold">Zlatni primjeri</button>
+<button type="button" role="tab" data-tab="disputes" data-i18n="tabDisputes">Sporni primjeri</button>
+<button type="button" role="tab" data-tab="trusted" data-i18n="tabTrusted">Pouzdane adrese</button>
+<button type="button" role="tab" data-tab="scoring" data-i18n="tabScoring">Bodovanje</button>
+</div>
+
+<div id="tab-overview" class="tab" role="tabpanel">
 <details open><summary data-i18n="intakeTitle">Primanje odgovora</summary>
 <p id="intake-state"></p><button id="intake-toggle" type="button"></button></details>
+<details open><summary data-i18n="scoringTitle">Bodovanje pouzdanosti</summary>
+<p id="scoring-state"></p><button id="scoring-toggle" type="button"></button>
+<p id="last-run" class="muted"></p></details>
+<h3 data-i18n="alertsTitle">Upozorenja</h3>
+<ul id="alerts"></ul>
+<h3 data-i18n="readinessTitle">Spremnost po vrsti</h3>
+<ul id="readiness"></ul>
+<h3 data-i18n="statesTitle">Stanja primjera</h3>
+<div class="table"><table><thead><tr><th data-i18n="colName">Naziv</th><th data-i18n="kind">Vrsta</th><th data-i18n="colStates">Stanja</th></tr></thead><tbody id="states"></tbody></table></div>
 <details><summary data-i18n="importTitle">Uvoz prijedloga iz korpusa</summary><form id="import"><p data-i18n="importIntro">Učitajte pripremljenu JSONL datoteku. Novi korpus je skica dok ga ne objavite. Uvoz ne mijenja postojeće odgovore.</p><label><span data-i18n="importName">Naziv korpusa</span> <input id="name" required maxlength="200"></label><label><span data-i18n="importFile">Datoteka s prijedlozima</span> <input id="file" type="file" accept=".jsonl" hidden></label><button id="select-file" type="button" data-i18n="importSelect">Odaberi datoteku</button> <span id="file-name"></span><button id="import-button" data-i18n="importButton">Uvezi prijedloge</button><p class="muted" data-i18n="importLimits">Najviše 20.000 primjera i 32 MiB po uvozu.</p></form></details>
 <h3 data-i18n="corporaTitle">Korpusi</h3>
 <div class="table"><table><thead><tr><th data-i18n="colName">Naziv</th><th data-i18n="colStatus">Status</th><th data-i18n="colLicence">Licencija izvora / oznaka</th><th data-i18n="colItems">Primjeri</th><th data-i18n="colActions">Radnje</th></tr></thead><tbody id="corpora"></tbody></table></div>
-<h3 data-i18n="annotatorsTitle">Označivači</h3>
-<div class="table"><table><thead><tr><th data-i18n="colAnnotator">Oznaka / e-pošta</th><th data-i18n="colStatus">Status</th><th data-i18n="colJudgments">Odgovori</th><th data-i18n="colSeen">Zadnji put</th><th data-i18n="colActions">Radnje</th></tr></thead><tbody id="annotators"></tbody></table></div>
-<button id="annotators-more" type="button" hidden data-i18n="more">Učitaj još</button>
 <h3 data-i18n="erasuresTitle">Zahtjevi za brisanje</h3>
 <p class="muted" data-i18n="erasuresHelp">U konzoli za administraciju Keycloaka potražite korisnika po ID-u i izbrišite ga, zatim potvrdite ovdje. Rok je 30 dana od zahtjeva.</p>
 <ul id="erasures"></ul>
+</div>
+
+<div id="tab-people" class="tab" role="tabpanel" hidden>
+<div class="table"><table><thead><tr><th data-i18n="colAnnotator">Oznaka / e-pošta</th><th data-i18n="colStatus">Status</th><th data-i18n="colTiers">Razine</th><th data-i18n="colJudgments">Odgovori</th><th data-i18n="colSeen">Zadnji put</th><th data-i18n="colActions">Radnje</th></tr></thead><tbody id="annotators"></tbody></table></div>
+<button id="annotators-more" type="button" hidden data-i18n="more">Učitaj još</button>
+</div>
+
+<div id="tab-quarantine" class="tab" role="tabpanel" hidden>
+<p class="muted" data-i18n="quarantineHelp">Automatska karantena traje najdulje 14 dana; ako u tom roku ne odlučite, izračun je sam ukida. Osoba ne vidi obavijest.</p>
+<ul id="quarantine" class="cards"></ul>
+</div>
+
+<div id="tab-gold" class="tab" role="tabpanel" hidden>
+<form id="gold-import"><label><span data-i18n="goldFile">Datoteka sa zlatnim primjerima (JSONL)</span> <input id="gold-file" type="file" accept=".jsonl"></label><button id="gold-import-button" data-i18n="goldImportButton">Uvezi zlatne primjere</button></form>
+<label><span data-i18n="goldPool">Skup</span> <select id="gold-pool"><option value="" data-i18n="all">svi</option><option value="qualification" data-i18n="poolQualification">provjera znanja</option><option value="audit" data-i18n="poolAudit">skrivene provjere</option></select></label>
+<p id="gold-pools" class="muted"></p>
+<div class="table"><table><thead><tr><th data-i18n="colItem">Primjer</th><th data-i18n="kind">Vrsta</th><th data-i18n="goldPool">Skup</th><th data-i18n="colAnswer">Odgovor</th><th data-i18n="colStatus">Status</th><th data-i18n="colActions">Radnje</th></tr></thead><tbody id="gold"></tbody></table></div>
+</div>
+
+<div id="tab-disputes" class="tab" role="tabpanel" hidden>
+<label><span data-i18n="colStatus">Status</span> <select id="dispute-state"><option value="contested" data-i18n="stateContested">sporno</option><option value="needs_expert" data-i18n="stateNeedsExpert">traži stručnjaka</option><option value="provisional" data-i18n="stateProvisional">privremeno</option></select></label>
+<ul id="disputes" class="cards"></ul>
+</div>
+
+<div id="tab-trusted" class="tab" role="tabpanel" hidden>
+<form id="trusted-form"><label><span data-i18n="trustedEmail">Adresa e-pošte</span> <input id="trusted-email" type="email" maxlength="320" autocomplete="off"></label><label><span data-i18n="trustedLabel">Bilješka (najviše ime)</span> <input id="trusted-label" maxlength="100" autocomplete="off"></label><button id="trusted-add" data-i18n="trustedAdd">Dodaj na popis</button></form>
+<ul id="trusted" class="cards"></ul>
+</div>
+
+<div id="tab-scoring" class="tab" role="tabpanel" hidden>
+<p><button id="run-now" type="button" data-i18n="runNow">Pokreni izračun</button></p>
+<h3 data-i18n="calibrationTitle">Kalibracija</h3>
+<ul id="calibration"></ul>
+<h3 data-i18n="runsTitle">Izračuni</h3>
+<div class="table"><table><thead><tr><th data-i18n="colRun">Izračun</th><th data-i18n="colStatus">Status</th><th data-i18n="colCounts">Odgovori / primjeri / osobe</th><th data-i18n="colActions">Radnje</th></tr></thead><tbody id="runs"></tbody></table></div>
+<h3 data-i18n="iaaTitle">Slaganje (Krippendorffova alfa)</h3>
+<label><span data-i18n="corpus">Korpus</span> <select id="iaa-corpus"></select></label>
+<ul id="iaa"></ul>
+<details><summary data-i18n="paramsTitle">Parametri</summary>
+<label><span data-i18n="paramsJson">Parametri (JSON)</span> <textarea id="params" rows="14" spellcheck="false"></textarea></label>
+<button id="params-save" type="button" data-i18n="paramsSave">Spremi parametre</button></details>
+</div>
 </section>
 </main>
-<footer><nav aria-label="Pravne informacije" data-i18n-aria="legalMenu"><a data-doc="privacy" href="/legal/privacy.hr" data-i18n="footerPrivacy">Privatnost</a> · <a data-doc="terms" href="/legal/terms.hr" data-i18n="footerTerms">Uvjeti i licencija</a> · <a data-doc="participation" href="/legal/participation.hr" data-i18n="footerParticipation">Sudjelovanje</a> · <a data-doc="storage" href="/legal/storage.hr" data-i18n="footerStorage">Kolačići i pohrana</a> · <a href="/static/guidelines.hr.html" data-guidelines data-i18n="guidelines">Smjernice za označavanje</a></nav><p id="footer-version" class="muted"></p></footer>
+<footer><nav aria-label="Pravne informacije" data-i18n-aria="legalMenu"><a data-doc="privacy" href="/legal/privacy.hr" data-i18n="footerPrivacy">Privatnost</a> · <a data-doc="terms" href="/legal/terms.hr" data-i18n="footerTerms">Uvjeti i licencija</a> · <a data-doc="participation" href="/legal/participation.hr" data-i18n="footerParticipation">Sudjelovanje</a> · <a data-doc="storage" href="/legal/storage.hr" data-i18n="footerStorage">Kolačići i pohrana</a> · <a data-doc="trust" href="/legal/trust.hr" data-i18n="footerTrust">Pouzdanost</a> · <a href="/static/guidelines.hr.html" data-guidelines data-i18n="guidelines">Smjernice za označavanje</a></nav><p id="footer-version" class="muted"></p></footer>
 </body></html>

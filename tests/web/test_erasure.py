@@ -154,7 +154,10 @@ async def test_excluded_annotator_keeps_data_subject_rights_and_answers_are_dele
     assert r.status_code == 200
     if status == "blocked":
         assert (await api.request("GET", "/api/corpora", "bob")).status_code == 403
-    assert (await api.request("GET", "/api/me", "bob")).json()["status"] == status
+    # A quarantine is silent: the person's own view says active (4.8.2).
+    shown = (await api.request("GET", "/api/me", "bob")).json()
+    assert shown["status"] == ("blocked" if status == "blocked" else "active")
+    assert shown["status_reason"] == ("synthetic" if status == "blocked" else None)
     assert (await api.request("GET", "/api/me/export.json", "bob")).status_code == 200
     erased_rows = "SELECT count(*) FROM label_annotator WHERE status = 'erased'"
     count = (await api.sql(erased_rows)).scalar_one()

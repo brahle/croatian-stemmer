@@ -93,7 +93,7 @@ class Context:
         self.legal = LegalDocuments(settings, DOCUMENTS)
         self._accepting = None  # (value, monotonic time)
         self._serving = None  # (scoring params, monotonic time)
-        self._scheduling = None  # (trust scheduler on, monotonic time)
+        self._scheduling = {}  # corpus -> (trust scheduler on, monotonic time)
         self._readiness = {}  # kind -> (readiness, monotonic time)
         self._audit_key = None
         self.scoring_pause = None  # tests: an async callable awaited between scoring and publication
@@ -138,21 +138,22 @@ class Context:
         self._readiness[kind] = (value, now)
         return value
 
-    async def trust_scheduling(self, db) -> bool:
-        """/next uses the trust scheduler once scoring is enabled or any gold exists (5 s cache);
-        before that it keeps V1's coverage-first order with its target vote count."""
+    async def trust_scheduling(self, db, corpus_id) -> bool:
+        """/next uses the trust scheduler once scoring is enabled or the corpus has gold (5 s
+        cache); before that it keeps V1's coverage-first order with its target vote count."""
         now = time.monotonic()
-        if self._scheduling is not None and now - self._scheduling[1] < 5:
-            return self._scheduling[0]
+        cached = self._scheduling.get(corpus_id)
+        if cached is not None and now - cached[1] < 5:
+            return cached[0]
         enabled = (await db.execute(select(Setting.value).where(Setting.key == "scoring_enabled"))).scalar_one_or_none()
-        gold = (await db.execute(select(Gold.item_id).limit(1))).first() is not None
-        self._scheduling = (enabled is True or gold, now)
-        return self._scheduling[0]
+        gold = (await db.execute(select(Gold.item_id).where(Gold.corpus_id == corpus_id).limit(1))).first() is not None
+        self._scheduling[corpus_id] = (enabled is True or gold, now)
+        return self._scheduling[corpus_id][0]
 
     def forget_settings(self):
         self._accepting = None
         self._serving = None
-        self._scheduling = None
+        self._scheduling = {}
         self._readiness = {}
 
     def consent_missing(self):

@@ -46,4 +46,5 @@ async def test_gold_and_other_items_have_one_shape(fresh_api):
     for judgment in export["judgments"]:
         assert set(judgment) == {"id", "corpus_id", "item_id", "revision", "answer", "lemma", "irregular",
                                  "item_revision", "client_version", "source", "elapsed_ms", "created_at",
-                                 "presentation"}
+                                 "presentation", "checked_against_known_answer"}
+        assert judgment["checked_against_known_answer"] is False  # active gold is never marked

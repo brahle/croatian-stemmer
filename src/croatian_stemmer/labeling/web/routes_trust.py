@@ -569,3 +569,25 @@ def register(app, ctx):
             if waiting:
                 found.append({"code": "erasures_waiting", "count": waiting})
         return {"items": found}
+
+    @app.get("/api/admin/overview")
+    async def overview(caller: Caller = Depends(curator), db=Depends(session)):
+        """The dashboard's first tab: per corpus and kind the queue's state counts, readiness per
+        kind, the gold pools, and the latest run with its calibration cells."""
+        async with db.begin():
+            params = await scoring_params(db)
+            enabled = (await db.execute(select(Setting.value).where(Setting.key == "scoring_enabled"))).scalar_one_or_none()
+            counts = (await db.execute(text("""
+                SELECT c.id, c.name, s.kind, s.state, count(*) FROM label_corpus c
+                JOIN label_item_state s ON s.corpus_id = c.id WHERE c.status <> 'archived'
+                GROUP BY c.id, c.name, s.kind, s.state ORDER BY c.name, c.id, s.kind, s.state"""))).all()
+            ready = {kind: await live_readiness(db, params, kind) for kind in ("pair", "lemma", "stem")}
+            run = (await db.execute(select(ScoringRun).where(ScoringRun.status == "done")
+                                    .order_by(ScoringRun.finished_at.desc()).limit(1))).scalar_one_or_none()
+            last = run_json(run, await stale(db, run.watermark), full=True) if run else None
+        corpora = {}
+        for corpus_id, name, kind, state, n in counts:
+            entry = corpora.setdefault(str(corpus_id), {"id": str(corpus_id), "name": name, "kinds": {}})
+            entry["kinds"].setdefault(kind, {})[state] = n
+        return {"scoring_enabled": enabled is True, "readiness": ready, "corpora": list(corpora.values()),
+                "last_run": last}
