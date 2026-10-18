@@ -5,7 +5,7 @@ import hashlib
 import pytest
 pytest.importorskip("sqlalchemy")
 pytest.importorskip("asyncpg")
-from labeling_support import answer, answer_path, candidates, make_anchor, profiled, score_now, unlimited
+from labeling_support import answer, answer_path, candidates, make_anchor, profiled, score_now, unlimited, unseeded
 
 pytestmark = pytest.mark.asyncio
 
@@ -62,9 +62,10 @@ async def test_adding_someone_already_signed_in_grants_at_once(fresh_api):
 
 async def test_after_revocation_the_next_run_drops_the_anchor_tier(fresh_api):
     api = unlimited(await fresh_api())
-    rows = await api.imported(candidates(pairs=3))
+    rows = await api.imported(candidates(pairs=12))
     owner = await make_anchor(api, "owner")
-    pair = rows[0]
+    # Not a keyed sample: there the owner's answer would be a reference check, not a vote.
+    pair = (await unseeded(api, [r for r in rows if r["kind"] == "pair"]))[0]
     for name in ("owner", "a", "b"):
         await profiled(api, name)
         assert (await api.request("POST", answer_path(pair), name, json=answer())).status_code == 200

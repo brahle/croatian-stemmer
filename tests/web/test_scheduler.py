@@ -1,5 +1,6 @@
 """The scheduler (4.9.1, 4.9.3): no repeats, capacity, spread, the least-resolved corpus,
 the keyed qualification-then-audit sequence, and speed at 50k items."""
+import gc
 import time
 from uuid import uuid4
 
@@ -121,11 +122,15 @@ async def test_next_is_fast_at_50k_items(fresh_api):
     headers = api.headers("alice")  # signed once: the client's own token signing is not server time
     for _ in range(5):  # warm the connection pool and the caches
         await api.client.get(f"/api/corpora/{corpus}/next", headers=headers)
+    # The test process carries the whole suite's heap; keep its collector out of the measurement.
+    gc.collect()
+    gc.freeze()
     times = []
     for _ in range(100):
         start = time.perf_counter()
         r = await api.client.get(f"/api/corpora/{corpus}/next", headers=headers)
         times.append(time.perf_counter() - start)
         assert r.status_code == 200 and r.json()["item"] is not None
+    gc.unfreeze()
     times.sort()
     assert times[int(len(times) * 0.95)] < 0.05, (times[len(times) // 2], times[-5:])
