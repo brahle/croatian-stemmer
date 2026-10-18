@@ -288,7 +288,7 @@ async def warn_overdue_erasures(ctx, days=14):
 
 # Every migration revision this code knows, oldest first (tests compare it with migrations/versions).
 SCHEMA_REVISIONS = ("001_labeling", "002_shared_corpus", "002a_v1_followups", "003_trust", "004_two_vote_params",
-                    "005_gold_reserve")
+                    "005_gold_reserve", "006_lexicon_provenance")
 
 
 async def check_schema(engine):

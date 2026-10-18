@@ -137,4 +137,4 @@ def test_004_on_an_empty_database(scratch_database):
     assert alembic(url, "upgrade", "head").returncode == 0
     # 003 already stores the current defaults; 004 has nothing to do.
     assert valid(url) == validate_params(DEFAULT_PARAMS) and events(url) == []
-    assert query(url, "SELECT version_num FROM alembic_version")[0][0] == "005_gold_reserve"
+    assert query(url, "SELECT version_num FROM alembic_version")[0][0] == "006_lexicon_provenance"

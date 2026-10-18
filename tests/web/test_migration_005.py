@@ -49,7 +49,7 @@ def test_005_downgrade_refuses_while_reserve_items_exist(scratch_database, monke
     url = scratch_database
     assert alembic(url, "upgrade", "004_two_vote_params").returncode == 0
     plain, reserve = seed(url, gold=True)
-    assert alembic(url, "upgrade", "head").returncode == 0
+    assert alembic(url, "upgrade", "005_gold_reserve").returncode == 0
     refused = alembic(url, "downgrade", "004_two_vote_params")
     assert refused.returncode != 0 and "LABELING_MIGRATION_RETIRE_RESERVE" in refused.stderr
     assert query(url, "SELECT version_num FROM alembic_version")[0][0] == "005_gold_reserve"
@@ -82,10 +82,26 @@ def test_the_schema_guard_knows_every_migration():
 async def test_the_app_refuses_a_schema_newer_than_it_knows(fresh_api):
     from croatian_stemmer.labeling.web.api import check_schema
     api = await fresh_api()
-    assert await check_schema(api.app.state.engine) == "005_gold_reserve"
+    assert await check_schema(api.app.state.engine) == "006_lexicon_provenance"
     await api.sql("UPDATE alembic_version SET version_num = '999_future'")
     with pytest.raises(RuntimeError, match="999_future"):
         await check_schema(api.app.state.engine)
     with pytest.raises(RuntimeError, match="does not know"):
         async with api.app.router.lifespan_context(api.app):
             pass
+
+
+def test_006_adds_lexicon_provenance_and_refuses_to_drop_it(scratch_database):
+    url = scratch_database
+    assert alembic(url, "upgrade", "head").returncode == 0
+    owner = uuid4()
+    query(url, f"""
+        INSERT INTO label_annotator (id, subject, status) VALUES ('{owner}', 'so', 'active');
+        INSERT INTO label_corpus (id, name, sha256, source_uri, license, lexicon_uri, lexicon_license, created_by)
+          VALUES ('{uuid4()}', 'w', '{"b" * 64}', 'urn:text', 'CC0 1.0', 'urn:lexicon', 'CC BY-SA 4.0',
+                  '{owner}');""", script=True)
+    refused = alembic(url, "downgrade", "005_gold_reserve")
+    assert refused.returncode != 0 and "lexicon provenance" in refused.stderr
+    query(url, "DELETE FROM label_corpus")
+    assert alembic(url, "downgrade", "005_gold_reserve").returncode == 0
+    assert alembic(url, "upgrade", "head").returncode == 0

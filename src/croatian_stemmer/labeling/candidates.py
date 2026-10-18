@@ -173,9 +173,12 @@ def private_seed(value=None) -> str:
 class Records:
     """Candidate rows of one corpus in the versioned candidate schema (v1)."""
 
-    def __init__(self, *, corpus_id, corpus_sha256, source_uri, license):
-        self.base = {"candidate_schema_version": 1, "corpus_id": corpus_id, "corpus_sha256": corpus_sha256,
-                     "source_uri": source_uri, "license": license}
+    def __init__(self, *, corpus_id, corpus_sha256, source_uri, license, lexicon=None):
+        """lexicon: (source URI, licence) of the lexicon behind the suggestions (schema 2)."""
+        self.base = {"candidate_schema_version": 2 if lexicon else 1, "corpus_id": corpus_id,
+                     "corpus_sha256": corpus_sha256, "source_uri": source_uri, "license": license}
+        if lexicon:
+            self.base.update({"lexicon_uri": lexicon[0], "lexicon_license": lexicon[1]})
         self.corpus_id = corpus_id
         self.algorithm = algorithm_sha256()
 
@@ -196,7 +199,9 @@ class Records:
                 "proposed_stem": proposed_stem, "upos": left.upos,
                 "context": left.context, "other_context": right.context if right else "",
                 "word_ref": left.ref, "other_word_ref": right.ref if right else "",
-                "sampling_stratum": stratum, "algorithm_sha256": self.algorithm}
+                "sampling_stratum": stratum, "algorithm_sha256": self.algorithm,
+                **({"lexicon_uri": self.base["lexicon_uri"], "lexicon_license": self.base["lexicon_license"]}
+                   if "lexicon_uri" in self.base else {})}
 
 
 def sample(tokens, records: Records, *, pair_count, word_count, rng, prefix="", word_strata=None):

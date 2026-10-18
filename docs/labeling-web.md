@@ -587,6 +587,10 @@ The application is one stateless container plus a PostgreSQL database:
   item (no version serves a retired item) and its active gold (`gold.retired`, reason
   `rollback`), then drops the column. A later upgrade does not reactivate them;
   prepare a new reserve.
+- Migration 006 (0.4.0) adds `label_corpus.lexicon_uri` and `lexicon_license`
+  (nullable): the lexicon behind a raw-text corpus's suggestions (candidate schema 2,
+  `from-text`). Publishing takes the stricter of the source and lexicon licences. Its
+  downgrade refuses while a corpus has a lexicon.
 - From 0.3.4 the app refuses to start on a database whose schema revision it does not
   know (one migrated by a newer version), so a rollback can never silently ignore a
   newer safety column: downgrade with the newer image first.

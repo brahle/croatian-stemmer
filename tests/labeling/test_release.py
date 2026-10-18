@@ -204,3 +204,21 @@ def test_a_wikipedia_source_gets_its_attribution_in_the_dataset_card(tmp_path):
     assert "written by Wikipedia contributors" in card and "permanent link to the article revision" in card
     assert "licensed CC BY-SA 4.0" in card and "Changes:" in card
     check(tmp_path / "wiki", path)
+
+
+
+def test_a_lexicon_is_attributed_and_its_licence_enforced(tmp_path):
+    plain = export(tmp_path, [item([("established", "same", E)] * 3)], name="plain.jsonl")
+    text = plain.read_text(encoding="utf-8").replace(
+        '"license": "CC BY-SA 4.0", "labels_license"',
+        '"license": "CC0 1.0", "lexicon_uri": "urn:test:lexicon", "lexicon_license": "CC BY-SA 4.0", "labels_license"')
+    path = tmp_path / "lexicon.jsonl"
+    path.write_text(text, encoding="utf-8")
+    build(path, tmp_path / "ok")
+    card = (tmp_path / "ok" / "dataset-card.md").read_text(encoding="utf-8")
+    assert "come from the lexicon urn:test:lexicon, licence CC BY-SA 4.0" in card
+    weaker = tmp_path / "weaker.jsonl"
+    weaker.write_text(text.replace('"labels_license": "CC BY-SA 4.0"', '"labels_license": "CC0 1.0"'),
+                      encoding="utf-8")
+    with pytest.raises(ValueError, match="not allowed by the source"):
+        build(weaker, tmp_path / "weaker")

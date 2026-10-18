@@ -31,11 +31,18 @@ class Candidate(BaseModel):
     other_word_ref: StrictStr = Field(max_length=512)
     sampling_stratum: StrictStr = Field(min_length=1, max_length=128)
     algorithm_sha256: StrictStr = Field(pattern=r"^[0-9a-f]{64}$")
+    # Schema 2 (from-text): the lexicon the lemma and POS suggestions come from, whose licence
+    # binds the labels too. Schema 1 (a lemmatised corpus suggests its own lemmas) has none.
+    lexicon_uri: StrictStr | None = Field(default=None, min_length=1, max_length=2048)
+    lexicon_license: StrictStr | None = Field(default=None, min_length=1, max_length=512)
 
     @model_validator(mode="after")
     def valid_candidate(self):
-        if self.candidate_schema_version != 1:
+        if self.candidate_schema_version not in (1, 2):
             raise ValueError("unsupported candidate schema")
+        if (self.candidate_schema_version == 2) != (self.lexicon_uri is not None) or \
+                (self.lexicon_uri is None) != (self.lexicon_license is None):
+            raise ValueError("schema 2 needs the lexicon's source and licence; schema 1 has none")
         for field in ("word", "proposed_lemma"):
             if word(getattr(self, field), field) != getattr(self, field):
                 raise ValueError("suggestions must be normalized")
@@ -61,6 +68,11 @@ class Candidate(BaseModel):
                           other_word_ref=self.other_word_ref, answer=answer, lemma=lemma, irregular=irregular)
 
     @property
+    def provenance(self):
+        return (self.corpus_id, self.corpus_sha256, self.source_uri, self.license, self.lexicon_uri,
+                self.lexicon_license)
+
+    @property
     def question(self):
         return (self.kind, self.word, self.other_word, self.proposed_stem, self.upos,
                 self.context, self.other_context, self.word_ref, self.other_word_ref)
@@ -76,10 +88,10 @@ class ImportRequest(BaseModel):
         if not self.name.strip():
             raise ValueError("name required")
         first = self.candidates[0]
-        identity = first.corpus_id, first.corpus_sha256, first.source_uri, first.license
+        identity = first.provenance
         seen = {}
         for row in self.candidates:
-            if (row.corpus_id, row.corpus_sha256, row.source_uri, row.license) != identity:
+            if row.provenance != identity:
                 raise ValueError("import must contain one corpus with consistent provenance")
             if row.item_id in seen and seen[row.item_id] != row.model_dump():
                 raise ValueError("duplicate item id with different content")

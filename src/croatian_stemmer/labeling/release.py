@@ -19,6 +19,7 @@ from datetime import date
 from pathlib import Path
 
 from .candidates import is_reserve
+from .licenses import allowed
 from .scoring import OTHER, corpus_params, krippendorff_alpha, release_rule
 
 FILES = ("labels.tsv", "summary.tsv", "dataset-card.md", "params.json", "CHECKSUMS")
@@ -109,6 +110,9 @@ def build(export: Path, output: Path, released_on: date | None = None):
     run, corpus, items = read_export(export)
     if not run.get("pinned") or run.get("stale"):
         raise ValueError("a release is built from a pinned run that is not stale")
+    if corpus.get("labels_license") not in allowed(corpus["license"], corpus.get("lexicon_license")):
+        raise ValueError(f"labels licence {corpus.get('labels_license')!r} is not allowed by the source "
+                         f"({corpus['license']}) and lexicon ({corpus.get('lexicon_license')}) licences")
     output.mkdir(parents=True, exist_ok=False)
     released_on = released_on or date.today()
     rows = [item for item in items if releasable(item)]
@@ -170,9 +174,14 @@ def attribution(corpus) -> str:
     """The attribution a Wikimedia source asks for (CC BY-SA 4.0 section 3(a)): the authors,
     a link to the material and a statement of the changes. Rows from `from-text` carry a
     permanent link to the article revision in word_ref/other_word_ref."""
+    text = ""
+    if corpus.get("lexicon_uri"):
+        text += (f"\nThe lemma and part-of-speech suggestions (`proposed_lemma`, `other_proposed_lemma`, "
+                 f"`upos`) come from the lexicon {corpus['lexicon_uri']}, licence {corpus['lexicon_license']}; "
+                 "the labels are an adaptation of it too, and the labels licence is one both allow.")
     if not WIKIMEDIA.match(corpus.get("source_uri") or ""):
-        return ""
-    return ("\nThe sentences are from Wikipedia articles, written by Wikipedia contributors. Each row's "
+        return text
+    return text + ("\nThe sentences are from Wikipedia articles, written by Wikipedia contributors. Each row's "
             "`word_ref` and `other_word_ref` is a permanent link to the article revision a sentence comes "
             "from; its history lists the authors. Changes: wiki markup was removed and the text was split "
             "into sentences; the sentences are otherwise unchanged.")

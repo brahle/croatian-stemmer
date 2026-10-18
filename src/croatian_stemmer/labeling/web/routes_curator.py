@@ -75,10 +75,12 @@ def register(app, ctx):
         async with db.begin():
             await db.execute(insert(Corpus).values(id=first.corpus_id, name=data.name, sha256=first.corpus_sha256,
                                                    source_uri=first.source_uri, license=first.license,
+                                                   lexicon_uri=first.lexicon_uri, lexicon_license=first.lexicon_license,
                                                    created_by=caller.id)
                              .on_conflict_do_nothing(index_elements=[Corpus.id]))
             corpus = await locked_corpus(db, first.corpus_id)
-            if (corpus.sha256, corpus.source_uri, corpus.license) != (first.corpus_sha256, first.source_uri, first.license):
+            if (corpus.sha256, corpus.source_uri, corpus.license, corpus.lexicon_uri, corpus.lexicon_license) != (
+                    first.corpus_sha256, first.source_uri, first.license, first.lexicon_uri, first.lexicon_license):
                 raise failure(409, "corpus_provenance_conflict")
             existing = set()
             ids = list(unique)
@@ -96,7 +98,7 @@ def register(app, ctx):
                 if item_id in existing:
                     continue
                 batch.append({"corpus_id": corpus.id, "id": item_id, "ordinal": ordinal + added,
-                              "kind": candidate.kind, "payload": candidate.model_dump(mode="json")})
+                              "kind": candidate.kind, "payload": candidate.model_dump(mode="json", exclude_none=True)})
                 added += 1
                 if len(batch) == 1000:
                     await db.execute(insert(Item), batch)
@@ -112,7 +114,8 @@ def register(app, ctx):
     async def publish(corpus_id: UUID, data: PublishRequest, caller: Caller = Depends(curator), db=Depends(session)):
         async with db.begin():
             corpus = await locked_corpus(db, corpus_id)
-            permitted = allowed(corpus.license)
+            # The labels carry the sentences (source licence) and, from a lexicon, its suggestions.
+            permitted = allowed(corpus.license, corpus.lexicon_license)
             if data.labels_license not in permitted:
                 raise failure(409, "license_not_publishable", source_license=corpus.license, allowed=list(permitted))
             if corpus.status == "published":

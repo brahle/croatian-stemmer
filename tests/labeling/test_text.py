@@ -13,6 +13,8 @@ from croatian_stemmer.labeling.text import (Documents, croatian, from_text, lexi
                                              wikitext_paragraphs)
 
 FIXTURE = Path(__file__).parent / "fixtures" / "synthetic-wiki.xml"
+LEX = {"lexicon_uri": "urn:test:lexicon", "lexicon_license": "CC BY-SA 4.0"}
+LEX_ARGS = ["--lexicon-source-uri", "urn:test:lexicon", "--lexicon-license", "CC BY-SA 4.0"]
 
 LEXICON = [  # (form, lemma, upos) of a tiny synthetic lexicon
     ("kuća", "kuća", "NOUN"), ("kuće", "kuća", "NOUN"), ("kući", "kuća", "NOUN"), ("kućama", "kuća", "NOUN"),
@@ -80,7 +82,7 @@ def test_dump_pages_skip_redirects_other_namespaces_and_disambiguation(tmp_path)
 
 
 def test_wikipedia_candidates_carry_licence_attribution_and_lexicon_suggestions(lexicon_file, tmp_path):
-    rows, receipt = from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], pair_count=6, word_count=4, seed=1)
+    rows, receipt = from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], **LEX, pair_count=6, word_count=4, seed=1)
     assert receipt["license"] == "CC BY-SA 4.0" and receipt["source_uri"] == "https://dumps.wikimedia.org/hrwiki/"
     assert receipt["format"] == "mediawiki" and receipt["human_judgments"] == 0 and "no ground truth" in receipt["gold"]
     known = {form: (lemma, upos) for form, lemma, upos in LEXICON}
@@ -91,10 +93,11 @@ def test_wikipedia_candidates_carry_licence_attribution_and_lexicon_suggestions(
         assert row["word"] not in ("ivan", "horvat")  # names (and PROPN) never become items
         assert row["word"] in row["context"].lower() and "@" not in row["context"]
         assert "Stranica o kućama" not in row["context"]  # an external link's label is no sentence
-        assert row["license"] == "CC BY-SA 4.0" and row["candidate_schema_version"] == 1
+        assert row["license"] == "CC BY-SA 4.0" and row["candidate_schema_version"] == 2
+        assert (row["lexicon_uri"], row["lexicon_license"]) == ("urn:test:lexicon", "CC BY-SA 4.0")
     assert {r["kind"] for r in rows} == {"pair", "lemma", "stem"}
     assert len({r["item_id"] for r in rows}) == len(rows)
-    assert from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], pair_count=6, word_count=4, seed=1) == (rows,
+    assert from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], **LEX, pair_count=6, word_count=4, seed=1) == (rows,
                                                                                                          receipt)
 
 
@@ -109,8 +112,8 @@ def test_plain_text_needs_provenance_and_filters_names_rare_and_foreign_words(le
                                     "Pišite na ime@example.org za kuće.\n", encoding="utf-8")
     (folder / "skip.md").write_text("Ovo se ne čita.", encoding="utf-8")
     with pytest.raises(ValueError, match="source URI and license"):
-        from_text([str(folder)], lexicon_paths=[lexicon_file], pair_count=2, word_count=2)
-    rows, receipt = from_text([str(folder)], lexicon_paths=[lexicon_file], source_uri="urn:test:text",
+        from_text([str(folder)], lexicon_paths=[lexicon_file], **LEX, pair_count=2, word_count=2)
+    rows, receipt = from_text([str(folder)], lexicon_paths=[lexicon_file], **LEX, source_uri="urn:test:text",
                               license="CC BY 4.0", pair_count=4, word_count=3, min_count=2)
     assert receipt["format"] == "text" and receipt["inputs"] == 2 and receipt["files"] == 2
     words = {r["word"] for r in rows} | {r["other_word"] for r in rows} - {""}
@@ -119,7 +122,7 @@ def test_plain_text_needs_provenance_and_filters_names_rare_and_foreign_words(le
     assert all(r["word_ref"].split("#")[0] in ("a/jedan.txt", "dva.txt") for r in rows)
     assert receipt["tokens_not_croatian_alphabet"] >= 1 and receipt["forms_below_min_count"] >= 1
     # Several inputs: the corpus hash is over their names and hashes, so it is stable.
-    again, _ = from_text([str(folder)], lexicon_paths=[lexicon_file], source_uri="urn:test:text",
+    again, _ = from_text([str(folder)], lexicon_paths=[lexicon_file], **LEX, source_uri="urn:test:text",
                          license="CC BY 4.0", pair_count=4, word_count=3)
     assert again == rows
 
@@ -131,7 +134,7 @@ def test_word_items_are_spread_over_frequency_bands(lexicon_file, tmp_path):
                     + [f"Grade kuće danas, broj {n}." for n in range(3)])
     path = tmp_path / "t.txt"
     path.write_text(text, encoding="utf-8")
-    rows, receipt = from_text([str(path)], lexicon_paths=[lexicon_file], source_uri="urn:test:bands",
+    rows, receipt = from_text([str(path)], lexicon_paths=[lexicon_file], **LEX, source_uri="urn:test:bands",
                               license="CC0 1.0", pair_count=1, word_count=3)
     bands = Counter(r["sampling_stratum"] for r in rows if r["kind"] == "lemma")
     assert bands == {"text_word_band_100-999": 1, "text_word_band_5-19": 1, "text_word_band_2-4": 1}
@@ -140,17 +143,17 @@ def test_word_items_are_spread_over_frequency_bands(lexicon_file, tmp_path):
 
 def test_from_text_command_and_stdin(lexicon_file, tmp_path, capsys, monkeypatch):
     out = tmp_path / "candidates.jsonl"
-    main(["from-text", str(FIXTURE), "--lexicon", str(lexicon_file), "--pairs", "4", "--word-items", "2",
+    main(["from-text", str(FIXTURE), "--lexicon", str(lexicon_file), *LEX_ARGS, "--pairs", "4", "--word-items", "2",
           "--source-uri", "https://dumps.wikimedia.org/hrwiki/20261001/", "--output", str(out)])
     receipt = json.loads(capsys.readouterr().out)
     rows = [json.loads(line) for line in out.read_text(encoding="utf-8").splitlines()]
     assert receipt["prepared_pairs"] == sum(r["kind"] == "pair" for r in rows) and rows
     assert {r["source_uri"] for r in rows} == {"https://dumps.wikimedia.org/hrwiki/20261001/"}
     with pytest.raises(SystemExit):  # never overwrites
-        main(["from-text", str(FIXTURE), "--lexicon", str(lexicon_file), "--output", str(out)])
+        main(["from-text", str(FIXTURE), "--lexicon", str(lexicon_file), *LEX_ARGS, "--output", str(out)])
     monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(
         "Ljudi žive u gradu. Ljudi grade kuće u gradu. Ljudi žive u kućama.".encode())))
-    main(["from-text", "-", "--lexicon", str(lexicon_file), "--source-uri", "urn:test:stdin", "--license",
+    main(["from-text", "-", "--lexicon", str(lexicon_file), *LEX_ARGS, "--source-uri", "urn:test:stdin", "--license",
           "CC0 1.0", "--pairs", "1", "--word-items", "1", "--output", str(tmp_path / "stdin.jsonl")])
     assert json.loads(capsys.readouterr().out)["inputs"] == 1
 
@@ -164,7 +167,7 @@ def test_lexicon_takes_each_forms_most_frequent_analysis(tmp_path):
 
 def test_mwparserfromhell_parser_when_installed(lexicon_file):
     pytest.importorskip("mwparserfromhell")
-    rows, receipt = from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], pair_count=4, word_count=2,
+    rows, receipt = from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], **LEX, pair_count=4, word_count=2,
                               parser="mwparserfromhell")
     assert receipt["parser"] == "mwparserfromhell" and rows
     assert all("tablični" not in r["context"] for r in rows)
@@ -172,8 +175,43 @@ def test_mwparserfromhell_parser_when_installed(lexicon_file):
 
 def test_gold_refuses_raw_text_candidates(lexicon_file, tmp_path):
     from croatian_stemmer.labeling.gold import build
-    rows, _ = from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], pair_count=2, word_count=1)
+    rows, _ = from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], **LEX, pair_count=2, word_count=1)
     candidates = tmp_path / "c.jsonl"
     candidates.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     with pytest.raises(ValueError, match="no ground truth"):
         build(FIXTURE, candidates)
+
+
+def test_the_lexicon_licence_binds_the_labels(lexicon_file, tmp_path):
+    path = tmp_path / "t.txt"
+    path.write_text("Ljudi žive u gradu. Ljudi grade kuće u gradu. Ljudi žive u kućama.", encoding="utf-8")
+    common = dict(lexicon_paths=[lexicon_file], source_uri="urn:test:cc0", pair_count=2, word_count=1)
+    _, receipt = from_text([str(path)], license="CC0 1.0", **common, **LEX)
+    assert receipt["labels_licenses"] == ["CC BY-SA 4.0"]  # CC0 text, CC BY-SA lexicon: share-alike
+    _, receipt = from_text([str(path)], license="CC0 1.0", **common, lexicon_uri="urn:test:lexicon",
+                           lexicon_license="CC0 1.0")
+    assert receipt["labels_licenses"] == ["CC0 1.0", "CC BY 4.0", "CC BY-SA 4.0"]
+    with pytest.raises(ValueError, match="no labels licence"):
+        from_text([str(path)], license="CC BY-NC 4.0", **common, **LEX)
+    with pytest.raises(ValueError, match="source URI and license"):
+        from_text([str(path)], license="CC0 1.0", **common, lexicon_uri="", lexicon_license="CC BY-SA 4.0")
+
+
+def test_a_wikipedia_dump_is_always_share_alike(lexicon_file):
+    for wrong in ("CC0 1.0", "CC BY 4.0", "CC BY-NC-SA 4.0"):
+        with pytest.raises(ValueError, match="CC BY-SA text"):
+            from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], license=wrong, pair_count=2, word_count=1,
+                      **LEX)
+    _, receipt = from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], license="CC BY-SA 4.0", pair_count=2,
+                           word_count=1, **LEX)
+    assert receipt["license"] == "CC BY-SA 4.0"
+
+
+def test_each_run_is_its_own_corpus(lexicon_file):
+    def corpus(**options):
+        kwargs = {"pair_count": 4, "word_count": 2, **options}
+        return from_text([str(FIXTURE)], lexicon_paths=[lexicon_file], **LEX, **kwargs)[1]["corpus_id"]
+    base = corpus()
+    assert corpus() == base
+    others = {corpus(seed=1), corpus(pair_count=5), corpus(word_count=3), corpus(min_count=3), corpus(max_pages=1)}
+    assert base not in others and len(others) == 5

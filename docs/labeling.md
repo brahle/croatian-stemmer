@@ -87,6 +87,7 @@ UTF-8), `-` for standard input, or a MediaWiki XML export such as a Wikipedia du
 
 ```sh
 croatian-stemmer-labels from-text TEXT_OR_DUMP... --lexicon path/to/hr500k.conllup \
+  --lexicon-source-uri http://hdl.handle.net/11356/1792 --lexicon-license 'CC BY-SA 4.0' \
   [--source-uri URI --license LICENCE] [--pairs 10000] [--word-items 1000] \
   [--min-count 2] [--seed 0] [--parser builtin|mwparserfromhell] [--max-pages N] \
   --output candidates.jsonl
@@ -125,22 +126,32 @@ How it works:
   (`text_corpus_same_lemma_suggestion`, `text_word_band_5-19`, ...), so a raw-text corpus
   never shares an estimated class prior with a lemmatised one.
 - **Identity.** `corpus_sha256` is the SHA-256 of the input file as given (the
-  compressed dump), or of the sorted list of names and hashes of several inputs. Item
-  ids are stable for the same input, options and seed. `word_ref` names the occurrence:
+  compressed dump), or of the sorted list of names and hashes of several inputs. The
+  corpus id covers that hash and every option that changes the items (`--seed`,
+  `--pairs`, `--word-items`, `--min-count`, `--max-pages`, `--parser`, the format and the
+  lexicon hashes), so two different runs over one file import as two corpora, never as a
+  mix in one. Item ids are stable for the same input and options. `word_ref` names the occurrence:
   for a dump, a permanent link to the article revision plus a sentence and word
   number, for example `https://hr.wikipedia.org/w/index.php?oldid=7244060#s20.w9`; for
   a text file, its path relative to the directory given, plus the same numbers.
 
-Provenance and licence: plain text needs `--source-uri` and `--license`. For a dump the
-licence defaults to `CC BY-SA 4.0` (Wikipedia's text licence) and the source URI to
-`https://dumps.wikimedia.org/<dbname>/`; pass the dated dump URL instead. A CC BY-SA
-source can only be published under CC BY-SA labels: the web app refuses any other
-labels licence (409 `license_not_publishable`), which keeps share-alike. Attribution
+Provenance and licence: plain text needs `--source-uri` and `--license`. A dump is CC
+BY-SA text: its licence is `CC BY-SA 4.0` and any other `--license` is refused. Its source
+URI defaults to `https://dumps.wikimedia.org/<dbname>/`; pass the dated dump URL instead.
+The suggestions come from the lexicon, so its provenance travels too:
+`--lexicon-source-uri` and `--lexicon-license` are required and every row carries them
+(candidate schema 2: `lexicon_uri`, `lexicon_license`). Labels may only be published under
+a licence both the text and the lexicon allow (the stricter wins: CC0 text with the CC
+BY-SA hr500k lexicon publishes only under CC BY-SA); the command refuses a combination no
+labels licence satisfies, the receipt lists the allowed ones, and the web app refuses any
+other (409 `license_not_publishable`), which keeps share-alike. Attribution
 travels with every row: each context's `word_ref` and `other_word_ref` link to the
 revision whose history lists its authors. When the source URI is a Wikimedia or
 Wikipedia address, `release` adds to the dataset card that the sentences are by
 Wikipedia contributors, where the links lead, and what was changed (markup removed,
-text split into sentences).
+text split into sentences). For a corpus with a lexicon it names the lexicon and its
+licence, and `release` refuses a labels licence that the source or the lexicon does not
+allow.
 
 **No gold from raw text.** Text without annotation has no ground truth, so `gold`
 cannot build known-answer items for such a corpus, and `from-text` reports
@@ -169,7 +180,8 @@ date in the source URI:
 
 ```sh
 croatian-stemmer-labels from-text data/hrwiki/hrwiki-latest-pages-articles.xml.bz2 \
-  --lexicon data/hr500k.conllup --source-uri https://dumps.wikimedia.org/hrwiki/20261001/ \
+  --lexicon data/hr500k.conllup --lexicon-source-uri http://hdl.handle.net/11356/1792 \
+  --lexicon-license 'CC BY-SA 4.0' --source-uri https://dumps.wikimedia.org/hrwiki/20261001/ \
   --pairs 8000 --word-items 1000 --output hrwiki-candidates.jsonl
 ```
 

@@ -38,9 +38,13 @@ def main(argv=None):
                                                  "or a MediaWiki dump (.xml or .xml.bz2)")
     text_.add_argument("--lexicon", required=True, type=Path, action="append",
                        help="a lemmatised CoNLL-U corpus giving each form's lemma and POS suggestion; repeatable")
+    text_.add_argument("--lexicon-source-uri", required=True,
+                       help="where the lexicon comes from (attribution), e.g. its repository record")
+    text_.add_argument("--lexicon-license", required=True, help="the lexicon's licence, e.g. 'CC BY-SA 4.0'")
     text_.add_argument("--source-uri", help="required for plain text; for a dump, default "
                                             "https://dumps.wikimedia.org/<dbname>/ (give the dated dump URL)")
-    text_.add_argument("--license", help="required for plain text; for a dump, default CC BY-SA 4.0")
+    text_.add_argument("--license", help="required for plain text; a dump is CC BY-SA 4.0 (the default; no "
+                                         "other licence is accepted for it)")
     text_.add_argument("--format", choices=("auto", "text", "mediawiki"), default="auto")
     text_.add_argument("--parser", choices=("builtin", "mwparserfromhell"), default="builtin",
                        help="wikitext parser; mwparserfromhell needs the `wiki` extra")
@@ -109,7 +113,9 @@ def main(argv=None):
             # Open the output first: never overwrite, and fail before a long run.
             with args.output.open("x", encoding="utf-8") as handle:
                 try:
-                    records, receipt = from_text(args.inputs, lexicon_paths=args.lexicon, source_uri=args.source_uri,
+                    records, receipt = from_text(args.inputs, lexicon_paths=args.lexicon,
+                                                 lexicon_uri=args.lexicon_source_uri,
+                                                 lexicon_license=args.lexicon_license, source_uri=args.source_uri,
                                                  license=args.license, pair_count=args.pairs,
                                                  word_count=args.word_items, seed=args.seed,
                                                  min_count=args.min_count, wikipedia=wikipedia, parser=args.parser,

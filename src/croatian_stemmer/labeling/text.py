@@ -13,6 +13,7 @@ import bz2
 import hashlib
 import html
 import io
+import json
 import random
 import re
 import sys
@@ -25,6 +26,7 @@ from xml.etree.ElementTree import iterparse
 from croatian_stemmer.rules import STOP_WORDS
 
 from .candidates import Records, Token, _check_provenance, occurrences, reservoir, sample
+from .licenses import allowed, family
 from .schema import normalized
 
 PREFIX = "text_"
@@ -338,9 +340,15 @@ def lexicon(paths):
 # ---- candidates ------------------------------------------------------------------------
 
 
-def from_text(inputs, *, lexicon_paths, source_uri=None, license=None, pair_count=10000, word_count=1000,
-              seed=0, min_count=2, wikipedia=None, parser="builtin", max_pages=None):
-    """(records, receipt): candidates of the text in the candidate schema (v1)."""
+def from_text(inputs, *, lexicon_paths, lexicon_uri, lexicon_license, source_uri=None, license=None,
+              pair_count=10000, word_count=1000, seed=0, min_count=2, wikipedia=None, parser="builtin",
+              max_pages=None):
+    """(records, receipt): candidates of the text in candidate schema 2, which also names the
+    lexicon (lexicon_uri, lexicon_license) the lemma and POS suggestions come from.
+
+    The corpus id covers the input's hash and every option that changes the items (seed,
+    sample sizes, min_count, max_pages, parser, format and the lexicon's hashes), so two
+    different runs over one file are two corpora, never a mix in one."""
     if parser not in ("builtin", "mwparserfromhell"):
         raise ValueError("parser must be builtin or mwparserfromhell")
     if (type(pair_count) is not int or type(word_count) is not int or pair_count < 0 or word_count < 0
@@ -350,9 +358,16 @@ def from_text(inputs, *, lexicon_paths, source_uri=None, license=None, pair_coun
         raise ValueError("min-count must be positive")
     documents = Documents(inputs, wikipedia=wikipedia, parser=parser, max_pages=max_pages)
     if documents.wikipedia:
+        # Wikipedia text is CC BY-SA: no other licence can be declared for it.
         license = license or WIKI_LICENSE
+        if family(license) != "by-sa":
+            raise ValueError(f"a MediaWiki dump is CC BY-SA text; {license!r} cannot be declared for it")
     elif not source_uri or not license:
         raise ValueError("source URI and license are required for plain text")
+    _check_provenance(lexicon_uri or "", lexicon_license or "")
+    if not allowed(license, lexicon_license):
+        raise ValueError(f"no labels licence satisfies both the text ({license}) and the lexicon "
+                         f"({lexicon_license}) licences")
     known, lexicon_hashes = lexicon(lexicon_paths)
 
     counts, lower, capital, chosen = Counter(), Counter(), Counter(), {}
@@ -418,8 +433,12 @@ def from_text(inputs, *, lexicon_paths, source_uri=None, license=None, pair_coun
     tokens.sort(key=lambda t: (t.upos, t.lemma, t.word))
     if not tokens:
         raise ValueError("the text has no eligible words")
-    corpus_id = str(uuid5(NAMESPACE_URL, "croatian-stemmer-corpus:" + corpus_sha256))
-    records = Records(corpus_id=corpus_id, corpus_sha256=corpus_sha256, source_uri=source_uri, license=license)
+    identity = {"corpus_sha256": corpus_sha256, "seed": seed, "pairs": pair_count, "word_items": word_count,
+                "min_count": min_count, "max_pages": max_pages, "parser": parser,
+                "format": "mediawiki" if documents.wikipedia else "text", "lexicon_sha256": lexicon_hashes}
+    corpus_id = str(uuid5(NAMESPACE_URL, "croatian-stemmer-text-corpus:" + json.dumps(identity, sort_keys=True)))
+    records = Records(corpus_id=corpus_id, corpus_sha256=corpus_sha256, source_uri=source_uri, license=license,
+                      lexicon=(lexicon_uri, lexicon_license))
     rng = random.Random(seed)
     by_band = defaultdict(list)
     for token in tokens:
@@ -430,8 +449,10 @@ def from_text(inputs, *, lexicon_paths, source_uri=None, license=None, pair_coun
     word_strata = _spread(by_band, min(word_count, len(tokens)), rng)
     rows, n_pairs = sample(tokens, records, pair_count=pair_count, word_count=0, rng=rng, prefix=PREFIX,
                            word_strata=word_strata)
-    receipt = {"candidate_schema_version": 1, "corpus_id": corpus_id, "corpus_sha256": corpus_sha256,
-               "source_uri": source_uri, "license": license, "seed": seed, "format":
+    receipt = {"candidate_schema_version": 2, "corpus_id": corpus_id, "corpus_sha256": corpus_sha256,
+               "source_uri": source_uri, "license": license, "lexicon_uri": lexicon_uri,
+               "lexicon_license": lexicon_license, "labels_licenses": list(allowed(license, lexicon_license)),
+               "identity": identity, "seed": seed, "format":
                "mediawiki" if documents.wikipedia else "text", "parser": parser if documents.wikipedia else None,
                "site": documents.site or None, "inputs": len(documents.files), "min_count": min_count,
                "lexicon_sha256": lexicon_hashes, "lexicon_forms": len(known),
