@@ -311,7 +311,15 @@ async def run_now(ctx, *, triggered_by=None, as_of_day=None, wait=False):
         try:
             results = []
             for _ in range(4):
-                run_id, status = await run_once(ctx, triggered_by=triggered_by, as_of_day=as_of_day)
+                try:
+                    run_id, status = await run_once(ctx, triggered_by=triggered_by, as_of_day=as_of_day)
+                except asyncio.TimeoutError:
+                    _count(ctx, "timed_out")
+                    raise
+                except Exception:
+                    _count(ctx, "failed")
+                    raise
+                _count(ctx, "success" if status == "done" else status)
                 results.append((run_id, status))
                 if status != "superseded":
                     break
@@ -329,6 +337,7 @@ async def scheduled_tick(ctx, as_of_day=None):
         enabled = (await connection.execute(text(
             "SELECT value FROM label_setting WHERE key = 'scoring_enabled'"))).scalar_one_or_none()
         if enabled is not True:
+            _count(ctx, "skipped")
             return None
         last = (await connection.execute(text(
             "SELECT watermark, as_of_day FROM label_scoring_run WHERE status = 'done' "
@@ -336,11 +345,20 @@ async def scheduled_tick(ctx, as_of_day=None):
         position, called = (await connection.execute(text("SELECT last_value, is_called FROM label_journal_seq"))).one()
         today = as_of_day or (await connection.execute(text("SELECT (now() AT TIME ZONE 'UTC')::date"))).scalar_one()
     if last is not None and last.watermark >= (position if called else 0) and last.as_of_day == today:
+        _count(ctx, "skipped")
         return None
     try:
         return await run_now(ctx, as_of_day=as_of_day)
     except ScoringBusy:
+        _count(ctx, "skipped")
         return None
+
+
+def _count(ctx, outcome):
+    """labeling_scoring_runs_total{outcome} (metrics.py)."""
+    metrics = getattr(ctx, "metrics", None)
+    if metrics is not None:
+        metrics.run(outcome)
 
 
 async def latest_done(db):
@@ -370,6 +388,6 @@ async def run_outputs(ctx, watermark, as_of_day, params, inputs_hash):
     """(outputs, inputs_changed): a run recomputed from the journals at its watermark, for
     the per-vote rows no table keeps. inputs_changed when a later privacy action changed them."""
     _, inputs = await load_inputs(ctx.engine, watermark, as_of_day, ctx.settings.scoring_max_judgments)
-    outputs = await asyncio.wait_for(asyncio.to_thread(score, inputs, validate_params(params)),
+    outputs = await asyncio.wait_for(asyncio.to_thread(score, inputs, validate_params(params, legacy=True)),
                                      ctx.settings.scoring_run_timeout_s)
     return outputs, inputs_sha256(inputs) != inputs_hash

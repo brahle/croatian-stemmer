@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.3.1
+
+Labeling web app: two-vote resolution and Prometheus metrics. Scoring stays as
+the curator left it.
+
+- Two votes resolve, and both must carry evidence for the answer. The `new`
+  tier's weight ceiling is 0.78 (was 0.75), so two agreeing votes, one from an
+  `established` annotator and one from a `new` one who has shown some accuracy,
+  meet the 0.95 rule (decision: an item needs two votes). At the promotion floor
+  (θ = 31/36) the pair gives 0.9565 (0.9490 before). The new
+  `resolve_vote_min_theta` (0.70) counts towards the two votes only votes for the
+  winning answer whose author's θ is at least 0.70: up to 0.3.0 an estimated class
+  prior could lift one established vote above 0.95 and any second vote (weight 0,
+  θ 0.6, a fresh account at 4/6, even a dissent) then resolved the item. Two `new`
+  votes, one vote and one anchor vote still never resolve; two anchors agreeing
+  still do; items stay `provisional` until their calibration cell passes. Past
+  runs replay under the rule they ran with. The `qualified` ceiling stays 0.80.
+  The trust page (1.1), the maintainers' model description and the DPIA say so.
+- Migration 004 moves stored parameters that still equal the 0.3.0 defaults (and
+  that nobody changed) to the 0.3.1 defaults; other stored parameters only gain
+  `resolve_vote_min_theta` = 0.70. Each change appends a `params.changed` event like
+  the dashboard's. No schema change; its downgrade restores what 0.3.0 can read. A
+  parameter change draws new calibration sets at the next run.
+- Metrics. `LABELING_METRICS_PORT` opens a second listener that serves only
+  `GET /metrics` (Prometheus text format, standard library only): scoring on/off,
+  runs by outcome, runs in progress, last run and last success, seconds since
+  the last success while scoring is on, background job successes and failures
+  (retention, unconsented expiry), pending erasure requests and the age of the
+  oldest, quarantined people. The app's own port never serves it. Aggregates
+  only. See docs/labeling-web.md, "Metrics".
+
 ## 0.3.0
 
 Labeling web app: the trust system (version 2 of the labeling design). Deploy with

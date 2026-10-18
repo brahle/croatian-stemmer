@@ -30,6 +30,8 @@ from .config import MINIMUM_AGE, Settings
 from .erasure import erase_profile, pending_erasure
 from .legal import LegalDocuments
 from .limits import Limiter
+from . import metrics as metrics_module
+from .metrics import Metrics
 from .models import Annotator, Consent, ErasureRequest, Gold, Setting
 from .retention import apply_retention
 from .scheduler import audit_key, live_readiness
@@ -93,6 +95,7 @@ class Context:
         self.sessions = async_sessionmaker(self.engine, expire_on_commit=False)
         self.auth = Authenticator(settings)
         self.limiter = Limiter()
+        self.metrics = Metrics(settings.ui_version)
         self.legal = LegalDocuments(settings, DOCUMENTS)
         self._accepting = None  # (value, monotonic time)
         self._serving = None  # (scoring params, monotonic time)
@@ -288,22 +291,32 @@ def create_app(settings: Settings) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app):
-        async def every(seconds, job, name):
+        async def every(seconds, job, name, metric):
             while True:
                 try:
                     await job(ctx)
+                    ctx.metrics.job(metric, ok=True)
                 except Exception:  # never let a background job take the app down
+                    ctx.metrics.job(metric, ok=False)
                     log.exception("%s failed", name)
                 await asyncio.sleep(seconds)
-        tasks = [asyncio.create_task(every(6 * 3600, warn_overdue_erasures, "erasure reminder")),
-                 asyncio.create_task(every(24 * 3600, expire_unconsented_profiles, "unconsented profile expiry")),
-                 asyncio.create_task(every(24 * 3600, apply_retention, "retention")),
-                 asyncio.create_task(every(settings.scoring_interval_s, scheduled_tick, "scoring run"))]
+        # Bound first: a port that cannot be bound fails the start before any job runs.
+        listener = None
+        if settings.metrics_port:
+            listener = await metrics_module.serve(ctx, settings.metrics_host, settings.metrics_port)
+            log.info("metrics on %s:%d/metrics", settings.metrics_host, settings.metrics_port)
+        tasks = [asyncio.create_task(every(6 * 3600, warn_overdue_erasures, "erasure reminder", "erasure_reminder")),
+                 asyncio.create_task(every(24 * 3600, expire_unconsented_profiles, "unconsented profile expiry",
+                                           "unconsented_expiry")),
+                 asyncio.create_task(every(24 * 3600, apply_retention, "retention", "retention")),
+                 asyncio.create_task(every(settings.scoring_interval_s, scheduled_tick, "scoring run", "scoring"))]
         try:
             yield
         finally:
             for task in tasks:
                 task.cancel()
+            if listener is not None:
+                listener.close()
             await ctx.engine.dispose()
 
     # No interactive docs or schema on a public site: they list every route and model.

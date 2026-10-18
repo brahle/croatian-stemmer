@@ -19,14 +19,15 @@ SCORING_VERSION = "2.0"
 
 DEFAULT_PARAMS = {
     "version": "2.0", "iterations": 10, "prior": [4, 2], "prior_anchor": [18, 2],
-    "theta_max": {"new": 0.75, "qualified": 0.80, "established": 0.95, "anchor": 0.98}, "theta_min": 0.5,
+    "theta_max": {"new": 0.78, "qualified": 0.80, "established": 0.95, "anchor": 0.98}, "theta_min": 0.5,
     "class_prior": "estimated", "lemma_k": 3,
     "soft_weight": 0.5, "soft_min_info": 1.0, "peer_cap_ratio": 1.0, "peer_cap_floor": 12,
     "gold_delay_days": 1,
     "qualification_n": 12, "qualification_hits": 9,
     "established_disc_gold": 30, "established_theta_lb": 0.75, "established_keep_theta_lb": 0.70,
     "established_wrong_sugg_gold": 5, "established_wrong_sugg_min_acc": 0.6, "established_votes": 100,
-    "resolve_confidence": 0.95, "resolve_min_votes": 2, "votes_low_cap": 5, "votes_expert_cap": 3,
+    "resolve_confidence": 0.95, "resolve_min_votes": 2, "resolve_vote_min_theta": 0.70,
+    "votes_low_cap": 5, "votes_expert_cap": 3,
     "calibration_n": 30, "calibration_lb": 0.80,
     "audit_sample_rate": 10, "review_sample_rate": 2, "blind_rate": 20,
     "gold_rate": {"new": 10, "qualified": 10, "established": 5, "anchor": 0, "quarantined": 10},
@@ -97,10 +98,18 @@ def _number(value, kind, low, high, name):
     return kind(value)
 
 
-def validate_params(raw) -> dict:
-    """A complete, bounded parameter set (every key required, no extra key), or ValueError."""
+# Settings added after 0.3.0, with the value that reproduces 0.3.0 for a parameter set
+# written before them (a past run's params, read by replay and the per-vote rows).
+LEGACY_DEFAULTS = {"resolve_vote_min_theta": None}
+
+
+def validate_params(raw, legacy=False) -> dict:
+    """A complete, bounded parameter set (every key required, no extra key), or ValueError.
+    legacy: a past run's parameters, where a setting added later takes its LEGACY_DEFAULTS value."""
     if not isinstance(raw, dict):
         raise ValueError("parameters must be an object")
+    if legacy:
+        raw = {**{k: v for k, v in LEGACY_DEFAULTS.items() if k not in raw}, **raw}
     expected = set(DEFAULT_PARAMS)
     if set(raw) != expected:
         missing, extra = sorted(expected - set(raw)), sorted(set(raw) - expected)
@@ -131,6 +140,9 @@ def validate_params(raw) -> dict:
         rates[tier] = _number(rates[tier], int, 0, 100, f"gold_rate.{tier}")
     if params["class_prior"] not in ("estimated", "uniform"):
         raise ValueError("class_prior must be estimated or uniform")
+    if params["resolve_vote_min_theta"] is not None:
+        params["resolve_vote_min_theta"] = _number(params["resolve_vote_min_theta"], float, 0.5, 0.95,
+                                                   "resolve_vote_min_theta")
     if params["anchor_consensus_votes"] is not None:
         params["anchor_consensus_votes"] = _number(params["anchor_consensus_votes"], int, 1, 10, "anchor_consensus_votes")
     if params["qualification_hits"] > params["qualification_n"]:
@@ -292,7 +304,10 @@ def corpus_params(params, corpus_id):
 
 def calibration_key(params) -> str:
     """Draws are frozen per policy: everything that can change a vote, weight, tier or state."""
-    policy = {key: value for key, value in params.items() if key not in CALIBRATION_NEUTRAL}
+    # A later setting at its legacy value is the policy of a parameter set without it, so a
+    # past run's draws keep their key.
+    policy = {key: value for key, value in params.items() if key not in CALIBRATION_NEUTRAL
+              and not (key in LEGACY_DEFAULTS and value == LEGACY_DEFAULTS[key])}
     return sha256({"scoring_version": SCORING_VERSION, "params": policy})
 
 
@@ -350,9 +365,11 @@ def top(probs):
 
 
 def model_rule(log_prior, votes, k, tiers, p):
-    """(met, winner, probabilities) for votes [(annotator, cls, theta_weight_fn)] under the
-    item's prior: confidence >= resolve_confidence, at least resolve_min_votes distinct
-    voters, and a vote for the winner from an established or anchor annotator."""
+    """(met, winner, probabilities) for votes [(annotator, cls, weight)] under the item's
+    prior: confidence >= resolve_confidence, at least resolve_min_votes distinct voters for
+    the winner whose theta is at least resolve_vote_min_theta (votes that carry evidence for
+    the answer, so neither the class prior nor a worthless vote stands in for a second
+    vote), and a vote for the winner from an established or anchor annotator."""
     if not votes:
         return False, None, None
     sums = {}
@@ -360,7 +377,12 @@ def model_rule(log_prior, votes, k, tiers, p):
         sums[cls] = sums.get(cls, 0.0) + w
     probs = posterior(log_prior, sums)
     winner = top(probs)
-    voters = {annotator for annotator, _, _ in votes}
+    floor = p.get("resolve_vote_min_theta")
+    if floor is None:  # the 0.3.0 rule (a past run's parameters): every distinct voter counts
+        voters = {annotator for annotator, _, _ in votes}
+    else:  # weight() is increasing in theta, so theta >= floor is weight >= weight(floor)
+        least = weight(floor, k) - 1e-12
+        voters = {annotator for annotator, cls, w in votes if cls == winner and w >= least}
     expert = any(cls == winner and tiers.get(annotator) in ("established", "anchor") for annotator, cls, _ in votes)
     met = probs[winner] >= p["resolve_confidence"] and len(voters) >= p["resolve_min_votes"] and expert
     return met, winner, probs
@@ -1276,7 +1298,7 @@ def replay(bundle) -> dict:
     report["inputs_match"] = report["inputs_sha256"] == run["inputs_sha256"]
     if not report["inputs_match"]:
         report["changed"] = changed_journals(run["inputs_summary"], summary) if run.get("inputs_summary") else None
-    outputs = score(inputs, validate_params(run["params"]))
+    outputs = score(inputs, validate_params(run["params"], legacy=True))
     report["outputs_sha256"] = sha256(outputs)
     report["outputs_match"] = report["outputs_sha256"] == run["outputs_sha256"] if report["inputs_match"] else None
     return {"report": report, "outputs": outputs}

@@ -109,10 +109,12 @@ async def test_the_launch(fresh_api, tmp_path):
     await profiled(api, "v")
     for item_id, value in sorted(gold):
         assert (await api.request("POST", answer_path(by_id[item_id]), "c", json=answer(value=value))).status_code == 200
-    # The second voter passes stem qualification too (a `new` voter's 0.75 ceiling and an
-    # established one's 0.86 give 0.9499 on two agreeing votes: just short of the rule).
+    # The second voter stays `new`: 8 correct knowledge-check answers of the 12 that decide
+    # qualification take it to the new ceiling (0.78), and two agreeing votes of an established
+    # and a new annotator meet the rule (decision 5ee0e7ef q4; with 0.3.0's 0.75 they gave 0.9499).
     qualification = [r.item_id for r in (await api.sql(
-        "SELECT item_id::text FROM label_gold WHERE kind = 'stem' AND pool = 'qualification'")).all()]
+        "SELECT item_id::text FROM label_gold WHERE kind = 'stem' AND pool = 'qualification' "
+        "ORDER BY item_id")).all()][:8]
     for item_id in qualification:
         value = dict(gold)[item_id]
         assert (await api.request("POST", answer_path(by_id[item_id]), "v", json=answer(value=value))).status_code == 200
@@ -131,9 +133,10 @@ async def test_the_launch(fresh_api, tmp_path):
         for name in ("c", "v"):
             assert (await api.request("POST", answer_path(row), name, json=answer(value=value))).status_code == 200
     run_id = await run_twice(api, as_of_day=later())
-    tier = (await api.sql("SELECT tier FROM label_annotator_score WHERE run_id = :r AND annotator_id = :a "
-                          "AND kind = 'stem'", r=run_id, a=await api.annotator_id("c"))).scalar_one()
-    assert tier == "established"
+    tiers = {name: (await api.sql("SELECT tier FROM label_annotator_score WHERE run_id = :r AND annotator_id = :a "
+                                  "AND kind = 'stem'", r=run_id, a=await api.annotator_id(name))).scalar_one()
+             for name in ("c", "v")}
+    assert tiers == {"c": "established", "v": "new"}
     calibration = (await api.sql("SELECT calibration FROM label_scoring_run WHERE id = :r", r=run_id)).scalar_one()
     stem_cell = calibration["stem/none"]
     assert stem_cell["n"] == 30 and len(stem_cell["pending"]) == 30 and not stem_cell["passed"]

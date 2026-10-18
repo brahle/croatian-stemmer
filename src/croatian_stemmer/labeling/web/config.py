@@ -1,5 +1,6 @@
 """Required runtime configuration; public browser settings contain no secrets."""
 
+import ipaddress
 import os
 import re
 from dataclasses import dataclass, field
@@ -88,6 +89,9 @@ class Settings:
     scoring_interval_s: int = 600
     scoring_run_timeout_s: int = 120
     scoring_max_judgments: int = 2_000_000
+    # Prometheus metrics on a second listener (0 = off); never routed by the ingress.
+    metrics_port: int = 0
+    metrics_host: str = "0.0.0.0"
     ui_version: str = field(default_factory=package_version)
 
     def __post_init__(self):
@@ -135,6 +139,12 @@ class Settings:
             raise ValueError("LABELING_SCORING_RUN_TIMEOUT must be 10 to 3600 seconds")
         if type(self.scoring_max_judgments) is not int or not 1000 <= self.scoring_max_judgments <= 50_000_000:
             raise ValueError("LABELING_SCORING_MAX_JUDGMENTS must be 1000 to 50000000")
+        if type(self.metrics_port) is not int or not (self.metrics_port == 0 or 1024 <= self.metrics_port <= 65535):
+            raise ValueError("LABELING_METRICS_PORT must be 0 (off) or 1024 to 65535")
+        try:
+            ipaddress.ip_address(self.metrics_host)
+        except ValueError:
+            raise ValueError("LABELING_METRICS_HOST must be an IP address") from None
 
     @classmethod
     def from_environment(cls):
@@ -164,7 +174,9 @@ class Settings:
                    target_votes=_int("LABELING_TARGET_VOTES", 3),
                    scoring_interval_s=_int("LABELING_SCORING_INTERVAL", 600),
                    scoring_run_timeout_s=_int("LABELING_SCORING_RUN_TIMEOUT", 120),
-                   scoring_max_judgments=_int("LABELING_SCORING_MAX_JUDGMENTS", 2_000_000))
+                   scoring_max_judgments=_int("LABELING_SCORING_MAX_JUDGMENTS", 2_000_000),
+                   metrics_port=_int("LABELING_METRICS_PORT", 0),
+                   metrics_host=get("LABELING_METRICS_HOST", "0.0.0.0"))
 
     @property
     def identity_origin(self):

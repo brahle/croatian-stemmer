@@ -95,6 +95,8 @@ Optional:
 | `LABELING_SCORING_INTERVAL` | `600` | seconds between scheduled scoring runs (60 to 86400); a tick does nothing while scoring is off |
 | `LABELING_SCORING_RUN_TIMEOUT` | `120` | seconds a scoring run may take before it fails (10 to 3600) |
 | `LABELING_SCORING_MAX_JUDGMENTS` | `2000000` | a run fails with `too_many_judgments` above this many judgments (1000 to 50,000,000); lower it to fit the pod's memory (about 400 bytes per judgment) |
+| `LABELING_METRICS_PORT` | `0` (off) | when set (1024 to 65535), a second listener on this port serves Prometheus metrics at `GET /metrics`; see "Metrics" |
+| `LABELING_METRICS_HOST` | `0.0.0.0` | the IP address the metrics listener binds |
 | `LABELING_READ_ONLY` | `false` | `true` pauses intake regardless of the curator's setting |
 | `LABELING_ALLOW_LOCAL_HTTP` | `false` | test-only: allows a loopback HTTP issuer; never set it in a deployment |
 | `LABELING_MIGRATION_ALLOW_DROP` | unset | see "Migrations" |
@@ -405,6 +407,38 @@ the answer, and deletes unanswered showings 30 days after they were last shown. 
 rows, which hold no personal data, are kept. The daily task for never-consented
 profiles is unchanged.
 
+### Metrics
+
+The app never serves `/metrics` on its own port (8000). With
+`LABELING_METRICS_PORT` set, for example to `9464`, the process opens a second
+plain-HTTP listener on that port that answers only `GET /metrics` (Prometheus
+text format 0.0.4) and 404 for anything else. A separate port is used rather than
+a path on the app's port: the ingress routes the public hostname to the app's
+service port only, so the metrics are unreachable from outside as long as the
+second port is not added to the ingress, and nothing depends on forwarded headers
+being set or stripped correctly. Declare the port on the container and scrape it
+from inside the cluster (a pod or service monitor that targets that port); do not
+add it to the ingress. The values are aggregates; no annotator id, email, item or
+corpus appears.
+
+| metric | type | meaning |
+|---|---|---|
+| `labeling_scoring_enabled` | gauge | 1 when the curator has switched scoring on |
+| `labeling_scoring_runs_total{outcome}` | counter | runs since the process started: `success`, `superseded`, `failed`, `timed_out`, and `skipped` (a scheduled tick that did not run: scoring off, nothing changed, or another run holding the lock) |
+| `labeling_scoring_runs_in_progress` | gauge | runs in status `running`; a row a crashed process left behind counts too |
+| `labeling_scoring_last_run_finish_timestamp_seconds{status}` | gauge | when the latest finished run finished, with its status (`done`, `superseded`, `failed`) |
+| `labeling_scoring_last_success_timestamp_seconds` | gauge | when the latest `done` run finished; absent before the first |
+| `labeling_scoring_seconds_since_last_success` | gauge | only while scoring is on: seconds since the later of the latest `done` run and the last write of the scoring switch (so switching scoring on does not page at once) |
+| `labeling_job_last_success_timestamp_seconds{job}` | gauge | when a background job last completed without an error: `retention`, `unconsented_expiry`, `erasure_reminder`, `scoring`; absent until the job's first pass after a start (each runs at startup) |
+| `labeling_job_failures_total{job}` | counter | background job passes that raised |
+| `labeling_erasure_requests_pending` | gauge | erasure requests whose Keycloak deletion is not yet recorded |
+| `labeling_erasure_request_oldest_pending_age_seconds` | gauge | age of the oldest of them (0 when none); the privacy notice promises completion within 30 days |
+| `labeling_annotators_quarantined` | gauge | people currently set aside |
+| `labeling_metrics_database_up` | gauge | 1 when the scrape could read the database (the database gauges are absent otherwise) |
+| `labeling_build_info{version}`, `labeling_process_start_time_seconds` | gauge | the release and the process start |
+
+Counters and job timestamps live in the process and restart from zero with it.
+
 ### Erasure and restore
 
 When an erasure request appears in the panel, add its Keycloak user id and request
@@ -482,6 +516,18 @@ The application is one stateless container plus a PostgreSQL database:
   runs, so deploying it scores nobody. It waits at most 5 seconds for table locks;
   on a timeout the init container exits non-zero and the pod retries. Take a
   manual CNPG backup immediately before deploying it.
+- Migration 004 (0.3.1) changes no schema. 0.3.1 has two new defaults: the `new`
+  tier's ceiling 0.75 to 0.78 (two agreeing votes of an established and a new
+  annotator can resolve an item) and `resolve_vote_min_theta` 0.70 (only votes for
+  the answer from people with θ of at least 0.70 count as the two votes). Stored
+  parameters that still equal the 0.3.0 defaults, never changed by a person, become
+  the 0.3.1 defaults; any other stored parameters only gain
+  `resolve_vote_min_theta` = 0.70 (0.3.1 refuses a set without it) and keep every
+  chosen value. Each change appends the same `params.changed` event the dashboard
+  does. Its downgrade puts the 0.3.0 defaults back when the stored value is still
+  this migration's, and otherwise removes only the new key, which 0.3.0 refuses;
+  run `python -m alembic downgrade 003_trust` with the 0.3.1 image before rolling
+  back to 0.3.0, whose init container does not know revision 004.
 - One replica. Rate limits are in process and migrations run per pod. The
   scoring and retention tasks also run in the app process; a scoring run uses a
   worker thread and holds about 400 bytes per judgment in memory (see

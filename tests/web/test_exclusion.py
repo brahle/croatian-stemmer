@@ -36,6 +36,8 @@ async def test_blocking_an_established_voter_reopens_their_items(fresh_api):
     free = [r for r in rows if r not in gold]
     item = free[0]
     await profiled(api, "y")
+    # y's vote counts as the second one only with some evidence (theta >= 0.70): one known answer.
+    assert (await api.request("POST", answer_path(gold[0]), "y", json=answer(value="different"))).status_code == 200
     for name in ("x", "y"):
         assert (await api.request("POST", answer_path(item), name, json=answer())).status_code == 200
     await score_now(api, as_of_day=later())
@@ -84,6 +86,8 @@ async def test_revoking_the_anchor_unwinds_consensus_gold(fresh_api):
     assert await tier(api, second, "x") == "established"
     target = [r for r in rows if r not in seeds][0]
     await profiled(api, "y")
+    # y's vote counts as the second one only with some evidence (theta >= 0.70): one known answer.
+    assert (await api.request("POST", answer_path(seeds[0]), "y", json=answer(value="different"))).status_code == 200
     for name in ("x", "y"):
         assert (await api.request("POST", answer_path(target), name, json=answer())).status_code == 200
     await score_now(api, as_of_day=later())
