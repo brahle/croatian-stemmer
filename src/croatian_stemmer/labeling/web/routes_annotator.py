@@ -185,7 +185,8 @@ def register(app, ctx):
         counts = {cid: {kind: 0 for kind in KINDS} for cid in corpus_ids}
         if corpus_ids:
             rows = await db.execute(select(Item.corpus_id, Item.kind, func.count()).where(
-                Item.corpus_id.in_(corpus_ids), Item.status == "active").group_by(Item.corpus_id, Item.kind))
+                Item.corpus_id.in_(corpus_ids), Item.status == "active", scheduler.ordinary())
+                .group_by(Item.corpus_id, Item.kind))
             for cid, kind, count in rows:
                 counts[cid][kind] = count
         return counts
@@ -214,7 +215,8 @@ def register(app, ctx):
                        func.count(votes.c.item_id).filter(votes.c.n > 0))
                 .outerjoin(Assignment, _mine(caller)).outerjoin(Judgment, _my_latest(caller))
                 .outerjoin(votes, votes.c.item_id == Item.id)
-                .where(Item.corpus_id == corpus_id, Item.status == "active").group_by(Item.kind))).all()
+                .where(Item.corpus_id == corpus_id, Item.status == "active", scheduler.ordinary())
+                .group_by(Item.kind))).all()
             events = (await db.execute(select(func.count()).select_from(Judgment).where(
                 Judgment.annotator_id == caller.id, Judgment.corpus_id == corpus_id))).scalar_one()
         kinds = {kind: {"total": 0, "reviewed": 0, "unsure": 0, "definite": 0, "items_with_votes": 0} for kind in KINDS}
@@ -240,7 +242,7 @@ def register(app, ctx):
         count = func.coalesce(votes.c.n, 0)
         item = (await db.execute(
             select(Item).outerjoin(votes, votes.c.item_id == Item.id).outerjoin(Assignment, _mine(caller))
-            .where(Item.corpus_id == corpus_id, Item.kind == kind, Item.status == "active",
+            .where(Item.corpus_id == corpus_id, Item.kind == kind, Item.status == "active", scheduler.ordinary(),
                    or_(Assignment.annotator_id.is_(None),
                        and_(Assignment.current_revision == 0, Assignment.last_shown_at < RESHOW)),
                    count < settings.target_votes)

@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.3.4
+
+Known-answer coverage: the gold builder can now fill every `pair` and `lemma` pool the
+readiness rules need, including the suggestion-wrong pool, from corpus truth, and says
+when it cannot. Web app: gold-reserve items are served only as known-answer checks.
+Migration 005 adds one column; no scoring change. Deployments need the new image (its
+init container runs the migration).
+
+- Why the hr500k gold had no suggestion-wrong items: `prepare` shows the corpus's own
+  lemmas as suggestions, so an answer the corpus settles always agrees with them. The
+  zero was structural, not a sampling accident.
+- `prepare --gold-reserve N` adds N items per reserve stratum, built from forms the
+  corpus settles: agreeing lemma items, and decoys that show a suggestion the corpus
+  contradicts (a lemma decoy, a pair shown `same` whose lemmas differ, a pair shown
+  `different` whose lemmas are equal). The ordinary sample is byte-identical with or
+  without the reserve. `--supplement FILE` prepares only new items for a corpus that is
+  already imported (same hash, source and licence; no occurrence reused); the existing
+  web import adds them to the corpus.
+- `gold` decides every candidate by corpus truth, whatever it suggests, takes
+  `--wrong-suggestion N` (default 30) suggestion-wrong audit items per kind from the
+  decoys, accepts several `--candidates` files and `--with` earlier gold files (never
+  reused, counted in the coverage), and prints a coverage report per kind and pool
+  against the readiness targets with a calibration hold-out margin (99.9 %). It exits 3
+  when a `pair` or `lemma` pool is short (`--allow-short` to exit 0). `stem` is reported
+  as expert-only: stem acceptability cannot be derived from lemma annotations. Output
+  for the same inputs differs from 0.3.3 (the selection now also draws decoys).
+- New `gold-check` command: validates gold files against their candidates as the web
+  import would (fields, answers, unknown items, conflicting answers across files) and
+  reports the coverage, exit 3 when short.
+- Web: gold-reserve items are never in the normal queue, the expert and seed queues or
+  the V1 order, and are left out of progress counts. Migration 005 adds
+  `label_item_state.reserve`, set by the import from the stratum (and backfilled), so
+  the queue reads a column rather than every item's payload.
+- `release` leaves gold-reserve items out of `labels.tsv`, and `release-check` refuses
+  one.
+
 ## 0.3.3
 
 Labeling web app: privacy notice 1.4 and DPIA 2.1. No schema or scoring change.

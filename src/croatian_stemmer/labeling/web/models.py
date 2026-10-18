@@ -411,6 +411,9 @@ class ItemState(Base):
     epoch: Mapped[int] = mapped_column(BigInteger, server_default="0")  # written only by the reopen route
     epoch_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     epoch_discard: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
+    # A gold-reserve item (sampling stratum gold_reserve_*), set at import: served only as a
+    # known-answer check, never as ordinary or expert work (migration 005).
+    reserve: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     __table_args__ = (
         ForeignKeyConstraint(["corpus_id", "item_id"], ["label_item.corpus_id", "label_item.id"]),

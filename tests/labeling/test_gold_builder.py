@@ -73,12 +73,13 @@ def test_builder_output_is_byte_identical_and_exclusions_hold(corpus, tmp_path, 
     for n in (1, 2):
         output = tmp_path / f"gold-{n}.jsonl"
         main(["gold", str(path), "--candidates", str(candidates), "--per-kind", "50", "--split", "qualification=20",
-              "--output", str(output)])
+              "--allow-short", "--output", str(output)])
         outputs.append(output.read_bytes())
         receipt = json.loads(capsys.readouterr().out)
     assert outputs[0] == outputs[1] and receipt["batch"]
     with pytest.raises(SystemExit):  # never overwrites an earlier output
-        main(["gold", str(path), "--candidates", str(candidates), "--output", str(tmp_path / "gold-1.jsonl")])
+        main(["gold", str(path), "--candidates", str(candidates), "--allow-short",
+              "--output", str(tmp_path / "gold-1.jsonl")])
     excluded = [json.loads(line)["item_id"] for line in outputs[0].decode().splitlines()[:10]]
     listing = tmp_path / "exclude.txt"
     listing.write_text("\n".join(excluded))
@@ -93,3 +94,176 @@ def test_candidates_from_another_corpus_are_refused(corpus, tmp_path):
     other.write_text(json.dumps({**records[0], "corpus_sha256": "f" * 64}) + "\n")
     with pytest.raises(ValueError, match="not prepared from this corpus"):
         build(path, other)
+
+
+# ---- gold reserve, wrong-suggestion gold, coverage (0.3.4) -------------------------------
+
+from croatian_stemmer.labeling.candidates import RESERVE_STRATA, index_conllu, settled_lemma
+from croatian_stemmer.labeling.gold import check, coverage, needed
+
+
+def write(path, rows):
+    path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    return path
+
+
+def truth(path):
+    index = index_conllu(path)
+    return lambda form, upos="NOUN": settled_lemma(index.freq, index.lemmas_of, form, upos, 5)
+
+
+def test_needed_covers_the_calibration_hold_out():
+    assert needed(15, 0) == 15 and needed(0, 10) == 0
+    assert needed(15, 10) == 22 and needed(60, 10) == 77 and needed(100, 10) == 124
+    assert needed(60, 50) > 120
+
+
+def test_gold_reserve_is_settled_corpus_truth_and_leaves_the_sample_alone(corpus):
+    path, _, records = corpus
+    kwargs = dict(source_uri="urn:test:gold", license="test fixture", pair_count=600, word_count=150, seed=3)
+    with_reserve, receipt = prepare(path, **kwargs, gold_reserve_size=20)
+    assert with_reserve[:len(records)] == records  # the ordinary sample is unchanged
+    assert prepare(path, **kwargs, gold_reserve_size=20) == (with_reserve, receipt)
+    reserve = with_reserve[len(records):]
+    assert Counter(r["sampling_stratum"] for r in reserve) == {stratum: 20 for stratum in RESERVE_STRATA}
+    assert receipt["gold_reserve"]["gold_reserve_lemma_decoy"] == 20 and receipt["prepared_lemma_items"] == 150
+    assert len({r["item_id"] for r in with_reserve}) == len(with_reserve)
+    used = [ref for r in reserve for ref in (r["word_ref"], r["other_word_ref"]) if ref]
+    assert len(used) == len(set(used))  # no occurrence twice
+    assert not set(used) & {ref for r in records for ref in (r["word_ref"], r["other_word_ref"])}
+    assert len(with_reserve) == len(records) + 80
+    lemma_of = truth(path)
+    for r in reserve:
+        assert "kosa" not in (r["word"], r["other_word"])  # ambiguous forms never take part
+        left = lemma_of(r["word"])
+        assert left is not None
+        stratum = r["sampling_stratum"]
+        if stratum == "gold_reserve_lemma":
+            assert r["proposed_lemma"] == left
+        elif stratum == "gold_reserve_lemma_decoy":
+            assert r["proposed_lemma"] != left
+        else:
+            right = lemma_of(r["other_word"])
+            shown_same = r["proposed_lemma"] == r["other_proposed_lemma"]
+            if stratum == "gold_reserve_pair_decoy_same":
+                assert shown_same and left != right
+            else:
+                assert not shown_same and left == right
+
+
+def test_a_supplement_adds_only_new_items_of_the_same_corpus(corpus, tmp_path):
+    path, _, records = corpus
+    extra, receipt = prepare(path, source_uri="urn:test:gold", license="test fixture", pair_count=0, word_count=0,
+                             gold_reserve_size=10, supplement=records)
+    assert len(extra) == 40 and receipt["supplement"] == {"existing_items": len(records), "new_items": 40}
+    assert not {r["item_id"] for r in extra} & {r["item_id"] for r in records}
+    refs = {ref for r in records for ref in (r["word_ref"], r["other_word_ref"]) if ref}
+    assert not refs & {ref for r in extra for ref in (r["word_ref"], r["other_word_ref"]) if ref}
+    with pytest.raises(ValueError, match="different corpus or provenance"):
+        prepare(path, source_uri="urn:test:other", license="test fixture", pair_count=0, word_count=0,
+                gold_reserve_size=10, supplement=records)
+    with pytest.raises(ValueError, match="at least one candidate"):
+        prepare(path, source_uri="urn:test:gold", license="test fixture", pair_count=0, word_count=0)
+
+
+def test_wrong_suggestion_gold_comes_from_reserve_decoys(corpus, tmp_path):
+    path, candidates, records = corpus
+    extra, _ = prepare(path, source_uri="urn:test:gold", license="test fixture", pair_count=0, word_count=0,
+                       gold_reserve_size=30, supplement=records)
+    supplement = write(tmp_path / "extra.jsonl", extra)
+    rows, receipt = build(path, [candidates, supplement], per_kind=120, qualification=30, wrong=20)
+    by_id = {r["item_id"]: r for r in records + extra}
+    lemma_of = truth(path)
+    wrong = [row for row in rows if row["basis"].endswith("_against_suggestion")]
+    assert Counter(row["kind"] for row in wrong) == {"pair": 20, "lemma": 20}
+    assert {row["pool"] for row in wrong} == {"audit"}
+    # Both directions of a wrong pair suggestion, half each.
+    assert Counter(row["answer"] for row in wrong if row["kind"] == "pair") == {"same": 10, "different": 10}
+    for row in rows:
+        candidate = by_id[row["item_id"]]
+        if row["kind"] == "lemma":
+            assert row["lemma"] == lemma_of(candidate["word"])  # the corrected lemma, never the decoy
+            assert (row in wrong) == (candidate["proposed_lemma"] != row["lemma"])
+        else:
+            same = lemma_of(candidate["word"]) == lemma_of(candidate["other_word"])
+            assert row["answer"] == ("same" if same else "different")
+            shown_same = candidate["proposed_lemma"] == candidate["other_proposed_lemma"]
+            assert (row in wrong) == (shown_same != same)
+    kinds = receipt["coverage"]["kinds"]
+    assert kinds["pair"]["wrong_suggestion"]["rows"] == 20 and kinds["stem"]["status"] == "expert_only"
+    report = check([write(tmp_path / "gold.jsonl", rows)], [candidates, supplement])
+    assert report["kinds"]["lemma"]["wrong_suggestion"]["rows"] == 20 and report["duplicates"] == 0
+
+
+def test_coverage_report_and_exit_status(corpus, tmp_path, capsys):
+    path, candidates, records = corpus
+    output = tmp_path / "short.jsonl"
+    # Without a reserve no item can disagree with the corpus's own suggestion: exit 3, file written.
+    with pytest.raises(SystemExit) as exit_:
+        main(["gold", str(path), "--candidates", str(candidates), "--output", str(output)])
+    assert exit_.value.code == 3 and output.exists()
+    captured = capsys.readouterr()
+    receipt = json.loads(captured.out)
+    assert receipt["coverage"]["kinds"]["pair"]["wrong_suggestion"]["ok"] is False
+    assert "SHORT" in captured.err and "EXPERT ONLY" in captured.err
+    main(["gold", str(path), "--candidates", str(candidates), "--allow-short", "--output", str(tmp_path / "ok.jsonl")])
+    capsys.readouterr()
+    with pytest.raises(SystemExit) as exit_:
+        main(["gold-check", str(output), "--candidates", str(candidates)])
+    assert exit_.value.code == 3
+    assert json.loads(capsys.readouterr().out)["kinds"]["pair"]["status"] == "short"
+
+
+def test_a_top_up_with_existing_gold_meets_readiness(tmp_path):
+    """The live situation: gold without wrong-suggestion items is imported; a supplement and
+    a second gold file built `--with` the first fill every pair and lemma pool."""
+    lines = []
+    for n in range(220):
+        lemma = name(n % 676)
+        lines.append("# text = " + " ".join(lemma + s for s in ("a", "e", "i", "u", "om")))
+        lines += [f"{i}\t{lemma}{s}\t{lemma}\tNOUN" for i, s in enumerate(("a", "e", "i", "u", "om"), 1)]
+        lines.append("")
+    path = tmp_path / "big.conllu"
+    path.write_text("\n".join(lines * 5) + "\n", encoding="utf-8")
+    records, _ = prepare(path, source_uri="urn:test:big", license="test fixture", pair_count=2000, word_count=400)
+    candidates = write(tmp_path / "candidates.jsonl", records)
+    first, receipt = build(path, candidates)
+    assert not receipt["coverage"]["ok"]
+    old = write(tmp_path / "gold-1.jsonl", first)
+    extra, _ = prepare(path, source_uri="urn:test:big", license="test fixture", pair_count=0, word_count=0,
+                       gold_reserve_size=100, supplement=records)
+    supplement = write(tmp_path / "extra.jsonl", extra)
+    out = tmp_path / "gold-2.jsonl"
+    main(["gold", str(path), "--candidates", str(candidates), "--candidates", str(supplement), "--with", str(old),
+          "--per-kind", "200", "--split", "qualification=0", "--output", str(out)])
+    second = [json.loads(line) for line in out.read_text().splitlines()]
+    assert not {r["item_id"] for r in second} & {r["item_id"] for r in first}
+    assert {r["pool"] for r in second} == {"audit"}
+    report = check([old, out], [candidates, supplement])
+    assert report["ok"] and report["rows"] == len(first) + len(second)
+    # Importing a file twice is harmless (unchanged); two answers for one item are refused.
+    assert check([old, old], [candidates])["duplicates"] == len(first)
+    flipped = write(tmp_path / "flipped.jsonl", [{**first[0], "answer": "different" if first[0]["answer"] == "same"
+                                                  else "same"}] if first[0]["kind"] == "pair" else
+                    [{**first[0], "lemma": "drugo"}])
+    with pytest.raises(ValueError, match="two different gold answers"):
+        check([old, flipped], [candidates])
+
+
+def test_gold_check_refuses_invalid_lines(corpus, tmp_path):
+    path, candidates, records = corpus
+    rows, _ = build(path, candidates, per_kind=10, qualification=5)
+    good = rows[0]
+    for bad, message in (({**good, "item_id": "00000000-0000-0000-0000-000000000000"}, "not in the candidates"),
+                         ({**good, "source": "curator"}, "source"),
+                         ({**good, "extra": 1}, "fields"),
+                         ({**good, "kind": "stem", "answer": "accept", "lemma": ""}, "not in the candidates")):
+        with pytest.raises(ValueError, match=message):
+            check([write(tmp_path / "bad.jsonl", [bad])], [candidates])
+
+
+def test_coverage_counts_stem_balance_when_stem_gold_exists():
+    rows = [{"kind": "stem", "pool": "qualification", "answer": "accept", "agrees": None}] * 30
+    report = coverage(rows)
+    assert report["kinds"]["stem"]["status"] == "short"  # every class needs a quarter
+    assert not report["ok"]

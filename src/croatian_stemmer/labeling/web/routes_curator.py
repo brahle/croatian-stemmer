@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from sqlalchemy import String, cast, exists, func, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 
+from ..candidates import is_reserve
 from ..schema import FIELDS
 from .common import Caller, corpus_json, excluded_annotators, failure, scoring_params, trust_event
 from .licenses import allowed
@@ -50,7 +51,8 @@ def register(app, ctx):
         for start in range(0, len(ids), 1000):
             chunk = ids[start:start + 1000]
             await db.execute(insert(ItemState).values([
-                {"corpus_id": corpus_id, "item_id": item_id, "kind": unique[item_id].kind} for item_id in chunk])
+                {"corpus_id": corpus_id, "item_id": item_id, "kind": unique[item_id].kind,
+                 "reserve": is_reserve(unique[item_id].sampling_stratum)} for item_id in chunk])
                 .on_conflict_do_nothing())
             audits = []
             for item_id in chunk:

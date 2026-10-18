@@ -341,15 +341,24 @@ calibration sets at the next run, reusing references the owner already gave.
 ### Known-answer items and the owner's expert work
 
 Build the hr500k known-answer file offline with `croatian-stemmer-labels gold` (see
-[labeling.md](labeling.md)) from the same candidates file the corpus was imported
-from, and import it in "Zlatni primjeri". The import skips calibration-sample items
-(reported as `held_out`), fills each kind's qualification pool up to 60 and puts the
-rest in the audit pool; a row that conflicts with an existing valid answer fails the
-whole import with 409 `gold_conflict`. If fewer than 60 qualification items remain,
-build a top-up with `--exclude` and a new seed.
+[labeling.md](labeling.md)) from the same candidates files the corpus was imported
+from, and import it in "Zlatni primjeri". Prepare the corpus with `--gold-reserve`
+(or import a supplement prepared with `--supplement` into the existing corpus) so that
+the builder also has decoy items for the known answers that differ from the
+suggestion; `gold` prints the coverage against the readiness targets and exits 3 when
+a `pair` or `lemma` pool would be short, and `gold-check` checks files before an
+import. The import skips calibration-sample items (reported as `held_out`), fills each
+kind's qualification pool up to 60 and puts the rest in the audit pool; a row that
+conflicts with an existing valid answer fails the whole import with 409
+`gold_conflict`. For a top-up, build the next file with `--with` the files already
+imported (their items are never reused) and a new seed.
 
-Known answers that differ from the suggestion, and every `stem` known answer, come
-only from anchors. The owner is the only anchor today, and their answers on seed,
+Gold-reserve items are served only as known-answer checks: never in the normal queue,
+the expert queues or the V1 order, not counted in progress, and never released. The
+import marks them in `label_item_state.reserve` (migration 005).
+
+Every `stem` known answer, and known answers that differ from the suggestion beyond
+the gold-reserve decoys, come only from anchors. The owner is the only anchor today, and their answers on seed,
 reference and review items are final. With "Rad za urednike" on (the default),
 the owner's `/next` serves, in order: `needs_expert` items; the seed queue while a
 pool is below its target (for `pair` and `lemma`, items where the crowd disagrees
@@ -546,6 +555,12 @@ The application is one stateless container plus a PostgreSQL database:
   this migration's, and otherwise removes only the new key, which 0.3.0 refuses;
   run `python -m alembic downgrade 003_trust` with the 0.3.1 image before rolling
   back to 0.3.0, whose init container does not know revision 004.
+- Migration 005 (0.3.4) adds `label_item_state.reserve` (boolean, default false,
+  no table rewrite) and marks the gold-reserve items already imported. The import
+  sets it for new items; the queues skip such items. Its downgrade drops the
+  column: run `python -m alembic downgrade 004_two_vote_params` with the 0.3.4
+  image before rolling back to 0.3.3, which would then serve any imported reserve
+  item (a decoy shows a wrong suggestion) as ordinary work.
 - One replica. Rate limits are in process and migrations run per pod. The
   scoring and retention tasks also run in the app process; a scoring run uses a
   worker thread and holds about 400 bytes per judgment in memory (see

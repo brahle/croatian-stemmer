@@ -17,6 +17,7 @@ from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
+from .candidates import is_reserve
 from .scoring import OTHER, corpus_params, krippendorff_alpha, release_rule
 
 FILES = ("labels.tsv", "summary.tsv", "dataset-card.md", "params.json", "CHECKSUMS")
@@ -90,9 +91,16 @@ def in_use(item):
             or (now is None and item.get("gold_status") == "active"))
 
 
+def reserve(item):
+    """A gold-reserve item (prepare --gold-reserve): built only as a known-answer check, and a
+    decoy's suggestion is deliberately wrong, so it is never part of a release."""
+    return is_reserve((item.get("candidate") or {}).get("sampling_stratum", ""))
+
+
 def releasable(item):
-    """In labels.tsv: resolved and releasable, and not a known-answer item still in use."""
-    return item["state"] == "resolved" and item["releasable"] and not in_use(item)
+    """In labels.tsv: resolved and releasable, not a known-answer item still in use, and
+    not a gold-reserve item."""
+    return item["state"] == "resolved" and item["releasable"] and not in_use(item) and not reserve(item)
 
 
 def build(export: Path, output: Path, released_on: date | None = None):
@@ -223,6 +231,8 @@ def check(directory: Path, export: Path, annotators: Path | None = None):
                 continue
             if in_use(item):
                 problems.append(f"labels.tsv:{number}: a known-answer item still in use")
+            if reserve(item):
+                problems.append(f"labels.tsv:{number}: a gold-reserve item")
             source = row.get("resolution_source")
             if source in CHECKED_SOURCES:
                 voters = {a for a, _, _ in crowd(item)}

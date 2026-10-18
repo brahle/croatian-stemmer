@@ -33,6 +33,14 @@ def item_bits(key_hex, corpus_id, item_id, audit_rate, review_rate):
     return audit, review, keyed(key_hex, f"rank:{corpus_id}:{item_id}") - 2 ** 63
 
 
+def ordinary():
+    """Items that are not gold-reserve items: a reserve item (prepare --gold-reserve) is only
+    ever served as a known-answer check, never as ordinary or expert work. For queries over
+    label_item; the queues read the same flag from label_item_state.reserve."""
+    return ~exists(select(ItemState.item_id).where(ItemState.corpus_id == Item.corpus_id,
+                                                   ItemState.item_id == Item.id, ItemState.reserve))
+
+
 async def audit_key(db) -> str:
     return (await db.execute(select(Setting.value).where(Setting.key == "audit_key"))).scalar_one()
 
@@ -228,6 +236,8 @@ async def pick(ctx, db, caller, corpus_ids, kind, expert_work=True):
             -- Known-answer items are served only by the keyed audit and qualification picks.
             AND NOT EXISTS (SELECT 1 FROM label_gold g WHERE g.corpus_id = s.corpus_id AND g.item_id = s.item_id
                             AND g.status = 'active')
+            -- Gold-reserve items exist only to be known-answer checks (a decoy shows a wrong suggestion).
+            AND NOT s.reserve
             AND NOT EXISTS (SELECT 1 FROM label_assignment a
                             WHERE a.annotator_id = :a AND a.corpus_id = s.corpus_id AND a.item_id = s.item_id
                               AND NOT (a.current_revision = 0 AND a.last_shown_at < now() - interval '30 minutes')
@@ -292,7 +302,8 @@ async def _expert_queues(db, key, params, a, corpus_ids, kind, ready, join, unse
     base = (select(Item.corpus_id, Item.id).outerjoin(Assignment, join)
             .join(ItemAudit, (ItemAudit.corpus_id == Item.corpus_id) & (ItemAudit.item_id == Item.id))
             .join(ItemState, (ItemState.corpus_id == Item.corpus_id) & (ItemState.item_id == Item.id))
-            .where(Item.corpus_id.in_(corpus_ids), Item.kind == kind, Item.status == "active", unseen))
+            .where(Item.corpus_id.in_(corpus_ids), Item.kind == kind, Item.status == "active", unseen,
+                   ~ItemState.reserve))
     # (1) needs_expert items.
     row = (await db.execute(base.where(ItemState.state == "needs_expert")
                             .order_by(ItemState.priority.desc(), Item.ordinal).limit(1))).first()

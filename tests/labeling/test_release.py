@@ -171,3 +171,21 @@ def test_one_added_vote_changes_only_that_item(tmp_path, capsys):
     assert [r for r in strip(two) if r["item_id"] == stable["item_id"]] == strip(one)
     main(["release-check", str(tmp_path / "two"), "--run-export", str(second)])
     assert json.loads(capsys.readouterr().out)["ok"] is True
+
+
+def test_gold_reserve_items_are_never_released(tmp_path):
+    """A gold-reserve item (a decoy shows a wrong suggestion on purpose) stays out of every
+    release, and release-check refuses one that is slipped in."""
+    plain = item([("established", "same", E)] * 3)
+    decoy = item([("established", "different", E)] * 3)
+    decoy["candidate"]["sampling_stratum"] = "gold_reserve_pair_decoy_same"
+    path = export(tmp_path, [plain, decoy])
+    out = tmp_path / "release"
+    assert build(path, out)["rows"] == 1
+    assert [row["item_id"] for row in labels(out)] == [plain["item_id"]]
+    check(out, path)
+    with (out / "labels.tsv").open("a", encoding="utf-8") as handle:
+        row = {**labels(out)[0], "item_id": decoy["item_id"]}
+        handle.write("\t".join(row.values()) + "\n")
+    with pytest.raises(ValueError, match="a gold-reserve item"):
+        check(out, path)
