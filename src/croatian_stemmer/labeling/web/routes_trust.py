@@ -186,6 +186,7 @@ def register(app, ctx):
             await db.execute(text("INSERT INTO label_admin_event (actor_id, kind, target, details) "
                                   "VALUES (:a, 'setting.update', 'scoring_enabled', CAST(:d AS jsonb))"),
                              {"a": caller.id, "d": json.dumps({"value": enabled})})
+        ctx.forget_settings()
         return {"scoring_enabled": enabled}
 
 
@@ -694,7 +695,7 @@ def register(app, ctx):
                           "n_definite": post.n_definite, "n_annotators": post.n_annotators,
                           "gold_status": post.gold_status, "gold_pool": pools.get(item.id),
                           "k": votes["k"], "prior": votes["prior"],
-                          "votes": [{key: v[key] for key in ("annotator_id", "tier", "class", "weight", "answer",
+                          "votes": [{key: v[key] for key in ("annotator_id", "tier", "class", "theta", "weight", "answer",
                                                              "lemma", "irregular", "presentation", "admitted")}
                                     for v in votes["votes"]]})
         body = "".join(json.dumps(line, ensure_ascii=False) + "\n" for line in lines)
@@ -732,7 +733,9 @@ def register(app, ctx):
             released = (await db.execute(text("""
                 SELECT p.corpus_id, p.item_id FROM label_item_posterior p
                 JOIN label_gold g ON g.corpus_id = p.corpus_id AND g.item_id = p.item_id
-                WHERE p.run_id = :r AND p.state = 'resolved' AND p.releasable"""), {"r": run_id})).all()
+                WHERE p.run_id = :r AND p.state = 'resolved' AND p.releasable
+                  -- what labels.tsv leaves out (qualification items, active checks) is not disclosed
+                  AND g.pool = 'audit' AND g.status <> 'active'"""), {"r": run_id})).all()
             count = 0
             for corpus_id, item_id in released:
                 if (corpus_id, item_id) not in disclosed:

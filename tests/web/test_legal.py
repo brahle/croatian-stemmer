@@ -1,12 +1,15 @@
 """Legal documents: both languages, configured controller values, the version guard."""
 import re
+from pathlib import Path
 
 import pytest
 pytest.importorskip("fastapi")
 from labeling_support import make_settings
 
-DOCS = [f"{doc}.{lang}" for doc in ("privacy", "terms", "participation", "storage") for lang in ("hr", "en")]
-VERSIONS = {"privacy": "1.2", "terms": "1.1", "participation": "1.0", "storage": "1.1"}
+DOCS = [f"{doc}.{lang}" for doc in ("privacy", "terms", "participation", "storage", "trust") for lang in ("hr", "en")]
+VERSIONS = {"privacy": "1.3", "terms": "1.1", "participation": "1.0", "storage": "1.1", "trust": "1.0"}
+ROOT = Path(__file__).resolve().parents[2]
+FORMULAS = ROOT / "docs" / "trust.md"
 
 
 def app_client(**changes):
@@ -25,8 +28,9 @@ async def test_documents_are_served_with_controller_values(name):
     assert r.headers["cache-control"] == "no-store" and "default-src 'none'" in r.headers["content-security-policy"]
     body = r.text
     assert "{{" not in body and "}}" not in body
-    assert "Ana &lt;Example&gt; &amp; Co" in body and "<Example>" not in body
-    assert "privacy@example.org" in body
+    if not name.startswith("trust"):
+        assert "Ana &lt;Example&gt; &amp; Co" in body
+    assert "<Example>" not in body and "privacy@example.org" in body
     expected = VERSIONS[name.split(".")[0]]
     assert '<meta name="document-version" content="%s">' % expected in body
     assert 'lang="%s"' % name.rsplit(".", 1)[1] in body
@@ -40,14 +44,14 @@ async def test_documents_are_served_with_controller_values(name):
         assert re.search(r"\blabels\.example\.org\b", body) and "kc-callback-" in body
 
 
-@pytest.mark.parametrize("name", [n for n in DOCS if not n.startswith("storage")])
+@pytest.mark.parametrize("name", [n for n in DOCS if n.split(".")[0] in ("privacy", "terms", "participation")])
 @pytest.mark.asyncio
 async def test_documents_state_age_18_and_the_new_identifier_on_erasure(name):
     async with app_client() as client:
         body = (await client.get("/legal/" + name)).text
     assert re.search(r"\b18\b", body) and not re.search(r"\b16\b", body)
     if not name.startswith("terms"):
-        # Erasure keeps the answers under a new random identifier (privacy 1.2, participation 1.0).
+        # Erasure keeps the answers under a new random identifier (privacy 1.2+, participation 1.0).
         assert ("novom nasumičnom oznakom" if name.endswith(".hr") else "new random identifier") in body
     if name.startswith("privacy"):
         assert ("30 dana nakon Vaše prve prijave" if name.endswith(".hr") else "30 days after your first sign-in") in body
@@ -107,7 +111,7 @@ def test_guard_refuses_unknown_placeholders(tmp_path, monkeypatch):
 async def test_public_config_names_versions_and_controller():
     async with app_client(idp_hint="google", read_only=True) as client:
         config = (await client.get("/api/config")).json()
-    assert config["legal"] == {"privacy": "1.2", "terms": "1.1", "participation": "1.0"}
+    assert config["legal"] == {"privacy": "1.3", "terms": "1.1", "participation": "1.0"}
     assert config["minimumAge"] == 18 and config["controller"] == {"name": "Example Controller"}
     assert config["idpHint"] == "google" and config["locales"] == ["hr", "en"]
     assert config["acceptingJudgments"] is False and config["uiVersion"]
@@ -129,3 +133,33 @@ async def test_no_api_docs_and_not_indexed():
             assert (await client.get(path)).status_code == 404
         r = await client.get("/legal/privacy.en")
     assert r.headers["x-robots-tag"] == "noindex, nofollow"
+
+
+@pytest.mark.parametrize("lang", ["hr", "en"])
+@pytest.mark.asyncio
+async def test_privacy_notice_describes_profiling_and_silent_review(lang):
+    """Privacy 1.3 (4.13.7): the profiling section, the silent review pause of at most 14 days
+    that the export shows, the 90-day timing retention, public releases on GitHub only."""
+    async with app_client() as client:
+        body = (await client.get(f"/legal/privacy.{lang}")).text
+    words = {"hr": ("profiliranje", "14 dana", "90 dana", "GitHub", "/legal/trust.hr", "17. stavka 3."),
+             "en": ("profiling", "14 days", "90 days", "GitHub", "/legal/trust.en", "17(3)")}[lang]
+    for word in words:
+        assert word in body, word
+
+
+@pytest.mark.parametrize("lang", ["hr", "en"])
+@pytest.mark.asyncio
+async def test_trust_page_carries_the_formulas_of_docs_trust_md(lang):
+    """The trust page's appendix holds the formulas of docs/trust.md, line for line."""
+    text = FORMULAS.read_text(encoding="utf-8")
+    block = [line for line in text.split("## Formulas", 1)[1].split("```", 2)[1].splitlines()
+             if "=" in line or "≤" in line]
+    assert len(block) == 8
+    async with app_client() as client:
+        body = (await client.get(f"/legal/trust.{lang}")).text
+    import html
+    page = html.unescape(body)
+    for line in block:
+        assert line in page, line
+    assert 'id="appendix"' in body

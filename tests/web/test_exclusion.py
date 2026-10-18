@@ -69,8 +69,8 @@ async def test_revoking_the_anchor_unwinds_consensus_gold(fresh_api):
     rows = await api.imported(pair_rows(60, different_every=0))
     await easy_params(api)
     owner = await make_anchor(api, "owner")
-    from labeling_support import unsampled
-    seeds = [r for r in await unsampled(api, rows)][:12]
+    from labeling_support import unseeded
+    seeds = (await unseeded(api, rows))[:12]
     for row in seeds:  # the owner's answer differs from the suggestion (`same`): final gold
         assert (await api.request("POST", answer_path(row), "owner", json=answer(value="different"))).status_code == 200
     [(first, _)] = await score_now(api, as_of_day=later())

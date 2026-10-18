@@ -287,3 +287,9 @@ class AdjudicateRequest(ReasonRequest):
 
 class ReopenRequest(ReasonRequest):
     discard_previous: StrictBool = False
+
+
+class ReapplyRequest(BaseModel):
+    """Keycloak user ids from the erasure list kept outside the database (after a restore)."""
+    model_config = ConfigDict(extra="forbid")
+    keycloak_user_ids: list[StrictStr] = Field(min_length=1, max_length=1000)

@@ -118,10 +118,14 @@ async def test_next_is_fast_at_50k_items(fresh_api):
                      SELECT :a, corpus_id, id, now(), now(), 1, 1, 'shown' FROM label_item
                      WHERE corpus_id = :c ORDER BY ordinal LIMIT 5000""", a=alice, c=corpus)
     await api.sql("ANALYZE")
+    headers = api.headers("alice")  # signed once: the client's own token signing is not server time
+    for _ in range(5):  # warm the connection pool and the caches
+        await api.client.get(f"/api/corpora/{corpus}/next", headers=headers)
     times = []
-    for _ in range(60):
+    for _ in range(100):
         start = time.perf_counter()
-        assert (await next_of(api, "alice", corpus))["item"] is not None
+        r = await api.client.get(f"/api/corpora/{corpus}/next", headers=headers)
         times.append(time.perf_counter() - start)
+        assert r.status_code == 200 and r.json()["item"] is not None
     times.sort()
-    assert times[int(len(times) * 0.95)] < 0.05, times[-5:]
+    assert times[int(len(times) * 0.95)] < 0.05, (times[len(times) // 2], times[-5:])

@@ -12,7 +12,7 @@ from scoring_world import World, synthetic, train, worked_example
 
 UNIFORM = [("same", math.log(0.5)), ("different", math.log(0.5))]
 # outputs_sha256 of synthetic(seed=1) at SCORING_VERSION 2.0; it changes only with a version bump.
-GOLDEN = "1a38a63aa686f6e093104e13f670efc00b86a7730fb4ea5cae3838b732e55874"
+GOLDEN = "d26574696eaa8f8a2c17306471c6ace88124a2d7d46debcf658a1ad4122f985d"
 
 
 def params(**changes):

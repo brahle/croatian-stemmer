@@ -579,8 +579,8 @@ def score(inputs, params):
                 continue
             if g.disclosed_seq is not None and first.seq >= g.disclosed_seq:
                 continue
-            if g.pool == "audit" and not first.day < cutoff_day:
-                continue
+            if g.pool == "audit" and not first.day <= cutoff_day:
+                continue  # an unannounced check counts from the following (UTC) day
             disc = g.kind == "stem" or first.presentation == "blind" or g.agrees is False
             wrong = g.kind != "stem" and g.agrees is False
             obs[(annotator, g.kind)].append((first.seq, first.id, first.cls == g.cls, disc, wrong, g.pool, g.cls))
@@ -993,7 +993,9 @@ def score(inputs, params):
                 calibrated = calibration.get(f"{kind}/{cell}", {}).get("passed", False)
                 state, source = ("resolved", "model") if calibrated else ("provisional", None)
                 answer_cls = winner
-                releasable = release_rule(v["prior"], weighted_all, v["k"], tiers_k, pc)
+                # The release rule is about the crowd: an anchor's vote never makes a row public.
+                releasable = release_rule(v["crowd_prior"], weighted(v["crowd"], key, v["crowd_k"]), v["crowd_k"],
+                                          tiers_k, pc)
             if state is None and not gold_valid and n_low >= pc["votes_low_cap"] and n_expert >= pc["votes_expert_cap"]:
                 state = "contested"
             if state is None and not gold_valid and n_low >= pc["votes_low_cap"]:
@@ -1038,6 +1040,7 @@ def score(inputs, params):
             vote_rows[f"{key[0]}/{key[1]}"] = {
                 "k": v["k"], "prior": [[cls, value] for cls, value in v["prior"]],
                 "votes": [{"annotator_id": j.annotator, "tier": tiers_k.get(j.annotator), "class": j.cls,
+                           "theta": thetas[(j.annotator, kind)],
                            "weight": weight(thetas[(j.annotator, kind)], v["k"]) if j.cls is not None else 0.0,
                            "answer": j.answer, "lemma": j.lemma, "irregular": bool(j.irregular),
                            "presentation": j.presentation, "admitted": j.admitted} for j in counted_all]}

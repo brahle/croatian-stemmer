@@ -10,13 +10,14 @@ distinct voters and none is pivotal, so the row does not depend on any single pe
 
 import csv
 import hashlib
+import math
 import io
 import json
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
-from .scoring import corpus_params, krippendorff_alpha, release_rule
+from .scoring import OTHER, corpus_params, krippendorff_alpha, release_rule
 
 FILES = ("labels.tsv", "summary.tsv", "dataset-card.md", "params.json", "CHECKSUMS")
 LABEL_COLUMNS = ("corpus_id", "corpus_sha256", "source_uri", "license", "labels_license", "item_id", "kind", "word",
@@ -49,23 +50,35 @@ def band(confidence):
     return "≥0.99" if confidence >= 0.99 else "0.95-0.99"
 
 
+def crowd_rows(item):
+    return [v for v in item["votes"] if v["class"] is not None and v["tier"] != "anchor"]
+
+
 def crowd(item):
     """The counted crowd votes of an item as scoring.release_rule() takes them."""
-    return [(v["annotator_id"], v["class"], v["weight"]) for v in item["votes"]
-            if v["class"] is not None and v["tier"] != "anchor"]
+    return [(v["annotator_id"], v["class"], v["weight"]) for v in crowd_rows(item)]
 
 
-def all_votes(item):
-    return [(v["annotator_id"], v["class"], v["weight"]) for v in item["votes"] if v["class"] is not None]
+def weight_at(vote, k):
+    """A vote's weight among k classes, from its weight among the export's classes."""
+    theta = vote["theta"]
+    return math.log(theta * (k - 1) / (1 - theta))
 
 
 def holds(item, params):
-    """The release rule on the item's crowd votes (model rows: on all its counted votes)."""
+    """The release rule on the item's crowd votes (anchors' votes never make a row public).
+    For lemma items the prior covers the crowd's own classes, as in the run."""
     p = corpus_params(params, item["corpus_id"])
     tiers = {v["annotator_id"]: v["tier"] for v in item["votes"]}
-    prior = [tuple(entry) for entry in item["prior"]]
-    votes = all_votes(item) if item["resolution_source"] == "model" else crowd(item)
-    return release_rule(prior, votes, item["k"], tiers, p)
+    votes = crowd(item)
+    if item["kind"] == "lemma":
+        present = sorted({cls for _, cls, _ in votes})
+        k = max(params["lemma_k"], len(present) + 1)
+        prior = [(c, math.log(1 / k)) for c in present] + [(OTHER, math.log((k - len(present)) / k))]
+        votes = [(a, cls, weight_at(v, k)) for (a, cls, _), v in zip(votes, crowd_rows(item))]
+    else:
+        prior, k = [tuple(entry) for entry in item["prior"]], item["k"]
+    return release_rule(prior, votes, k, tiers, p)
 
 
 def releasable(item):
@@ -208,7 +221,7 @@ def check(directory: Path, export: Path, annotators: Path | None = None):
                 problems.append(f"labels.tsv:{number}: a known-answer item still in use")
             source = row.get("resolution_source")
             if source in CHECKED_SOURCES:
-                voters = {a for a, _, _ in (all_votes(item) if source == "model" else crowd(item))}
+                voters = {a for a, _, _ in crowd(item)}
                 if len(voters) < run["params"]["release_min_voters"] or not holds(item, run["params"]):
                     problems.append(f"labels.tsv:{number}: fewer than three crowd voters or a pivotal one")
             if row.get("confidence_band") and source != "model":

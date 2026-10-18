@@ -25,7 +25,8 @@ from .models import (AdminEvent, Anchor, Annotator, AnnotatorScore, Corpus, Eras
                      Judgment, Setting, TrustedEmail)
 from .scheduler import audit_key, item_bits
 from .scoring_run import latest_done, moderation_tx
-from .requests import Candidate, ImportRequest, PublishRequest, SettingsRequest, StatusRequest
+from .erasure import erase_profile
+from .requests import Candidate, ImportRequest, PublishRequest, ReapplyRequest, SettingsRequest, StatusRequest
 
 
 def register(app, ctx):
@@ -344,6 +345,23 @@ def register(app, ctx):
                            # The Keycloak user (id) the curator must delete; gone once completed.
                            "keycloak_user_id": (details or {}).get("keycloak_user_id"),
                            "reason": (details or {}).get("reason")} for e, details, age in rows]}
+
+    @app.post("/api/admin/erasures/reapply")
+    async def reapply_erasures(data: ReapplyRequest, caller: Caller = Depends(curator), db=Depends(session)):
+        """After a database restore: erase again every profile whose erasure was requested after
+        the backup, from the erasure list the curator keeps outside the database (4.13.4)."""
+        erased = []
+        for subject in dict.fromkeys(data.keycloak_user_ids):
+            async with db.begin():
+                await moderation_tx(db)
+                person = (await db.execute(select(Annotator).where(Annotator.subject == subject)
+                                           .with_for_update())).scalar_one_or_none()
+                if person is None or person.status == "erased":
+                    continue
+                await erase_profile(db, person, actor_id=caller.id,
+                                    details={"keycloak_user_id": subject, "reason": "restore_reapply"})
+                erased.append(str(person.id))
+        return {"erased": erased}
 
     @app.post("/api/admin/erasures/{erasure_id}/complete")
     async def complete_erasure(erasure_id: int, caller: Caller = Depends(curator), db=Depends(session)):

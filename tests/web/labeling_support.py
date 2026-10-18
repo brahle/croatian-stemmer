@@ -14,7 +14,7 @@ COMPLIANCE = {"controller_name": "Example Controller", "controller_email": "priv
               "hosting_summary": "Example Hosting Ltd, Germany", "edge_log_retention": "7 days",
               "backup_retention": "14 days"}
 # The document versions this release ships and requires (config defaults).
-REQUIRED = {"privacy": "1.2", "terms": "1.1", "participation": "1.0"}
+REQUIRED = {"privacy": "1.3", "terms": "1.1", "participation": "1.0"}
 
 
 def make_settings(database_url="postgresql+asyncpg://test@localhost/labeling_test", issuer=ISSUER, **changes):
@@ -334,3 +334,12 @@ def synthetic_conllu(path, lemmas=120, repeat=6):
             lines.append("")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
+
+
+async def unseeded(api, rows):
+    """Candidates in neither keyed sample (calibration or review): the anchors' seed answers on
+    them can become consensus gold."""
+    found = {str(r[0]) for r in (await api.sql(
+        "SELECT item_id FROM label_item_audit WHERE corpus_id = :c AND (audit_sample OR review_sample)",
+        c=rows[0]["corpus_id"])).all()}
+    return [row for row in rows if row["item_id"] not in found]

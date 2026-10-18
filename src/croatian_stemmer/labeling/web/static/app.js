@@ -100,7 +100,7 @@ const strings = {
     pin:'Prikvači', unpin:'Otkvači', bundle:'Paket za ponavljanje', stale:' · zastario', pinned:' · prikvačen',
     iaaTitle:'Slaganje (Krippendorffova alfa)', iaaLine:'{kind}: alfa {alpha}, opaženo slaganje {observed}', paramsTitle:'Parametri',
     paramsJson:'Parametri (JSON)', paramsSave:'Spremi parametre', paramsSaved:'Parametri su spremljeni.',
-    exportResolved:'Razriješeno (TSV)', exportRunExport:'Izračun za izdanje (JSONL)', recordRelease:'Zabilježi izdanje',
+    annotatorsExport:'Suradnici (JSONL)', exportResolved:'Razriješeno (TSV)', exportRunExport:'Izračun za izdanje (JSONL)', recordRelease:'Zabilježi izdanje',
     releaseRecorded:'Izdanje je zabilježeno; otkriveno zlatnih primjera: {n}.',
     exportedRestricted:'Preuzeto. Datoteka sadrži pseudonimizirane podatke: čuvajte je samo lokalno, izbrišite je najkasnije za 30 dana i odmah kada se dovrši brisanje osobe čiji su odgovori u njoj.',
   },
@@ -200,7 +200,7 @@ const strings = {
     pin:'Pin', unpin:'Unpin', bundle:'Replay bundle', stale:' · stale', pinned:' · pinned',
     iaaTitle:'Agreement (Krippendorff’s alpha)', iaaLine:'{kind}: alpha {alpha}, observed agreement {observed}', paramsTitle:'Parameters',
     paramsJson:'Parameters (JSON)', paramsSave:'Save parameters', paramsSaved:'The parameters are saved.',
-    exportResolved:'Resolved (TSV)', exportRunExport:'Run export for a release (JSONL)', recordRelease:'Record the release',
+    annotatorsExport:'Contributors (JSONL)', exportResolved:'Resolved (TSV)', exportRunExport:'Run export for a release (JSONL)', recordRelease:'Record the release',
     releaseRecorded:'The release is recorded; gold items disclosed: {n}.',
     exportedRestricted:'Downloaded. The file holds pseudonymous data: keep it local only, delete it within 30 days and at once when the erasure of a person whose answers it holds is completed.',
   },
@@ -418,7 +418,8 @@ async function loadCorpora(selected = ''){
   const rows = (await allCorpora()).filter(row => row.status === 'published');
   const any = rows.length > 1 ? [new Option(t('anyCorpus'), ANY)] : [];
   $('corpus').replaceChildren(new Option(t('chooseCorpusOption'), ''), ...any, ...rows.map(row => new Option(row.name, row.id)));
-  $('corpus').value = selected === ANY && any.length ? ANY : rows.some(row => row.id === selected) ? selected : rows.length === 1 ? rows[0].id : '';
+  // "Any corpus" is the default once there is more than one (the least-resolved one is served first).
+  $('corpus').value = rows.some(row => row.id === selected) ? selected : rows.length === 1 ? rows[0].id : any.length ? ANY : '';
   if (!rows.length) { message(t('noCorpora')); }
   await chooseCorpus();
 }
@@ -690,7 +691,8 @@ async function curatorScoring(){
     const actions = cell(t('colActions'));
     if (r.status === 'done') {
       actions.append(button(r.pinned ? t('unpin') : t('pin'), () => run(async () => { await post(`admin/scoring/runs/${r.id}/${r.pinned ? 'unpin' : 'pin'}`, {}); await curatorScoring(); })),
-                     button(t('bundle'), () => run(async () => { await download(`admin/scoring/runs/${r.id}/bundle`, `run-${r.id}.json`); message(t('exportedRestricted')); })));
+                     button(t('bundle'), () => run(async () => { await download(`admin/scoring/runs/${r.id}/bundle`, `run-${r.id}.json`); message(t('exportedRestricted')); })),
+                     button(t('annotatorsExport'), () => run(async () => { await download(`admin/annotators/export.jsonl?run_id=${r.id}`, `annotators-${r.id}.jsonl`); message(t('exportedRestricted')); })));
       if (r.pinned) actions.append(button(t('recordRelease'), () => run(async () => {
         const data = await post(`admin/scoring/runs/${r.id}/release`, {}); message(t('releaseRecorded', {n: data.disclosed}));
       })));

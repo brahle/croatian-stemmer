@@ -92,17 +92,25 @@ async def eligible_now(db, annotator_ids):
     return {a for a in active if in_profiling_cohort(rows[a])}
 
 
-async def counted_now(db, params, corpus_id, item_id, epoch, sampled, gold_active, without=None):
+async def counted_now(db, params, corpus_id, item_id, epoch, sampled, gold_active, without=None, with_lease=False):
     """{"low": n, "expert": n}: the capped count of admitted first answers in the item's epoch
-    from annotators whose votes are eligible now (the same rule a run applies)."""
+    from annotators whose votes are eligible now (the same rule a run applies). With
+    `with_lease`, also other annotators' unanswered showings of the last 30 minutes."""
     firsts = (await db.execute(text("""
         SELECT f.*, a.status, EXISTS (SELECT 1 FROM label_anchor x WHERE x.annotator_id = f.annotator_id) AS anchor,
+               (SELECT count(*) FROM label_assignment l WHERE l.corpus_id = :c AND l.item_id = :i
+                AND l.annotator_id IS DISTINCT FROM CAST(:w AS uuid) AND l.current_revision = 0
+                AND l.last_shown_at > now() - interval '30 minutes') AS lease,
                coalesce((SELECT array_agg(ARRAY[c.document, c.version, c.age_threshold::text])
                          FROM label_consent c WHERE c.annotator_id = f.annotator_id), '{}') AS consents
         FROM (SELECT DISTINCT ON (annotator_id) annotator_id, admitted, admission_group, coalesce(seq, 0) AS seq, id
               FROM label_judgment WHERE corpus_id = :c AND item_id = :i AND coalesce(seq, 0) > :e
               ORDER BY annotator_id, coalesce(seq, 0), id) f
-        JOIN label_annotator a ON a.id = f.annotator_id"""), {"c": corpus_id, "i": item_id, "e": epoch})).all()
+        RIGHT JOIN (SELECT 1) one ON true
+        LEFT JOIN label_annotator a ON a.id = f.annotator_id"""),
+        {"c": corpus_id, "i": item_id, "e": epoch, "w": without})).all()
+    lease = firsts[0].lease if firsts else 0
+    firsts = [r for r in firsts if r.annotator_id is not None]
     firsts = sorted((r for r in firsts if r.annotator_id != without), key=lambda r: (r.seq, str(r.id)))
     eligible = {r.annotator_id for r in firsts if r.status == "active" and in_profiling_cohort(
         (document, version, int(age) if age is not None else None) for document, version, age in r.consents)}
@@ -112,14 +120,7 @@ async def counted_now(db, params, corpus_id, item_id, epoch, sampled, gold_activ
         [(r.annotator_id, True if r.admitted is None else r.admitted, r.admission_group or "low") for r in firsts],
         eligible.__contains__, {"low": caps["votes_low_cap"], "expert": caps["votes_expert_cap"]},
         exempt=lambda a: sampled and a in anchors, uncapped=gold_active)
-    return used
-
-
-async def _lease(db, corpus_id, item_id, annotator_id):
-    """Other annotators' unanswered showings of the item in the last 30 minutes."""
-    return (await db.execute(select(func.count()).select_from(Assignment).where(
-        Assignment.corpus_id == corpus_id, Assignment.item_id == item_id, Assignment.annotator_id != annotator_id,
-        Assignment.current_revision == 0, Assignment.last_shown_at > RESHOW))).scalar_one()
+    return (used, lease) if with_lease else used
 
 
 def _unseen(caller_id):
@@ -261,8 +262,9 @@ async def pick(ctx, db, caller, corpus_ids, kind, expert_work=True):
         sampled = row.audit_sample or row.review_sample
         if row.gold or (anchor and sampled):
             return Pick(row.corpus_id, row.item_id)
-        used = await counted_now(db, params, row.corpus_id, row.item_id, row.epoch, sampled, False, without=a)
-        if used[group] + await _lease(db, row.corpus_id, row.item_id, a) < cap:
+        used, lease = await counted_now(db, params, row.corpus_id, row.item_id, row.epoch, sampled, False, without=a,
+                                        with_lease=True)
+        if used[group] + lease < cap:
             return Pick(row.corpus_id, row.item_id)
     return None
 

@@ -83,9 +83,19 @@ async def test_a_freed_slot_is_refilled_and_the_cap_holds_through_every_change(f
     first = [f"o{n}" for n in range(5)]
     for name in first:
         if excluded == "outside_cohort":
-            await api.consent(name)  # the 0.2.3 gate only: not profiled, so not counted
-        else:
-            await profiled(api, name)
+            # Answered under the 0.2.3 gate (privacy 1.2): stored and admitted, not profiled, not counted.
+            assert (await api.request("GET", "/api/me", name)).status_code == 200
+            who = await api.annotator_id(name)
+            for document, version in (("privacy", "1.2"), ("terms", "1.1"), ("participation", "1.0")):
+                await api.sql("INSERT INTO label_consent (annotator_id, document, version, locale, age_confirmed, "
+                              "age_threshold, ui_version) VALUES (:a, :d, :v, 'hr', true, 18, '0.2.3')",
+                              a=who, d=document, v=version)
+            await api.sql("INSERT INTO label_judgment (id, corpus_id, item_id, annotator_id, revision, answer, irregular, "
+                          "item_revision, client_version, created_at, admitted, admission_group) VALUES (:id, :c, :i, :a, "
+                          "1, 'same', false, 1, '0.2.3', now(), true, 'low')",
+                          id=uuid4(), c=row["corpus_id"], i=row["item_id"], a=who)
+            continue
+        await profiled(api, name)
         assert (await api.request("POST", answer_path(row), name, json=answer())).status_code == 200
     if excluded != "outside_cohort":
         for name in first:

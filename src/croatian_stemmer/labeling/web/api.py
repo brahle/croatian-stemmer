@@ -31,6 +31,7 @@ from .erasure import erase_profile, pending_erasure
 from .legal import LegalDocuments
 from .limits import Limiter
 from .models import Annotator, Consent, ErasureRequest, Gold, Setting
+from .retention import apply_retention
 from .scheduler import audit_key, live_readiness
 from .trusted import match_anchor
 from .scoring_run import moderation_tx, scheduled_tick
@@ -294,6 +295,7 @@ def create_app(settings: Settings) -> FastAPI:
                 await asyncio.sleep(seconds)
         tasks = [asyncio.create_task(every(6 * 3600, warn_overdue_erasures, "erasure reminder")),
                  asyncio.create_task(every(24 * 3600, expire_unconsented_profiles, "unconsented profile expiry")),
+                 asyncio.create_task(every(24 * 3600, apply_retention, "retention")),
                  asyncio.create_task(every(settings.scoring_interval_s, scheduled_tick, "scoring run"))]
         try:
             yield

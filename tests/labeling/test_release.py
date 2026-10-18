@@ -17,16 +17,15 @@ PRIOR = [["same", math.log(0.5)], ["different", math.log(0.5)]]
 
 def item(votes, source="model", state="resolved", gold=None, pool=None, answer=None):
     """A run-export item record. votes: [(tier, answer, theta)]; ids are fresh annotators."""
-    rows = [{"annotator_id": str(uuid4()), "tier": tier, "class": value, "weight": weight(theta, 2), "answer": value,
+    rows = [{"annotator_id": str(uuid4()), "tier": tier, "class": value, "theta": theta, "weight": weight(theta, 2),
+             "answer": value,
              "lemma": "", "irregular": False, "presentation": "shown", "admitted": True} for tier, value, theta in votes]
     tiers = {v["annotator_id"]: v["tier"] for v in rows}
     triples = [(v["annotator_id"], v["class"], v["weight"]) for v in rows]
     crowd = [t for t, v in zip(triples, rows) if v["tier"] != "anchor"]
     met, winner, probs = model_rule([tuple(p) for p in PRIOR], triples, 2, tiers, PARAMS)
-    checked = source == "model"
-    # An adjudication is releasable as the curator's decision; other rows need three voters, none pivotal.
-    ok = source == "adjudication" or release_rule([tuple(p) for p in PRIOR], triples if checked else crowd, 2, tiers,
-                                                  PARAMS)
+    # An adjudication is releasable as the curator's decision; other rows need three crowd voters, none pivotal.
+    ok = source == "adjudication" or release_rule([tuple(p) for p in PRIOR], crowd, 2, tiers, PARAMS)
     item_id = str(uuid4())
     return {"record": "item", "corpus_id": CORPUS, "item_id": item_id, "kind": "pair",
             "candidate": {"word": "kuće", "other_word": "kuća", "upos": "NOUN", "context": "Sintetički primjer.",

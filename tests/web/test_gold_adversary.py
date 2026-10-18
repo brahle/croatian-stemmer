@@ -4,7 +4,7 @@ audit positions cannot be predicted without the key; blind showings are equally 
 gold and other items."""
 import random
 from collections import Counter
-from uuid import uuid4
+from uuid import UUID
 
 import pytest
 pytest.importorskip("sqlalchemy")
@@ -65,7 +65,7 @@ def test_audit_positions_cannot_be_predicted_without_the_key():
     its own key: over 5,000 showings its guesses are independent of the truth."""
     rng = random.Random(4)
     key, guess = "%064x" % rng.getrandbits(256), "%064x" % rng.getrandbits(256)
-    annotator = str(uuid4())
+    annotator = "00000000-0000-4000-8000-00000000a11c"
     table = Counter()
     for n in range(5000):
         actual = keyed(key, f"audit:{annotator}:pair:{n}") % 100 < 10
@@ -86,9 +86,10 @@ def test_blind_rate_is_the_same_on_gold_and_other_items():
     rng = random.Random(5)
     key = "%064x" % rng.getrandbits(256)
     params = {"blind_rate": 20}
-    people = [str(uuid4()) for _ in range(50)]
-    gold = [(str(uuid4()), str(uuid4())) for _ in range(100)]
-    other = [(str(uuid4()), str(uuid4())) for _ in range(100)]
+    fresh = lambda: str(UUID(int=rng.getrandbits(128)))
+    people = [fresh() for _ in range(50)]
+    gold = [(fresh(), fresh()) for _ in range(100)]
+    other = [(fresh(), fresh()) for _ in range(100)]
     rates = []
     for items in (gold, other):
         shows = [blind_by_rule(key, params, a, c, i, "pair") for a in people for c, i in items]
