@@ -72,3 +72,4 @@ exclude = ["tests/web"]
 # summary of everything except passes (-ra). Override with `-v`/`--tb=long`.
 addopts = "-q --tb=short --no-header -ra"
 testpaths = ["tests"]
+markers = ["slow: large synthetic workloads (50k-item scheduler, 100k-judgment run)"]

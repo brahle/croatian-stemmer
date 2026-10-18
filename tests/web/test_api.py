@@ -277,7 +277,9 @@ async def test_reimport_preserves_items(api):
     r = await api.request("POST", "/api/import", "curator", True, json={"name": "Again", "candidates": changed})
     assert r.json()["added"] == 0 and r.json()["already_present"] == 3
     await api.consent("alice")
-    assert (await next_item(api, rows[0]))["candidate"]["algorithm_sha256"] == "b" * 64
+    assert "algorithm_sha256" not in (await next_item(api, rows[0]))["candidate"]  # provenance stays server-side
+    stored = await api.sql("SELECT payload ->> 'algorithm_sha256' FROM label_item WHERE id = :i", i=rows[0]["item_id"])
+    assert stored.scalar_one() == "b" * 64
     more = rows + [dict(rows[0], item_id=str(uuid4()), word_ref="test:3")]
     assert (await api.request("POST", "/api/import", "curator", True, json={"name": "More", "candidates": more})).json()["added"] == 1
     assert (await api.request("GET", root(rows[0]) + "/progress", "alice")).json()["kinds"]["pair"]["total"] == 2

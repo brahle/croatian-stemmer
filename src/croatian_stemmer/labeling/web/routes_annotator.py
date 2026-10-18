@@ -14,11 +14,14 @@ from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 
+from ..scoring import corpus_params
+from . import scheduler
 from .common import Caller, corpus_json, definite_votes, failure, judgment_json, visible_corpus
 from .config import MINIMUM_AGE
 from .erasure import erase_profile, still_present
 from .scoring_run import moderation_tx
-from .models import Annotator, Assignment, Consent, Corpus, ErasureRequest, Item, Judgment
+from .models import Annotator, Assignment, Consent, Corpus, ErasureRequest, Gold, Item, ItemAudit, ItemState, Judgment
+from .scheduler import candidate_view
 from .requests import AnswerRequest, Candidate, ConsentRequest, EraseRequest
 
 KINDS = ("pair", "lemma", "stem")
@@ -39,8 +42,12 @@ def _my_latest(caller):
                 Judgment.item_id == Assignment.item_id, Judgment.revision == Assignment.current_revision)
 
 
-def _question(item, assignment, judgment):
-    return {"candidate": item.payload, "ordinal": item.ordinal, "status": item.status,
+def _question(item, assignment, judgment, presentation=None):
+    """The single serialiser of an item for annotators. It never joins gold: a known-answer
+    item and any other item differ only in the payload, ordinal and presentation (4.3.6)."""
+    presentation = presentation or (assignment.presentation if assignment and assignment.presentation else "shown")
+    return {"candidate": candidate_view(item.payload, presentation), "ordinal": item.ordinal, "status": item.status,
+            "presentation": presentation,
             "assignment": {"current_revision": assignment.current_revision if assignment else 0},
             "judgment": judgment_json(judgment)}
 
@@ -116,11 +123,13 @@ def register(app, ctx):
                            "revision": j.revision, "answer": j.answer, "lemma": j.lemma,
                            "irregular": j.irregular, "item_revision": j.item_revision,
                            "client_version": j.client_version, "source": j.source,
-                           "elapsed_ms": j.elapsed_ms, "created_at": iso(j.created_at)} for j in judgments],
+                           "elapsed_ms": j.elapsed_ms, "created_at": iso(j.created_at),
+                           "presentation": j.presentation or "shown"} for j in judgments],
             "assignments": [{"corpus_id": str(a.corpus_id), "item_id": str(a.item_id),
                              "first_shown_at": iso(a.first_shown_at), "last_shown_at": iso(a.last_shown_at),
                              "shown_count": a.shown_count, "current_revision": a.current_revision,
-                             "last_answer_at": iso(a.last_answer_at)} for a in assignments],
+                             "last_answer_at": iso(a.last_answer_at), "presentation": a.presentation or "shown"}
+                            for a in assignments],
             "erasure_requests": [{"id": e.id, "requested_at": iso(e.requested_at),
                                   "app_erased_at": iso(e.app_erased_at),
                                   "keycloak_deleted_at": iso(e.keycloak_deleted_at)} for e in erasures],
@@ -184,32 +193,62 @@ def register(app, ctx):
                            "definite": reviewed - unsure, "items_with_votes": voted}
         return {"kinds": kinds, "revision_events": events}
 
+    async def serve(db, caller, corpus_ids, kind, expert_work):
+        """The next item among corpus_ids, shown (assignment upserted), as /next returns it."""
+        params, key = await ctx.serving_params(db), await ctx.audit_key(db)
+        if await ctx.trust_scheduling(db):
+            chosen = await scheduler.pick(ctx, db, caller, corpus_ids, kind, expert_work)
+            if chosen is None:
+                return None
+            item = (await db.execute(select(Item).where(Item.corpus_id == chosen.corpus_id,
+                                                        Item.id == chosen.item_id))).scalar_one()
+            assignment = await scheduler.show(db, key, params, caller.id, item, chosen.presentation)
+            return {"item": _question(item, assignment, None), "qualification": chosen.qualification}
+        # V1's coverage-first order with its target vote count, until scoring or gold exists.
+        corpus_id = corpus_ids[0]
+        votes = definite_votes(corpus_id)
+        count = func.coalesce(votes.c.n, 0)
+        item = (await db.execute(
+            select(Item).outerjoin(votes, votes.c.item_id == Item.id).outerjoin(Assignment, _mine(caller))
+            .where(Item.corpus_id == corpus_id, Item.kind == kind, Item.status == "active",
+                   or_(Assignment.annotator_id.is_(None),
+                       and_(Assignment.current_revision == 0, Assignment.last_shown_at < RESHOW)),
+                   count < settings.target_votes)
+            .order_by(count, Item.ordinal).limit(1))).scalar_one_or_none()
+        if item is None:
+            return None
+        assignment = await scheduler.show(db, key, params, caller.id, item)
+        return {"item": _question(item, assignment, None), "qualification": None}
+
     @app.get("/api/corpora/{corpus_id}/next")
-    async def next_item(corpus_id: UUID, kind: Kind = "pair", caller: Caller = Depends(consented),
-                        db=Depends(session)):
+    async def next_item(corpus_id: UUID, kind: Kind = "pair", expert: bool = True,
+                        caller: Caller = Depends(consented), db=Depends(session)):
         limiter.take("read", caller.id)
         async with db.begin():
             await still_present(db, caller)
             await visible_corpus(db, caller, corpus_id, labeling=True)
-            votes = definite_votes(corpus_id)
-            count = func.coalesce(votes.c.n, 0)
-            item = (await db.execute(
-                select(Item).outerjoin(votes, votes.c.item_id == Item.id).outerjoin(Assignment, _mine(caller))
-                .where(Item.corpus_id == corpus_id, Item.kind == kind, Item.status == "active",
-                       or_(Assignment.annotator_id.is_(None),
-                           and_(Assignment.current_revision == 0, Assignment.last_shown_at < RESHOW)),
-                       count < settings.target_votes)
-                .order_by(count, Item.ordinal).limit(1))).scalar_one_or_none()
-            if item is None:
-                return {"item": None}
-            now = func.now()
-            assignment = (await db.execute(insert(Assignment).values(
-                annotator_id=caller.id, corpus_id=corpus_id, item_id=item.id, first_shown_at=now,
-                last_shown_at=now, shown_count=1).on_conflict_do_update(
-                index_elements=[Assignment.annotator_id, Assignment.corpus_id, Assignment.item_id],
-                set_={"last_shown_at": now, "shown_count": Assignment.shown_count + 1})
-                .returning(Assignment))).scalar_one()
-        return {"item": _question(item, assignment, None)}
+            served = await serve(db, caller, [corpus_id], kind, expert)
+        return served or {"item": None, "qualification": None}
+
+    @app.get("/api/next")
+    async def next_any(kind: Kind = "pair", expert: bool = True, caller: Caller = Depends(consented),
+                       db=Depends(session)):
+        """Any published corpus: the one with the lowest share of resolved items of the kind
+        first (ties by publication time), skipping corpora with nothing to serve."""
+        limiter.take("read", caller.id)
+        async with db.begin():
+            await still_present(db, caller)
+            corpora = (await db.execute(text("""
+                SELECT c.id FROM label_corpus c LEFT JOIN label_item_state s ON s.corpus_id = c.id AND s.kind = :k
+                WHERE c.status = 'published' GROUP BY c.id, c.published_at
+                HAVING count(s.item_id) > 0
+                ORDER BY avg(CASE WHEN s.state = 'resolved' THEN 1.0 ELSE 0.0 END), c.published_at, c.id"""),
+                {"k": kind})).scalars().all()
+            for corpus_id in corpora:
+                served = await serve(db, caller, [corpus_id], kind, expert)
+                if served:
+                    return served
+        return {"item": None, "qualification": None}
 
     @app.get("/api/corpora/{corpus_id}/items")
     async def my_items(corpus_id: UUID, kind: Kind = "pair",
@@ -237,9 +276,46 @@ def register(app, ctx):
                 select(Item, Assignment, Judgment).outerjoin(Assignment, _mine(caller))
                 .outerjoin(Judgment, _my_latest(caller))
                 .where(Item.corpus_id == corpus_id, Item.id == item_id))).one_or_none()
-        if row is None:
-            raise failure(404, "not_found")
-        return _question(*row)
+            if row is None:
+                raise failure(404, "not_found")
+            item, assignment, judgment = row
+            presentation = None
+            if assignment is None or assignment.presentation is None:
+                # Never shown to this person: the same keyed rule as a showing, so asking for
+                # an item directly cannot reveal a suggestion a showing would hide.
+                params, key = await ctx.serving_params(db), await ctx.audit_key(db)
+                blind = scheduler.blind_by_rule(key, params, caller.id, corpus_id, item_id, item.kind)
+                presentation = "blind" if blind else "shown"
+        return _question(item, assignment, judgment, presentation)
+
+    async def admission(db, caller, item):
+        """(admitted, admission_group) of an answer (4.9.2). The response never says which:
+        no status code distinguishes gold, capacity or quarantine."""
+        state = (await db.execute(select(ItemState).where(ItemState.corpus_id == item.corpus_id,
+                                                          ItemState.item_id == item.id).with_for_update())).scalar_one()
+        epoch = state.epoch
+        first = (await db.execute(
+            select(Judgment.admitted, Judgment.admission_group).where(
+                Judgment.annotator_id == caller.id, Judgment.corpus_id == item.corpus_id, Judgment.item_id == item.id,
+                func.coalesce(Judgment.seq, 0) > epoch).order_by(func.coalesce(Judgment.seq, 0), Judgment.id)
+            .limit(1))).first()
+        if first is not None:  # a revision inherits its epoch's first answer's decision
+            return (True if first.admitted is None else first.admitted), first.admission_group or "low"
+        anchor, tier = await scheduler.standing(db, caller.id, item.kind)
+        group = "expert" if tier in ("anchor", "established") else "low"
+        if caller.id not in await scheduler.eligible_now(db, [caller.id]):
+            return False, group  # quarantined, or outside the profiling cohort: kept, not counted
+        audit = (await db.execute(select(ItemAudit).where(ItemAudit.corpus_id == item.corpus_id,
+                                                          ItemAudit.item_id == item.id))).scalar_one()
+        gold = (await db.execute(select(Gold.status).where(Gold.corpus_id == item.corpus_id,
+                                                           Gold.item_id == item.id))).scalar_one_or_none()
+        if gold in ("active", "retired") or (anchor and (audit.audit_sample or audit.review_sample)):
+            return True, group  # gold and the anchors' sampled checks are exempt from the budgets
+        params = await ctx.serving_params(db)
+        used = await scheduler.counted_now(db, params, item.corpus_id, item.id, epoch,
+                                           audit.audit_sample or audit.review_sample, False, without=caller.id)
+        caps = corpus_params(params, item.corpus_id)
+        return used[group] < caps["votes_expert_cap" if group == "expert" else "votes_low_cap"], group
 
     @app.post("/api/corpora/{corpus_id}/items/{item_id}/answer")
     async def answer(corpus_id: UUID, item_id: UUID, data: AnswerRequest,
@@ -260,14 +336,13 @@ def register(app, ctx):
                 if item is None:
                     raise failure(404, "not_found")
                 await visible_corpus(db, caller, corpus_id, labeling=True)
-                # Answering an item that was never fetched is allowed and recorded as unseen.
                 now = datetime.now(timezone.utc)
-                await db.execute(insert(Assignment).values(
-                    annotator_id=caller.id, corpus_id=corpus_id, item_id=item_id, first_shown_at=now,
-                    last_shown_at=now, shown_count=0).on_conflict_do_nothing())
+                # Only an item served by /next (or the person's own earlier answer) can be answered.
                 assignment = (await db.execute(select(Assignment).where(
                     Assignment.annotator_id == caller.id, Assignment.corpus_id == corpus_id,
-                    Assignment.item_id == item_id).with_for_update())).scalar_one()
+                    Assignment.item_id == item_id).with_for_update())).scalar_one_or_none()
+                if assignment is None or assignment.shown_count < 1:
+                    raise failure(409, "not_assigned")
                 old = (await db.execute(select(Judgment).where(Judgment.id == data.request_id))).scalar_one_or_none()
                 if old is not None:
                     if (old.annotator_id, old.corpus_id, old.item_id, old.revision - 1, old.answer, old.lemma,
@@ -287,10 +362,12 @@ def register(app, ctx):
                         irregular=data.irregular, annotation_id=data.request_id, annotated_at=now).validate()
                 except ValueError as exc:
                     raise failure(422, "invalid_judgment") from exc
+                admitted, group = await admission(db, caller, item)
                 db.add(Judgment(id=data.request_id, corpus_id=corpus_id, item_id=item_id, annotator_id=caller.id,
                                 revision=revision, answer=data.answer, lemma=data.lemma, irregular=data.irregular,
                                 item_revision=item.revision, client_version=data.client_version, source="web",
-                                elapsed_ms=data.elapsed_ms, created_at=now))
+                                elapsed_ms=data.elapsed_ms, created_at=now, admitted=admitted, admission_group=group,
+                                presentation=assignment.presentation or "shown"))
                 assignment.current_revision, assignment.last_answer_at = revision, now
             return {"annotation_id": str(data.request_id), "revision": revision, "current_revision": revision}
         except IntegrityError as exc:

@@ -30,7 +30,8 @@ from .config import MINIMUM_AGE, Settings
 from .erasure import erase_profile, pending_erasure
 from .legal import LegalDocuments
 from .limits import Limiter
-from .models import Annotator, Consent, ErasureRequest, Setting
+from .models import Annotator, Consent, ErasureRequest, Gold, Setting
+from .scheduler import audit_key, live_readiness
 from .scoring_run import moderation_tx, scheduled_tick
 
 STATIC = Path(__file__).parent / "static"
@@ -91,6 +92,9 @@ class Context:
         self.legal = LegalDocuments(settings, DOCUMENTS)
         self._accepting = None  # (value, monotonic time)
         self._serving = None  # (scoring params, monotonic time)
+        self._scheduling = None  # (trust scheduler on, monotonic time)
+        self._readiness = {}  # kind -> (readiness, monotonic time)
+        self._audit_key = None
         self.scoring_pause = None  # tests: an async callable awaited between scoring and publication
         self.status_pause = None  # tests: awaited by the status route while it holds the annotator row
         self._build_dependencies()
@@ -117,9 +121,38 @@ class Context:
         self._serving = (params, now)
         return params
 
+    async def audit_key(self, db) -> str:
+        """The audit key, read once (it never changes after migration 003)."""
+        if self._audit_key is None:
+            self._audit_key = await audit_key(db)
+        return self._audit_key
+
+    async def readiness(self, db, kind) -> dict:
+        """Live readiness of a kind from the gold mirror and the anchors (5 s cache)."""
+        now = time.monotonic()
+        cached = self._readiness.get(kind)
+        if cached is not None and now - cached[1] < 5:
+            return cached[0]
+        value = await live_readiness(db, await self.serving_params(db), kind)
+        self._readiness[kind] = (value, now)
+        return value
+
+    async def trust_scheduling(self, db) -> bool:
+        """/next uses the trust scheduler once scoring is enabled or any gold exists (5 s cache);
+        before that it keeps V1's coverage-first order with its target vote count."""
+        now = time.monotonic()
+        if self._scheduling is not None and now - self._scheduling[1] < 5:
+            return self._scheduling[0]
+        enabled = (await db.execute(select(Setting.value).where(Setting.key == "scoring_enabled"))).scalar_one_or_none()
+        gold = (await db.execute(select(Gold.item_id).limit(1))).first() is not None
+        self._scheduling = (enabled is True or gold, now)
+        return self._scheduling[0]
+
     def forget_settings(self):
         self._accepting = None
         self._serving = None
+        self._scheduling = None
+        self._readiness = {}
 
     def consent_missing(self):
         return failure(403, "consent_required", required=self.settings.required_documents)
@@ -137,11 +170,16 @@ class Context:
             async with sessions() as db:
                 yield db
 
+        # The caller's row and consent rows in one round trip (the gate needs both on every request).
+        consents = (select(func.array_agg(func.json_build_array(Consent.document, Consent.version,
+                                                                Consent.age_threshold)))
+                    .where(Consent.annotator_id == Annotator.id).scalar_subquery())
+
         async def annotator_any(request: Request, db=Depends(session)) -> Caller:
             principal = await auth.authenticate(request.headers.get("authorization"))
             async with db.begin():
                 row = (await db.execute(select(Annotator.id, Annotator.status, Annotator.last_seen_at,
-                                               func.now() - Annotator.last_seen_at)
+                                               func.now() - Annotator.last_seen_at, consents)
                                         .where(Annotator.subject == principal.subject))).one_or_none()
                 if row is None:
                     # An erased account keeps its Keycloak user for up to 30 days;
@@ -153,23 +191,21 @@ class Context:
                         subject=principal.subject, email=principal.email,
                         email_verified=principal.email_verified).on_conflict_do_nothing(index_elements=[Annotator.subject]))
                     row = (await db.execute(select(Annotator.id, Annotator.status, Annotator.last_seen_at,
-                                                   func.now() - Annotator.last_seen_at)
+                                                   func.now() - Annotator.last_seen_at, consents)
                                             .where(Annotator.subject == principal.subject))).one()
                 elif row[3].total_seconds() > 600 and not await refresh_profile(db, row[0], principal):
                     # Erased since the SELECT above: never write the email back or go on as a stale caller.
                     raise await pending_erasure(db, principal.subject) or failure(409, "erasure_pending")
-            return Caller(id=row[0], status=row[1], principal=principal)
+            return Caller(id=row[0], status=row[1], principal=principal,
+                          consents=tuple(tuple(c) for c in row[4] or ()))
 
         async def annotator(caller: Caller = Depends(annotator_any)) -> Caller:
             if caller.status == "blocked":
                 raise failure(403, "account_blocked")
             return caller
 
-        async def consented(caller: Caller = Depends(annotator), db=Depends(session)) -> Caller:
-            async with db.begin():
-                rows = (await db.execute(select(Consent.document, Consent.version, Consent.age_threshold).where(
-                    Consent.annotator_id == caller.id))).all()
-            if not self.consent_complete(rows):
+        async def consented(caller: Caller = Depends(annotator)) -> Caller:
+            if not self.consent_complete(caller.consents):
                 raise self.consent_missing()
             return caller
 

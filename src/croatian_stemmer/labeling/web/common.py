@@ -21,6 +21,7 @@ class Caller:
     id: UUID
     status: str
     principal: Principal
+    consents: tuple = ()  # (document, version, age_threshold) rows when the request began
 
     @property
     def curator(self):

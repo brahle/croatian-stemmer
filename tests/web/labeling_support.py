@@ -113,6 +113,17 @@ def answer_path(row):
     return f'/api/corpora/{row["corpus_id"]}/items/{row["item_id"]}/answer'
 
 
+# Gold is invisible to annotators (4.3.6): no non-curator response anywhere in the suite may
+# name gold, the audit machinery or a gold basis. Qualification is announced, so it may appear.
+HIDDEN = ("gold", "audit", "corpus_unambiguous", "anchor_consensus")
+
+
+def hidden_from_annotators(url, response):
+    body = response.text.lower()
+    for word in HIDDEN:
+        assert word not in body, f"a non-curator response to {url} names {word!r}: {response.text[:300]}"
+
+
 class Api:
     """An httpx client on the ASGI app plus helpers for the common flows."""
 
@@ -120,9 +131,22 @@ class Api:
         self.client, self.identity, self.app, self.settings = client, identity, app, settings
         self.headers = identity.headers
 
-    def request(self, method, url, name="alice", curator=False, **kwargs):
-        return self.client.request(method, url, headers={**self.headers(name, curator), **kwargs.pop("headers", {})},
-                                   **kwargs)
+    async def request(self, method, url, name="alice", curator=False, fetched=True, **kwargs):
+        """One API call as `name`. Answers count as fetched: unless `fetched=False`, an answer to an
+        item the person was never shown gets the assignment /next would have created first (the
+        tests that are about what /next serves fetch through /next)."""
+        if fetched and method == "POST" and url.endswith("/answer") and name in self.identity.subjects:
+            _, _, corpus, _, item, _ = url.rsplit("/", 5)
+            await self.sql("""INSERT INTO label_assignment (annotator_id, corpus_id, item_id, first_shown_at,
+                                last_shown_at, shown_count, presentation)
+                              SELECT a.id, :c, :i, now(), now(), 1, 'shown' FROM label_annotator a
+                              WHERE a.subject = :s AND EXISTS (SELECT 1 FROM label_item WHERE corpus_id = :c AND id = :i)
+                              ON CONFLICT DO NOTHING""", c=corpus, i=item, s=self.identity.subjects[name])
+        response = await self.client.request(method, url, headers={**self.headers(name, curator),
+                                                                    **kwargs.pop("headers", {})}, **kwargs)
+        if not curator and url.startswith("/api/"):
+            hidden_from_annotators(url, response)
+        return response
 
     async def consent(self, name="alice", curator=False):
         s = self.settings
@@ -217,3 +241,38 @@ def unlimited(api):
     from croatian_stemmer.labeling.web.limits import Rate
     api.app.state.ctx.limiter.rates = {name: Rate(10 ** 9, 10 ** 9) for name in ("answer", "read", "account")}
     return api
+
+
+async def scoring_on(api):
+    """Enable scoring (the curator's switch); /next then uses the trust scheduler."""
+    r = await api.request("PUT", "/api/admin/scoring/settings", "curator", True, json={"scoring_enabled": True})
+    assert r.status_code == 200, r.text
+    api.app.state.ctx.forget_settings()
+
+
+def pair_rows(n, corpus=None, different_every=2):
+    """n pair candidates of one synthetic corpus; every `different_every`-th has different
+    proposed lemmas (so the suggestion implies `different`)."""
+    corpus = corpus or str(uuid4())
+    base = candidates()[0]
+    rows = []
+    for i in range(n):
+        different = different_every and i % different_every == 1
+        rows.append({**base, "corpus_id": corpus, "item_id": str(uuid4()), "word_ref": f"test:pair:{i}",
+                     "other_proposed_lemma": "kućica" if different else base["other_proposed_lemma"],
+                     "other_word": "kućice" if different else base["other_word"]})
+    return rows
+
+
+async def make_anchor(api, name="owner"):
+    """Put `name`'s verified email on the trusted list through the curator route; the next
+    authenticated request of `name` grants the anchor. Returns the annotator id."""
+    r = await api.request("POST", "/api/admin/trusted", "curator", True,
+                          json={"email": f"{name}@example.org", "label": name.capitalize()})
+    assert r.status_code in (200, 409), r.text
+    await profiled(api, name)
+    annotator = await api.annotator_id(name)
+    granted = (await api.sql("SELECT count(*) FROM label_anchor WHERE annotator_id = :a", a=annotator)).scalar_one()
+    assert granted == 1
+    api.app.state.ctx.forget_settings()
+    return annotator
