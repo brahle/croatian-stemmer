@@ -4,13 +4,13 @@ Nothing here returns another annotator's answers or identity; vote counts appear
 only as corpus-level totals.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 from uuid import UUID
 
 from fastapi import Depends, Query
 from fastapi.responses import JSONResponse
-from sqlalchemy import and_, func, or_, select, text, true
+from sqlalchemy import and_, func, literal, or_, select, text, true, tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 
@@ -45,12 +45,24 @@ def _my_latest(caller):
 
 def _question(item, assignment, judgment, presentation=None):
     """The single serialiser of an item for annotators. It never joins gold: a known-answer
-    item and any other item differ only in the payload, ordinal and presentation (4.3.6)."""
+    item and any other item differ only in the payload and presentation (4.3.6). No positional
+    field (the import ordinal) is sent: items imported together, such as a gold reserve, would
+    be recognisable by it."""
     presentation = presentation or (assignment.presentation if assignment and assignment.presentation else "shown")
-    return {"candidate": candidate_view(item.payload, presentation), "ordinal": item.ordinal, "status": item.status,
+    return {"candidate": candidate_view(item.payload, presentation), "status": item.status,
             "presentation": presentation,
             "assignment": {"current_revision": assignment.current_revision if assignment else 0},
             "judgment": judgment_json(judgment)}
+
+
+CURSOR = r"^([0-9]{1,20}~[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?$"
+
+
+def _cursor(assignment):
+    """An opaque position in the caller's own list: when the item was first shown to them."""
+    shown = assignment.first_shown_at
+    micros = (shown - datetime(1970, 1, 1, tzinfo=timezone.utc)) // timedelta(microseconds=1)
+    return f"{micros}~{assignment.item_id}"
 
 
 def register(app, ctx):
@@ -185,7 +197,8 @@ def register(app, ctx):
         counts = {cid: {kind: 0 for kind in KINDS} for cid in corpus_ids}
         if corpus_ids:
             rows = await db.execute(select(Item.corpus_id, Item.kind, func.count()).where(
-                Item.corpus_id.in_(corpus_ids), Item.status == "active").group_by(Item.corpus_id, Item.kind))
+                Item.corpus_id.in_(corpus_ids), Item.status == "active", scheduler.ordinary())
+                .group_by(Item.corpus_id, Item.kind))
             for cid, kind, count in rows:
                 counts[cid][kind] = count
         return counts
@@ -214,7 +227,8 @@ def register(app, ctx):
                        func.count(votes.c.item_id).filter(votes.c.n > 0))
                 .outerjoin(Assignment, _mine(caller)).outerjoin(Judgment, _my_latest(caller))
                 .outerjoin(votes, votes.c.item_id == Item.id)
-                .where(Item.corpus_id == corpus_id, Item.status == "active").group_by(Item.kind))).all()
+                .where(Item.corpus_id == corpus_id, Item.status == "active", scheduler.ordinary())
+                .group_by(Item.kind))).all()
             events = (await db.execute(select(func.count()).select_from(Judgment).where(
                 Judgment.annotator_id == caller.id, Judgment.corpus_id == corpus_id))).scalar_one()
         kinds = {kind: {"total": 0, "reviewed": 0, "unsure": 0, "definite": 0, "items_with_votes": 0} for kind in KINDS}
@@ -240,7 +254,7 @@ def register(app, ctx):
         count = func.coalesce(votes.c.n, 0)
         item = (await db.execute(
             select(Item).outerjoin(votes, votes.c.item_id == Item.id).outerjoin(Assignment, _mine(caller))
-            .where(Item.corpus_id == corpus_id, Item.kind == kind, Item.status == "active",
+            .where(Item.corpus_id == corpus_id, Item.kind == kind, Item.status == "active", scheduler.ordinary(),
                    or_(Assignment.annotator_id.is_(None),
                        and_(Assignment.current_revision == 0, Assignment.last_shown_at < RESHOW)),
                    count < settings.target_votes)
@@ -269,7 +283,8 @@ def register(app, ctx):
         async with db.begin():
             await still_present(db, caller)
             corpora = (await db.execute(text("""
-                SELECT c.id FROM label_corpus c LEFT JOIN label_item_state s ON s.corpus_id = c.id AND s.kind = :k
+                SELECT c.id FROM label_corpus c
+                LEFT JOIN label_item_state s ON s.corpus_id = c.id AND s.kind = :k AND NOT s.reserve
                 WHERE c.status = 'published' GROUP BY c.id, c.published_at
                 HAVING count(s.item_id) > 0
                 ORDER BY avg(CASE WHEN s.state = 'resolved' THEN 1.0 ELSE 0.0 END), c.published_at, c.id"""),
@@ -283,19 +298,25 @@ def register(app, ctx):
     @app.get("/api/corpora/{corpus_id}/items")
     async def my_items(corpus_id: UUID, kind: Kind = "pair",
                        state: Literal["mine_labelled", "mine_unsure"] = "mine_labelled",
-                       after: int = Query(-1, ge=-1, le=2**31 - 1), limit: int = Query(1, ge=1, le=50),
+                       after: str = Query("", max_length=80, pattern=CURSOR), limit: int = Query(1, ge=1, le=50),
                        caller: Caller = Depends(consented), db=Depends(session)):
+        """The caller's own items in the order they were first shown to them. The cursor is
+        that showing time and the item id, never the item's position in the corpus."""
         limiter.take("read", caller.id)
         unsure = Judgment.answer == "unsure"
+        order = (Assignment.first_shown_at, Item.id)
         async with db.begin():
             await visible_corpus(db, caller, corpus_id, labeling=True)
-            rows = (await db.execute(
-                select(Item, Assignment, Judgment).join(Assignment, _mine(caller)).join(Judgment, _my_latest(caller))
-                .where(Item.corpus_id == corpus_id, Item.kind == kind, Item.status == "active",
-                       Item.ordinal > after, unsure if state == "mine_unsure" else ~unsure)
-                .order_by(Item.ordinal).limit(limit + 1))).all()
-        return {"items": [_question(*row) for row in rows[:limit]],
-                "next_after": rows[limit - 1][0].ordinal if len(rows) > limit else None}
+            query = (select(Item, Assignment, Judgment).join(Assignment, _mine(caller)).join(Judgment, _my_latest(caller))
+                     .where(Item.corpus_id == corpus_id, Item.kind == kind, Item.status == "active",
+                            unsure if state == "mine_unsure" else ~unsure))
+            if after:
+                micros, _, item_id = after.partition("~")
+                shown = datetime.fromtimestamp(int(micros) / 1_000_000, timezone.utc)
+                query = query.where(tuple_(*order) > tuple_(literal(shown), literal(UUID(item_id))))
+            rows = (await db.execute(query.order_by(*order).limit(limit + 1))).all()
+        items = [{**_question(*row), "cursor": _cursor(row[1])} for row in rows[:limit]]
+        return {"items": items, "next_after": items[-1]["cursor"] if len(rows) > limit else None}
 
     @app.get("/api/corpora/{corpus_id}/items/{item_id}")
     async def item_detail(corpus_id: UUID, item_id: UUID, caller: Caller = Depends(consented),
@@ -303,12 +324,15 @@ def register(app, ctx):
         async with db.begin():
             await visible_corpus(db, caller, corpus_id, labeling=True)
             row = (await db.execute(
-                select(Item, Assignment, Judgment).outerjoin(Assignment, _mine(caller))
+                select(Item, Assignment, Judgment, ItemState.reserve).outerjoin(Assignment, _mine(caller))
                 .outerjoin(Judgment, _my_latest(caller))
+                .join(ItemState, (ItemState.corpus_id == Item.corpus_id) & (ItemState.item_id == Item.id))
                 .where(Item.corpus_id == corpus_id, Item.id == item_id))).one_or_none()
-            if row is None:
+            # A gold-reserve item exists for a person only once it was served to them as a check:
+            # otherwise it is "not found" like an unknown id, so ids cannot be probed for membership.
+            if row is None or (row.reserve and row.Assignment is None and not caller.curator):
                 raise failure(404, "not_found")
-            item, assignment, judgment = row
+            item, assignment, judgment, _ = row
             presentation = None
             if assignment is None or assignment.presentation is None:
                 # Never shown to this person: the same keyed rule as a showing, so asking for

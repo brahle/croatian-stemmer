@@ -82,12 +82,12 @@ const strings = {
     readinessTitle:'Spremnost po vrsti', readinessLine:'{kind}: provjera znanja {q}, skrivene provjere {a}, napredovanje {p}; skupovi {pools}',
     yes:'da', no:'ne', statesTitle:'Stanja primjera', colStates:'Stanja', colTiers:'Razine', colItem:'Primjer', colAnswer:'Odgovor',
     colRun:'Izračun', colCounts:'Odgovori / primjeri / osobe', anchorBadge:'stručnjak',
-    state_open:'otvoreno', state_provisional:'privremeno', state_resolved:'riješeno', state_needs_expert:'traži stručnjaka',
+    state_open:'otvoreno', state_reserve:'provjere u pričuvi', state_provisional:'privremeno', state_resolved:'riješeno', state_needs_expert:'traži stručnjaka',
     state_contested:'sporno', state_ambiguous:'dvosmisleno', stateContested:'sporno', stateNeedsExpert:'traži stručnjaka', stateProvisional:'privremeno',
     quarantineHelp:'Automatska karantena traje najdulje 14 dana; ako u tom roku ne odlučite, izračun je sam ukida. Osoba ne vidi obavijest.',
     quarantineEmpty:'Nitko nije u karanteni.', quarantineLine:'{who} · {days} d · signali: {flags}', release:'Vrati u rad', keep:'Zadrži', block:'Blokiraj',
     decisionDone:'Odluka je zapisana.',
-    goldFile:'Datoteka sa zlatnim primjerima (JSONL)', goldImportButton:'Uvezi zlatne primjere', goldPool:'Skup', all:'svi',
+    goldFile:'Datoteka sa zlatnim primjerima (JSONL)', goldRetireFile:'Datoteka s oznakama primjera za povlačenje (jedna po retku)', goldRetireButton:'Povuci sve s popisa', anyCorpus:'svi korpusi', badIds:'Svaki redak datoteke mora biti oznaka primjera (UUID).', goldRetired:'Povučeno {retired}; već povučeno {already}; izvan uporabe {inactive}; nepoznato {unknown}.', goldImportButton:'Uvezi zlatne primjere', goldPool:'Skup', all:'svi',
     poolQualification:'provjera znanja', poolAudit:'skrivene provjere', goldImported:'Prihvaćeno {accepted}; izdvojeno za kalibraciju {held}; nepromijenjeno {same}.',
     goldPools:'Aktivni skupovi: {pools}', retire:'Povuci', reactivate:'Vrati', retract:'Poništi', disclose:'Označi kao otkriven',
     goldDone:'Promjena je zapisana.', noItems:'Nema primjera.',
@@ -182,12 +182,12 @@ const strings = {
     readinessTitle:'Readiness per kind', readinessLine:'{kind}: knowledge check {q}, hidden checks {a}, promotion {p}; pools {pools}',
     yes:'yes', no:'no', statesTitle:'Item states', colStates:'States', colTiers:'Levels', colItem:'Item', colAnswer:'Answer',
     colRun:'Run', colCounts:'Answers / items / people', anchorBadge:'expert',
-    state_open:'open', state_provisional:'provisional', state_resolved:'resolved', state_needs_expert:'needs an expert',
+    state_open:'open', state_reserve:'checks in reserve', state_provisional:'provisional', state_resolved:'resolved', state_needs_expert:'needs an expert',
     state_contested:'contested', state_ambiguous:'ambiguous', stateContested:'contested', stateNeedsExpert:'needs an expert', stateProvisional:'provisional',
     quarantineHelp:'An automatic quarantine lasts at most 14 days; if you do not decide by then, the run lifts it. The person sees no notice.',
     quarantineEmpty:'Nobody is in quarantine.', quarantineLine:'{who} · {days} d · signals: {flags}', release:'Release', keep:'Keep', block:'Block',
     decisionDone:'The decision is recorded.',
-    goldFile:'Gold items file (JSONL)', goldImportButton:'Import gold items', goldPool:'Pool', all:'all',
+    goldFile:'Gold items file (JSONL)', goldRetireFile:'File of item ids to retire (one per line)', goldRetireButton:'Retire everything listed', anyCorpus:'any corpus', badIds:'Every line of the file must be an item id (UUID).', goldRetired:'Retired {retired}; already retired {already}; out of use {inactive}; unknown {unknown}.', goldImportButton:'Import gold items', goldPool:'Pool', all:'all',
     poolQualification:'knowledge check', poolAudit:'hidden checks', goldImported:'Accepted {accepted}; held out for calibration {held}; unchanged {same}.',
     goldPools:'Active pools: {pools}', retire:'Retire', reactivate:'Reactivate', retract:'Retract', disclose:'Mark disclosed',
     goldDone:'The change is recorded.', noItems:'No items.',
@@ -220,7 +220,7 @@ const errors = {
     invalid_email:'Upišite ispravnu adresu e-pošte.', scoring_busy:'Izračun je već u tijeku. Pokušajte za koji trenutak.', params_invalid:'Parametri nisu ispravni.',
     not_assigned:'Ovaj primjer Vam nije dodijeljen. Učitajte sljedeći primjer.', run_stale:'Nakon izračuna je bilo moderacije; pokrenite novi izračun.',
     run_not_done:'Izračun nije završen.', not_adjudicable:'Presuditi se može samo spornom, privremenom ili primjeru koji traži stručnjaka.',
-    gold_disclosed:'Odgovor ovog primjera je otkriven; ne može se ponovno koristiti za provjere.', calibration_item:'Primjer je u kalibracijskom uzorku i ne može biti zlatni.'},
+    gold_disclosed:'Odgovor ovog primjera je otkriven; ne može se ponovno koristiti za provjere.', calibration_item:'Primjer je u kalibracijskom uzorku i ne može biti zlatni.', several_corpora:'Oznake pripadaju različitim korpusima. Odaberite korpus.', reserve_item:'Primjer iz pričuve zlatnih provjera nikad se ne objavljuje.'},
   en: {invalid_token:'Your sign-in has expired. Please sign in again.', annotator_role_required:'You are not allowed to label.', identity_unavailable:'Sign-in verification is unavailable right now.',
     invalid_candidates:'The file does not match the candidate import format.', body_too_large:'The file or request is too large.', corpus_provenance_conflict:'The corpus provenance differs from the corpus already imported.',
     immutable_item_conflict:'An existing item has different content. The import was refused.', invalid_judgment:'The answer does not fit this item. Check the lemma: one word, letters only.', request_id_conflict:'This save attempt was already used for a different answer.',
@@ -235,7 +235,7 @@ const errors = {
     invalid_email:'Type a valid email address.', scoring_busy:'A run is already in progress. Try again in a moment.', params_invalid:'The parameters are not valid.',
     not_assigned:'This item was not served to you. Load the next item.', run_stale:'There was moderation after this run; start a new run.',
     run_not_done:'The run has not finished.', not_adjudicable:'Only a contested, provisional or needs-expert item can be adjudicated.',
-    gold_disclosed:'This item\'s answer has been disclosed; it cannot be used for checks again.', calibration_item:'The item is in the calibration sample and cannot be gold.'},
+    gold_disclosed:'This item\'s answer has been disclosed; it cannot be used for checks again.', calibration_item:'The item is in the calibration sample and cannot be gold.', several_corpora:'The ids belong to several corpora. Choose a corpus.', reserve_item:'An item from the known-answer reserve is never released.'},
 };
 const LABEL_LICENCES = ['CC BY-SA 4.0', 'CC BY 4.0', 'CC0 1.0'];
 const CHOICES = {pair:['same','different','unsure'], lemma:['confirmed','unsure'], stem:['accept','reject','unsure']};
@@ -244,7 +244,7 @@ class UserError extends Error {}
 const $ = id => document.getElementById(id);
 let lang = initialLanguage();
 let config = null, keycloak = null, me = null;
-let current = null, cursor = -1, pending = null, busy = false, generation = 0, shownAt = 0, lastProgress = null;
+let current = null, cursor = '', pending = null, busy = false, generation = 0, shownAt = 0, lastProgress = null;
 let annotatorOffset = 0, trustCard = null, qualifying = null, curatorTab = 'overview';
 const ANY = '*';
 
@@ -424,7 +424,7 @@ async function loadCorpora(selected = ''){
   await chooseCorpus();
 }
 function resetQuestion(){
-  generation++; cursor = -1; current = null; pending = null; lastProgress = null; qualifying = null; paintQualification();
+  generation++; cursor = ''; current = null; pending = null; lastProgress = null; qualifying = null; paintQualification();
   $('retry').hidden = true; $('question').hidden = true; $('skip').hidden = true; $('empty').hidden = true;
   $('progress').replaceChildren();
 }
@@ -452,13 +452,13 @@ async function load(){
     served = await json(corpus === ANY ? `next?kind=${kind}&expert=${expert}` : `corpora/${corpus}/next?kind=${kind}&expert=${expert}`);
     item = served.item;
   } else if (corpus === ANY) { message(t('chooseCorpus')); return; }
-  else item = (await json(`corpora/${corpus}/items?kind=${kind}&state=${queue}&after=${cursor}`)).items[0] || null;
+  else item = (await json(`corpora/${corpus}/items?kind=${kind}&state=${queue}&after=${encodeURIComponent(cursor)}`)).items[0] || null;
   if (seq !== generation) return;
   current = item; pending = null; qualifying = served ? served.qualification : null;
   paintQualification();
   $('retry').hidden = true; $('question').hidden = !current; $('skip').hidden = !current; $('empty').hidden = !!current;
   if (current) {
-    if (queue !== 'next') cursor = current.ordinal;
+    if (queue !== 'next') cursor = current.cursor;
     render();
     message(t('chooseAnswer'));
   } else {
@@ -615,6 +615,9 @@ async function curatorQuarantine(){
 }
 async function curatorGold(){
   const pool = $('gold-pool').value;
+  const selected = $('gold-retire-corpus').value;
+  $('gold-retire-corpus').replaceChildren(new Option(t('anyCorpus'), ''), ...(await allCorpora()).map(c => new Option(c.name, c.id)));
+  $('gold-retire-corpus').value = selected;
   const data = await json('admin/gold' + (pool ? '?pool=' + pool : ''));
   $('gold-pools').textContent = t('goldPools', {pools: data.pools.filter(p => p.status === 'active')
     .map(p => `${p.kind}/${p.pool}${p.suggestion_agrees === false ? '*' : ''}: ${p.n}`).join(', ') || '—'});
@@ -824,6 +827,18 @@ $('gold-import').onsubmit = event => { event.preventDefault(); run(async () => {
   const accepted = Object.entries(data.accepted).map(([kind, pools]) => `${kind} ${pools.qualification}/${pools.audit}`).join(', ') || '0';
   await curatorGold(); message(t('goldImported', {accepted, held: data.held_out, same: data.unchanged}));
 }); };
+$('gold-retire').onsubmit = event => { event.preventDefault(); run(async () => {
+  const file = $('gold-retire-file').files[0];
+  if (!file) throw new UserError(t('badIds'));
+  if (file.size > 2 * 1024 * 1024) throw Object.assign(new UserError(), {code:'body_too_large'});
+  const ids = (await file.text()).split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  if (!ids.length || !ids.every(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) throw new UserError(t('badIds'));
+  const reason = needReason($('gold-retire-reason'));
+  const corpus = $('gold-retire-corpus').value;
+  const data = await post('admin/gold/retire', {item_ids: ids, reason, ...(corpus ? {corpus_id: corpus} : {})});
+  $('gold-retire-reason').value = '';
+  await curatorGold(); message(t('goldRetired', {retired: data.retired, already: data.already_retired, inactive: data.not_active, unknown: data.unknown}));
+}); };
 for (const id of GATE) $(id).onchange = gateReady;
 $('consent').onsubmit = event => { event.preventDefault(); run(async () => {
   await post('me/consent', {privacy_version: config.legal.privacy, terms_version: config.legal.terms,
@@ -840,7 +855,7 @@ $('erase').onsubmit = event => { event.preventDefault(); run(async () => {
   showErased(t('erasedDone'));
 }); };
 $('corpus').onchange = () => run(chooseCorpus);
-for (const id of ['kind', 'queue']) $(id).onchange = () => run(async () => { cursor = -1; await load(); });
+for (const id of ['kind', 'queue']) $(id).onchange = () => run(async () => { cursor = ''; await load(); });
 $('skip').onclick = () => run(load);
 $('retry').onclick = () => run(submitPending);
 $('answer').onsubmit = event => event.preventDefault();

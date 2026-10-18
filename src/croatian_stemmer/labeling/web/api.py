@@ -19,7 +19,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import exists, func, select, update
+from sqlalchemy import exists, func, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -286,6 +286,25 @@ async def warn_overdue_erasures(ctx, days=14):
     return [request_id for request_id, _ in rows]
 
 
+# Every migration revision this code knows, oldest first (tests compare it with migrations/versions).
+SCHEMA_REVISIONS = ("001_labeling", "002_shared_corpus", "002a_v1_followups", "003_trust", "004_two_vote_params",
+                    "005_gold_reserve")
+
+
+async def check_schema(engine):
+    """Refuse to start on a database migrated by a newer version: its safety columns (such as
+    label_item_state.reserve) would be silently ignored. Roll back by running the newer
+    version's downgrade first (docs/labeling-web.md)."""
+    async with engine.connect() as connection:
+        version = (await connection.execute(text("SELECT version_num FROM alembic_version"))).scalar_one_or_none()
+    if version not in SCHEMA_REVISIONS:
+        raise RuntimeError(f"the database schema is at revision {version!r}, which this version does not know "
+                           f"(newest known: {SCHEMA_REVISIONS[-1]}); downgrade it with the newer image first")
+    if version != SCHEMA_REVISIONS[-1]:
+        log.warning("the database schema is at %s, older than %s: run the migrations", version, SCHEMA_REVISIONS[-1])
+    return version
+
+
 def create_app(settings: Settings) -> FastAPI:
     ctx = Context(settings)
 
@@ -300,6 +319,7 @@ def create_app(settings: Settings) -> FastAPI:
                     ctx.metrics.job(metric, ok=False)
                     log.exception("%s failed", name)
                 await asyncio.sleep(seconds)
+        await check_schema(ctx.engine)
         # Bound first: a port that cannot be bound fails the start before any job runs.
         listener = None
         if settings.metrics_port:

@@ -117,6 +117,7 @@
 
 <div id="tab-gold" class="tab" role="tabpanel" hidden>
 <form id="gold-import"><label><span data-i18n="goldFile">Datoteka sa zlatnim primjerima (JSONL)</span> <input id="gold-file" type="file" accept=".jsonl"></label><button id="gold-import-button" data-i18n="goldImportButton">Uvezi zlatne primjere</button></form>
+<form id="gold-retire"><label><span data-i18n="goldRetireFile">Datoteka s oznakama primjera za povlačenje (jedna po retku)</span> <input id="gold-retire-file" type="file" accept=".txt,text/plain"></label><label><span data-i18n="corpus">Korpus</span> <select id="gold-retire-corpus"></select></label><label><span data-i18n="reason">Razlog</span> <input id="gold-retire-reason" maxlength="500"></label><button id="gold-retire-button" data-i18n="goldRetireButton">Povuci sve s popisa</button></form>
 <label><span data-i18n="goldPool">Skup</span> <select id="gold-pool"><option value="" data-i18n="all">svi</option><option value="qualification" data-i18n="poolQualification">provjera znanja</option><option value="audit" data-i18n="poolAudit">skrivene provjere</option></select></label>
 <p id="gold-pools" class="muted"></p>
 <div class="table"><table><thead><tr><th data-i18n="colItem">Primjer</th><th data-i18n="kind">Vrsta</th><th data-i18n="goldPool">Skup</th><th data-i18n="colAnswer">Odgovor</th><th data-i18n="colStatus">Status</th><th data-i18n="colActions">Radnje</th></tr></thead><tbody id="gold"></tbody></table></div>

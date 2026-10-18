@@ -216,7 +216,9 @@ event is what the `established` keep rule reads.
   qualification up to 16 then audit up to 30, each class held to at least 25 %;
   `pair`/`lemma` only when the answer differs from the suggestion, into the audit pool
   until 15 such items exist. Agreeing `pair`/`lemma` gold is never created this way;
-  hr500k supplies it.
+  hr500k supplies it, and from 0.3.4 also suggestion-wrong gold, from gold-reserve decoy
+  items (items prepared to show a suggestion the corpus contradicts, see
+  [labeling.md](labeling.md)). Gold-reserve items are never in a seed or expert queue.
 
 Decided events are written when the run publishes and take effect from the next run.
 

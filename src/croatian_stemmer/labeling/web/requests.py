@@ -227,6 +227,19 @@ class GoldImportRequest(BaseModel):
     rows: list[GoldRow] = Field(min_length=1, max_length=5000)
 
 
+class GoldRetireRequest(BaseModel):
+    """Retire many known-answer items at once (a file of item ids, one per line)."""
+    model_config = ConfigDict(extra="forbid")
+    corpus_id: UUID | None = None
+    item_ids: list[UUID] = Field(min_length=1, max_length=20000)
+    reason: StrictStr = Field(min_length=1, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def meaningful(cls, value):
+        return _reason(value)
+
+
 class GoldActionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     action: Literal["set", "retire", "reactivate", "retract", "disclose"]

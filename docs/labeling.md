@@ -21,6 +21,49 @@ croatian-stemmer-labels prepare path/to/corpus.conllu \
 
 The command requires source/license provenance, reads rather than modifies the
 corpus, refuses to overwrite the output, and prints a preparation receipt.
+
+`--gold-reserve N` (default 0) adds a gold reserve: N items for each of four reserve
+strata, built only to become known-answer items, from forms the corpus settles (the
+`gold` rule below: one lemma for the form and POS, at least `--min-freq` occurrences,
+default 5; nouns, verbs, adjectives and adverbs only). `gold_reserve_lemma` items show
+the corpus lemma. The three decoy strata show a suggestion the corpus contradicts, on
+purpose, because an item whose suggestion is the corpus's own lemma can never have a
+known answer that differs from its suggestion: `gold_reserve_lemma_decoy` shows the
+lemma of another word with the same stem, or else the form itself, as the lemma;
+`gold_reserve_pair_decoy_same` shows two forms of different lemmas (forms the stemmer
+merges first, then forms sharing their first four letters) with one lemma for both;
+`gold_reserve_pair_decoy_different` shows two forms of one lemma with a decoy lemma on
+one of them. No reserve item reuses an occurrence another item uses (a form may come
+back in another sentence), and every item id has the same form (kind, occurrences, stem),
+so an id does not tell a reserve item. The reserve is drawn from a private secret
+(`--reserve-secret`, at least 16 characters; drawn at random when omitted and printed only
+in the receipt); in a run with a reserve the ordinary sample is drawn from the secret too,
+because a sample anyone can reproduce from the public corpus and the documented `--seed`
+would reveal the reserve as its complement. **Keep the receipt private** (outside the
+repository, never published): with it anyone could rebuild the reserve. The web app never serves a reserve
+item as ordinary or expert work (only as a known-answer check once it is gold), leaves
+reserve items out of progress counts, and `release` never publishes one, so the decoys
+neither bias the crowd sample nor reach a release. Reserve items that do not become
+gold (for example those in the calibration sample) are never shown; the rest stay
+available for later top-ups when checks are served out or disclosed.
+
+To add a reserve to a corpus that is already imported, prepare a supplement: only new
+item ids of the same corpus, never reusing an occurrence of the earlier file (an ordinary
+item that would is left out), and refused unless the corpus hash, source URI and licence
+are the same. With `--supplement`, `--pairs` and `--word-items` default to 0:
+
+```sh
+croatian-stemmer-labels prepare path/to/corpus.conllu \
+  --source-uri https://example.org/corpus-record --license 'SOURCE-LICENSE' \
+  --gold-reserve 200 --supplement candidates.jsonl \
+  --output candidates-extra.jsonl > candidates-extra.receipt.json  # private
+```
+
+Import it like any candidates file: the import adds new items to an existing corpus with
+the same provenance, reports existing ids as `already_present` and leaves them unchanged,
+and refuses a different hash, source or licence (409 `corpus_provenance_conflict`) or a
+changed question under an existing id (409 `immutable_item_conflict`).
+
 Candidate JSONL has its own versioned schema and no answer, annotator, or human
 annotation identifier. Same-lemma suggestions, stem-collision suggestions and
 random different-lemma suggestions are sampling strata, not gold labels. Review
@@ -102,30 +145,89 @@ and exits non-zero with a message on any error.
 
 ```sh
 croatian-stemmer-labels gold path/to/corpus.conllu --candidates candidates.jsonl \
-  --min-freq 5 --per-kind 400 --seed 1 --split qualification=80 \
-  [--exclude used-ids.txt] --output gold.jsonl
+  [--candidates candidates-extra.jsonl] [--with gold-1.jsonl] \
+  --min-freq 5 --per-kind 400 --split qualification=80 --wrong-suggestion 30 \
+  [--seed PRIVATE] [--exclude used-ids.txt] [--live overview.json] [--params params.json] \
+  [--allow-short] --output gold.jsonl > gold.receipt.json  # private
 ```
 
-The defaults are the values shown. The candidates must be the file the corpus was
-imported from: every row's `corpus_sha256` must equal the corpus's, and the corpus must
-not change while the command reads it. A candidate becomes a known-answer item only when
-the corpus settles it beyond doubt: both forms occur at least `--min-freq` times with
-that lemma and POS, and each form has one lemma for its POS. A `pair` is `same` only in
-the same-lemma stratum with equal lemmas, and `different` only in the two
-different-lemma strata with lemmas that differ and are not prefixes of each other; a
-`lemma` item is `confirmed` with the corpus lemma; `stem` items are never produced
-(stem known answers, and every known answer that differs from the suggestion, come only
-from the trusted list in the app). A seeded sample takes `--per-kind` items per kind,
-at most 60 % `same` for `pair`; the first N per kind (`--split qualification=N`) go to
-the qualification pool and the rest to the audit pool. `--exclude` takes a file of item
-ids, one per line, never to use, for a top-up batch. Identical inputs and options give
-identical bytes. The receipt names the batch id, input hashes, options, eligible counts
-and counts per kind, pool, answer and basis, and states `human_judgments: 0`.
+The defaults are the values shown. The selection is seeded by a private seed (`--seed`,
+at least 16 characters; drawn at random when omitted and recorded only in the receipt):
+with a public seed anyone could rebuild which items are known answers from the public
+corpus and the documented options, and answer exactly those with care. Keep the receipt
+private. The candidates must be the files the corpus was
+imported from (repeat `--candidates` for a supplement): every row's `corpus_sha256` must
+equal the corpus's, and the corpus must not change while the command reads it. A candidate
+becomes a known-answer item only when the corpus settles it beyond doubt: every form shown
+occurs at least `--min-freq` times with its lemma and POS, and each form has one lemma for
+its POS. The answer is that corpus truth, whatever the item suggests: a `pair` is `same`
+when the two settled lemmas are equal and `different` when they differ and are not
+variants (one a prefix of the other, or equal without diacritics); a `lemma` item is
+`confirmed` with the corpus lemma. `stem` items are never produced (below).
 
-Import the file in the curator dashboard ("Zlatni primjeri"). The import skips items
-that belong to the calibration sample (reported as `held_out`), fills each kind's
-qualification pool up to 60 and puts any surplus in the audit pool. If fewer than 60
-remain, build a top-up batch with `--exclude` and a new `--seed`.
+An ordinary candidate shows the corpus's own lemmas, so its known answer always agrees
+with the suggestion. Gold that differs from the suggestion, which the `copy` flag and the
+promotion floor need (`readiness.wrong_suggestion_pool`, 15 per kind), therefore comes
+from the gold-reserve decoys of `prepare --gold-reserve`: `--wrong-suggestion` such items
+per kind (default 30; for `pair` half shown `same` with answer `different` and half the
+other way), always in the audit pool, with a basis ending in `_against_suggestion`. The
+rest of `--per-kind` agrees with the suggestion, at most 60 % `same` for `pair`; the first
+N of those per kind (`--split qualification=N`) go to the qualification pool and the rest
+to the audit pool. `--exclude` takes a file of item ids, one per line, never to use.
+`--with` takes gold files already imported: their items are not used again (a repeated
+item counts once; one with two different answers is refused) and they count in the
+coverage, which is how a top-up is built. Identical inputs, options and seed give
+identical bytes. The receipt names the batch id, input hashes, options, eligible counts
+(`/against_suggestion` for decoys), counts per kind, pool, answer and basis, and the
+coverage, and states `human_judgments: 0`.
+
+Coverage: on standard error the command prints, per kind and pool, the rows the import
+would put in each pool (the import fills qualification to its target and sends the rest
+to audit), the rows needed and the readiness target. A pool is covered when it still
+meets its target after the import holds out the calibration sample (`audit_sample_rate`,
+10 %) with probability at least 0.999; for the defaults that is 77 qualification rows
+for 60, 133 more rows for the audit pool of 100 and 22 suggestion-wrong rows for 15. The
+targets come from `DEFAULT_PARAMS`, or from `--params` (a parameter set as the dashboard
+shows it). **When a `pair` or `lemma` pool is short the command still writes the file
+but exits with status 3** (`--allow-short` exits 0); `stem` is reported as `EXPERT ONLY`
+and never fails the command. The live pools stay authoritative: the hold-out is decided
+per item by a keyed hash the builder cannot see, and gold can since have been retired,
+contested or served out. Without `--live`, rows from `--with` files count as if all
+were imported and still active, and the report says it is an **upper bound**. With
+`--live FILE` (the JSON of `GET /api/admin/overview`, which the dashboard's "Pregled" tab
+loads, or of `GET /api/admin/gold`) the site's active pools count as they are, the
+`--with` rows only exclude their items, and the new rows must fill what is missing; the
+table then has a `live` column.
+
+Stem known answers cannot come from a lemmatised corpus. A stem is acceptable when every
+usual form of its lemma reduces to it and no word of another meaning does (the
+guidelines); a corpus records lemmas, not which forms a stem may merge, and it holds
+neither every form of a lemma nor a judgement of which different lemmas are related in
+meaning (stem alternations such as *ruka*/*ruci* and derivations such as *rad*/*raditi*
+make any rule over lemmas unsound). Stem gold comes from the trusted list: the anchors'
+answers on the stem seed queue become `anchor_consensus` gold (16 qualification items,
+then 30 audit items, each class at least a quarter), or the curator sets it per item.
+
+### Check a gold file
+
+```sh
+croatian-stemmer-labels gold-check gold-1.jsonl [gold-2.jsonl ...] \
+  --candidates candidates.jsonl [--candidates candidates-extra.jsonl] [--live overview.json] \
+  [--params params.json]
+```
+
+It reads the gold files in import order and fails (exit 2, with the line) on a line the
+web import would refuse or whose item is not in the candidates, and on an item with two
+different answers (the import's `gold_conflict`); a repeated identical line counts as
+`duplicates` (the import's `unchanged`). It recomputes each row's agreement with the
+suggestion as the server does, prints the coverage report described above and exits 3
+when a `pair` or `lemma` pool is short.
+
+Import the files in the curator dashboard ("Zlatni primjeri"), in order. The import skips
+items that belong to the calibration sample (reported as `held_out`), fills each kind's
+qualification pool up to 60 and puts any surplus in the audit pool. Re-importing a line
+with the same answer is reported as `unchanged`; a different answer for an item that
+already has valid gold fails the whole import (409 `gold_conflict`).
 
 ### Replay a scoring run
 

@@ -341,15 +341,45 @@ calibration sets at the next run, reusing references the owner already gave.
 ### Known-answer items and the owner's expert work
 
 Build the hr500k known-answer file offline with `croatian-stemmer-labels gold` (see
-[labeling.md](labeling.md)) from the same candidates file the corpus was imported
-from, and import it in "Zlatni primjeri". The import skips calibration-sample items
-(reported as `held_out`), fills each kind's qualification pool up to 60 and puts the
-rest in the audit pool; a row that conflicts with an existing valid answer fails the
-whole import with 409 `gold_conflict`. If fewer than 60 qualification items remain,
-build a top-up with `--exclude` and a new seed.
+[labeling.md](labeling.md)) from the same candidates files the corpus was imported
+from, and import it in "Zlatni primjeri". Prepare the corpus with `--gold-reserve`
+(or import a supplement prepared with `--supplement` into the existing corpus) so that
+the builder also has decoy items for the known answers that differ from the
+suggestion; `gold` prints the coverage against the readiness targets and exits 3 when
+a `pair` or `lemma` pool would be short, and `gold-check` checks files before an
+import. The import skips calibration-sample items (reported as `held_out`), fills each
+kind's qualification pool up to 60 and puts the rest in the audit pool; a row that
+conflicts with an existing valid answer fails the whole import with 409
+`gold_conflict`. For a top-up, build the next file with `--with` the files already
+imported (their items are never reused) and a new seed.
 
-Known answers that differ from the suggestion, and every `stem` known answer, come
-only from anchors. The owner is the only anchor today, and their answers on seed,
+To retire many known-answer items at once (for example a gold set whose selection became
+public), use "Povuci sve s popisa" under "Zlatni primjeri": upload a text file of item ids,
+one per line, choose the corpus (or "svi korpusi" when all ids are in one corpus) and give a
+reason. `POST /api/admin/gold/retire` (`{"item_ids": [...], "reason": "...", "corpus_id":
+optional}`, curator only) retires every listed active item in one transaction, each with the
+same `gold.retired` event (with the reason) and mirror update as the single "Povuci", under
+the moderation lock, so runs and replays read it exactly as single retires. It reports
+`retired`, `already_retired`, `not_active` (contested or retracted, left as they are) and
+`unknown` (no known-answer item, or one in another corpus when a corpus is named), and is
+idempotent. Ids found in more than one corpus are refused (409 `several_corpora`) unless the
+corpus is named. Retired items free their place in the qualification pool, so a replacement
+gold file imported next fills it again, and the next run's readiness counts only the active
+rows.
+
+Gold-reserve items are served only as known-answer checks: never in the normal queue,
+the expert queues or the V1 order, not counted in progress or in the overview's open
+work (shown there as "provjere u pričuvi"), never released, and never disclosed by
+recording a release (`POST /api/admin/scoring/runs/{id}/release` refuses them with 409
+`reserve_item`). An annotator gets a reserve item's detail only once it was served to
+them; before that it is "not found" like an unknown id. No annotator response carries
+the item's import position (`ordinal`): items imported together, such as a supplement,
+would be recognisable by it; "my items" pages by an opaque cursor in the order the person
+was shown them. The import marks reserve items in `label_item_state.reserve`
+(migration 005).
+
+Every `stem` known answer, and known answers that differ from the suggestion beyond
+the gold-reserve decoys, come only from anchors. The owner is the only anchor today, and their answers on seed,
 reference and review items are final. With "Rad za urednike" on (the default),
 the owner's `/next` serves, in order: `needs_expert` items; the seed queue while a
 pool is below its target (for `pair` and `lemma`, items where the crowd disagrees
@@ -546,6 +576,20 @@ The application is one stateless container plus a PostgreSQL database:
   this migration's, and otherwise removes only the new key, which 0.3.0 refuses;
   run `python -m alembic downgrade 003_trust` with the 0.3.1 image before rolling
   back to 0.3.0, whose init container does not know revision 004.
+- Migration 005 (0.3.4) adds `label_item_state.reserve` (boolean, default false,
+  no table rewrite) and marks the gold-reserve items already imported. The import
+  sets it for new items; the queues skip such items. Rolling back to 0.3.3: with the
+  0.3.4 image run `python -m alembic downgrade 004_two_vote_params`, then deploy
+  0.3.3. The downgrade refuses while any reserve item is active, because 0.3.3 would
+  serve the decoys (deliberately wrong suggestions) as ordinary work. Then either
+  restore the backup taken before the reserve was imported, or set
+  `LABELING_MIGRATION_RETIRE_RESERVE=true` for that one run: it retires every reserve
+  item (no version serves a retired item) and its active gold (`gold.retired`, reason
+  `rollback`), then drops the column. A later upgrade does not reactivate them;
+  prepare a new reserve.
+- From 0.3.4 the app refuses to start on a database whose schema revision it does not
+  know (one migrated by a newer version), so a rollback can never silently ignore a
+  newer safety column: downgrade with the newer image first.
 - One replica. Rate limits are in process and migrations run per pod. The
   scoring and retention tasks also run in the app process; a scoring run uses a
   worker thread and holds about 400 bytes per judgment in memory (see
