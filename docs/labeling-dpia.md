@@ -3,8 +3,7 @@
 - Version 2.1, 18 October 2026.
 - Controller: the person named as controller in the privacy notice (set at deployment as
   `LABELING_CONTROLLER_NAME`, contact `LABELING_CONTROLLER_EMAIL`).
-- Status: draft for the controller's sign-off. Signed off: ____________________
-  (date: __________)
+- Status: signed off by the controller on 18 October 2026.
 - Scope: the labeling web app of croatian-stemmer from 0.3.0 on, with privacy notice 1.4
   or later, until a change listed in section 7 is made. The current model and its
   parameters are in [trust.md](trust.md), operation in [labeling-web.md](labeling-web.md).
