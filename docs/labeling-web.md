@@ -91,7 +91,7 @@ Optional:
 | `LABELING_OIDC_AUDIENCE` | `croatian-stemmer-labeling-api` | required token audience |
 | `LABELING_PRIVACY_VERSION`, `LABELING_TERMS_VERSION`, `LABELING_PARTICIPATION_VERSION` | `1.4`, `1.1`, `1.0` | document versions people must accept; must equal the versions the shipped documents declare. Privacy 1.3 (0.3.0) describes trust scoring; only people who accepted 1.3 or later are scored. Privacy 1.4 (0.3.3) adds IT service providers as processors, their transfers and the erasure list |
 | `LABELING_DAILY_CAP` | `3000` | judgments per annotator per 24 hours |
-| `LABELING_TARGET_VOTES` | `3` | before scoring is enabled and while a corpus has no known-answer items, `/next` stops serving an item once this many people gave a definite answer; afterwards the trust scheduler's vote budgets apply instead |
+| `LABELING_TARGET_VOTES` | `3` | before scoring is enabled and while no published corpus has known-answer items of the kind, `/next` stops serving an item once this many people gave a definite answer; afterwards the trust scheduler's vote budgets apply instead |
 | `LABELING_SCORING_INTERVAL` | `600` | seconds between scheduled scoring runs (60 to 86400); a tick does nothing while scoring is off |
 | `LABELING_SCORING_RUN_TIMEOUT` | `120` | seconds a scoring run may take before it fails (10 to 3600) |
 | `LABELING_SCORING_MAX_JUDGMENTS` | `2000000` | a run fails with `too_many_judgments` above this many judgments (1000 to 50,000,000); lower it to fit the pod's memory (about 400 bytes per judgment) |
@@ -226,13 +226,21 @@ storage notice and that test first.
 
 `GET /api/corpora/{id}/next?kind=` returns one item the caller has not answered
 and that was not shown to them in the last 30 minutes. Until scoring is enabled
-and while the corpus has no known-answer items, it keeps the V1 order: items with
-fewer than `LABELING_TARGET_VOTES` definite answers, fewest first. After that the
-trust scheduler decides (see "Trust system"): the announced qualification items,
-unannounced known-answer checks, the anchors' expert queues, then items by
-priority within the per-item vote budgets. `GET /api/next?kind=` does the same
-across published corpora, starting with the one with the lowest share of
-resolved items; the UI calls it "Bilo koji korpus". Skipped items come back
+and while no published corpus has known-answer items of the kind, it keeps the V1
+order: items with fewer than `LABELING_TARGET_VOTES` definite answers, fewest first.
+After that the trust scheduler decides (see "Trust system"): the announced
+qualification items, unannounced known-answer checks, the anchors' expert queues,
+then items by priority within the per-item vote budgets. Qualification items and
+checks come from every published corpus with known-answer items of the kind, so they
+may belong to another corpus than the one chosen (the item carries its own
+`corpus_id`, which its answer and detail routes use); the other work stays in the chosen
+corpus. `GET /api/next?kind=` does the same across published corpora, starting with
+the one with the lowest share of resolved items; the UI calls it "Bilo koji korpus".
+While a kind's knowledge check is served, choosing a corpus needs the `qualified` tier
+or above for the kind: below it `/api/corpora/{id}/next` returns 403
+`corpus_choice_locked`, `/api/me` says `corpus_choice: {kind: "locked"}` and the UI
+keeps the selector on "Bilo koji korpus". The person's own items stay reachable by
+corpus. Skipped items come back
 after 30 minutes. `/items?state=mine_labelled|mine_unsure` are the caller's own
 review queues. No response contains another person's answers, and no response
 differs between a known-answer item and another item except in the item itself.

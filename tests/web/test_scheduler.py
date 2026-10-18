@@ -20,7 +20,9 @@ async def keyed_api(fresh_api):
 
 
 async def next_of(api, name, corpus, kind="pair"):
-    r = await api.request("GET", f"/api/corpora/{corpus}/next", name, params={"kind": kind})
+    """A chosen corpus, or with corpus None "any corpus" (the only route below qualified while
+    the kind's knowledge check is served)."""
+    r = await api.request("GET", f"/api/corpora/{corpus}/next" if corpus else "/api/next", name, params={"kind": kind})
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -81,7 +83,7 @@ async def test_qualification_then_keyed_audit(fresh_api):
     gold = {r["item_id"] for r in pairs[:200]}
     qualification = {r["item_id"] for r in pairs[:60]}
     alice = await profiled(api, "alice")
-    corpus = rows[0]["corpus_id"]
+    corpus = None
     for n in range(12):
         served = await next_of(api, "alice", corpus)
         item = served["item"]

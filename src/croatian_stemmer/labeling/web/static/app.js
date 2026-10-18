@@ -66,6 +66,7 @@ const strings = {
     genericError:'Zahtjev nije uspio. Pokušajte ponovno.', actionFailed:'Radnja nije uspjela. Pokušajte ponovno.',
     anyCorpus:'Bilo koji korpus', expertWork:'Rad za urednike', qualification:'Provjera znanja {done}/{of}',
     qualificationHelp:'Prvih {of} primjera ove vrste provjerava Vaše znanje i prikazuje se bez prijedloga. Rezultat ćete vidjeti u odjeljku „Pouzdanost”.',
+    corpusLocked:'Korpus ćete moći odabrati kad položite provjeru znanja za ovu vrstu. Do tada dobivate primjere iz bilo kojeg korpusa.',
     blindNote:'Ovaj primjer prikazan je bez prijedloga iz korpusa.', footerTrust:'Pouzdanost',
     trustTitle:'Pouzdanost', trustHow:'Kako radi pouzdanost', trustNone:'Pouzdanost još nije izračunata.',
     trustLine:'{kind}: razina {tier}, procjena {band}; provjera s poznatim odgovorom oko {checks}{agreement}.',
@@ -166,6 +167,7 @@ const strings = {
     genericError:'The request failed. Please try again.', actionFailed:'The action failed. Please try again.',
     anyCorpus:'Any corpus', expertWork:'Expert work', qualification:'Knowledge check {done}/{of}',
     qualificationHelp:'The first {of} items of this kind check your knowledge and are shown without a suggestion. You will see the result under "Reliability".',
+    corpusLocked:'You can choose a corpus once you pass the knowledge check for this kind. Until then you get items from any corpus.',
     blindNote:'This item is shown without the corpus suggestion.', footerTrust:'Reliability',
     trustTitle:'Reliability', trustHow:'How reliability works', trustNone:'Reliability has not been computed yet.',
     trustLine:'{kind}: level {tier}, estimate {band}; known-answer checks about {checks}{agreement}.',
@@ -220,7 +222,8 @@ const errors = {
     invalid_email:'Upišite ispravnu adresu e-pošte.', scoring_busy:'Izračun je već u tijeku. Pokušajte za koji trenutak.', params_invalid:'Parametri nisu ispravni.',
     not_assigned:'Ovaj primjer Vam nije dodijeljen. Učitajte sljedeći primjer.', run_stale:'Nakon izračuna je bilo moderacije; pokrenite novi izračun.',
     run_not_done:'Izračun nije završen.', not_adjudicable:'Presuditi se može samo spornom, privremenom ili primjeru koji traži stručnjaka.',
-    gold_disclosed:'Odgovor ovog primjera je otkriven; ne može se ponovno koristiti za provjere.', calibration_item:'Primjer je u kalibracijskom uzorku i ne može biti zlatni.', several_corpora:'Oznake pripadaju različitim korpusima. Odaberite korpus.', reserve_item:'Primjer iz pričuve zlatnih provjera nikad se ne objavljuje.'},
+    gold_disclosed:'Odgovor ovog primjera je otkriven; ne može se ponovno koristiti za provjere.', calibration_item:'Primjer je u kalibracijskom uzorku i ne može biti zlatni.', several_corpora:'Oznake pripadaju različitim korpusima. Odaberite korpus.', reserve_item:'Primjer iz pričuve zlatnih provjera nikad se ne objavljuje.',
+    corpus_choice_locked:'Korpus ćete moći odabrati kad položite provjeru znanja. Do tada odaberite „Bilo koji korpus”.'},
   en: {invalid_token:'Your sign-in has expired. Please sign in again.', annotator_role_required:'You are not allowed to label.', identity_unavailable:'Sign-in verification is unavailable right now.',
     invalid_candidates:'The file does not match the candidate import format.', body_too_large:'The file or request is too large.', corpus_provenance_conflict:'The corpus provenance differs from the corpus already imported.',
     immutable_item_conflict:'An existing item has different content. The import was refused.', invalid_judgment:'The answer does not fit this item. Check the lemma: one word, letters only.', request_id_conflict:'This save attempt was already used for a different answer.',
@@ -235,7 +238,8 @@ const errors = {
     invalid_email:'Type a valid email address.', scoring_busy:'A run is already in progress. Try again in a moment.', params_invalid:'The parameters are not valid.',
     not_assigned:'This item was not served to you. Load the next item.', run_stale:'There was moderation after this run; start a new run.',
     run_not_done:'The run has not finished.', not_adjudicable:'Only a contested, provisional or needs-expert item can be adjudicated.',
-    gold_disclosed:'This item\'s answer has been disclosed; it cannot be used for checks again.', calibration_item:'The item is in the calibration sample and cannot be gold.', several_corpora:'The ids belong to several corpora. Choose a corpus.', reserve_item:'An item from the known-answer reserve is never released.'},
+    gold_disclosed:'This item\'s answer has been disclosed; it cannot be used for checks again.', calibration_item:'The item is in the calibration sample and cannot be gold.', several_corpora:'The ids belong to several corpora. Choose a corpus.', reserve_item:'An item from the known-answer reserve is never released.',
+    corpus_choice_locked:'You can choose a corpus once you pass the knowledge check. Until then, choose "Any corpus".'},
 };
 const LABEL_LICENCES = ['CC BY-SA 4.0', 'CC BY 4.0', 'CC0 1.0'];
 const CHOICES = {pair:['same','different','unsure'], lemma:['confirmed','unsure'], stem:['accept','reject','unsure']};
@@ -416,12 +420,24 @@ async function allCorpora(){
 }
 async function loadCorpora(selected = ''){
   const rows = (await allCorpora()).filter(row => row.status === 'published');
-  const any = rows.length > 1 ? [new Option(t('anyCorpus'), ANY)] : [];
+  const locked = Object.values(me?.corpus_choice || {}).includes('locked');
+  const any = rows.length > 1 || (rows.length && locked) ? [new Option(t('anyCorpus'), ANY)] : [];
   $('corpus').replaceChildren(new Option(t('chooseCorpusOption'), ''), ...any, ...rows.map(row => new Option(row.name, row.id)));
   // "Any corpus" is the default once there is more than one (the least-resolved one is served first).
   $('corpus').value = rows.some(row => row.id === selected) ? selected : rows.length === 1 ? rows[0].id : any.length ? ANY : '';
   if (!rows.length) { message(t('noCorpora')); }
+  paintCorpusLock();
   await chooseCorpus();
+}
+// Below the qualified level, while a kind's knowledge check runs, new work comes from "any corpus"
+// (the server refuses a chosen one); the person's own items stay reachable by corpus.
+function corpusLocked(){ return $('queue').value === 'next' && me?.corpus_choice?.[$('kind').value] === 'locked'; }
+function paintCorpusLock(){
+  const locked = corpusLocked() && [...$('corpus').options].some(option => option.value === ANY);
+  if (locked) $('corpus').value = ANY;
+  $('corpus').dataset.off = locked ? '1' : '';
+  $('corpus').disabled = busy || locked;
+  $('corpus-lock').hidden = !locked;
 }
 function resetQuestion(){
   generation++; cursor = ''; current = null; pending = null; lastProgress = null; qualifying = null; paintQualification();
@@ -449,7 +465,14 @@ async function load(){
   const expert = $('expert-field').hidden || $('expert').checked;
   let item, served = null;
   if (queue === 'next') {
-    served = await json(corpus === ANY ? `next?kind=${kind}&expert=${expert}` : `corpora/${corpus}/next?kind=${kind}&expert=${expert}`);
+    try { served = await json(corpus === ANY ? `next?kind=${kind}&expert=${expert}` : `corpora/${corpus}/next?kind=${kind}&expert=${expert}`); }
+    catch (error) {
+      // The level changed since the page loaded: refresh it and follow the lock.
+      if (error.code !== 'corpus_choice_locked' || corpusLocked()) throw error;
+      me = await json('me');
+      if (!corpusLocked()) throw error;
+      return loadCorpora(corpus);
+    }
     item = served.item;
   } else if (corpus === ANY) { message(t('chooseCorpus')); return; }
   else item = (await json(`corpora/${corpus}/items?kind=${kind}&state=${queue}&after=${encodeURIComponent(cursor)}`)).items[0] || null;
@@ -855,7 +878,11 @@ $('erase').onsubmit = event => { event.preventDefault(); run(async () => {
   showErased(t('erasedDone'));
 }); };
 $('corpus').onchange = () => run(chooseCorpus);
-for (const id of ['kind', 'queue']) $(id).onchange = () => run(async () => { cursor = ''; await load(); });
+for (const id of ['kind', 'queue']) $(id).onchange = () => run(async () => {
+  const corpus = $('corpus').value;
+  paintCorpusLock();
+  if ($('corpus').value !== corpus) await chooseCorpus(); else { cursor = ''; await load(); }
+});
 $('skip').onclick = () => run(load);
 $('retry').onclick = () => run(submitPending);
 $('answer').onsubmit = event => event.preventDefault();

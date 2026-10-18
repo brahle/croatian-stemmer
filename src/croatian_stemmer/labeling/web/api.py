@@ -32,7 +32,7 @@ from .legal import LegalDocuments
 from .limits import Limiter
 from . import metrics as metrics_module
 from .metrics import Metrics
-from .models import Annotator, Consent, ErasureRequest, Gold, Setting
+from .models import Annotator, Consent, Corpus, ErasureRequest, Gold, Setting
 from .retention import apply_retention
 from .scheduler import audit_key, live_readiness
 from .trusted import match_anchor
@@ -99,7 +99,7 @@ class Context:
         self.legal = LegalDocuments(settings, DOCUMENTS)
         self._accepting = None  # (value, monotonic time)
         self._serving = None  # (scoring params, monotonic time)
-        self._scheduling = {}  # corpus -> (trust scheduler on, monotonic time)
+        self._scheduling = {}  # kind -> (trust scheduler on, monotonic time)
         self._readiness = {}  # kind -> (readiness, monotonic time)
         self._audit_key = None
         self.scoring_pause = None  # tests: an async callable awaited between scoring and publication
@@ -135,26 +135,28 @@ class Context:
         return self._audit_key
 
     async def readiness(self, db, kind) -> dict:
-        """Live readiness of a kind from the gold mirror and the anchors (5 s cache)."""
+        """Live readiness of a kind from the gold /next can serve and the anchors (5 s cache)."""
         now = time.monotonic()
         cached = self._readiness.get(kind)
         if cached is not None and now - cached[1] < 5:
             return cached[0]
-        value = await live_readiness(db, await self.serving_params(db), kind)
+        value = await live_readiness(db, await self.serving_params(db), kind, served=True)
         self._readiness[kind] = (value, now)
         return value
 
-    async def trust_scheduling(self, db, corpus_id) -> bool:
-        """/next uses the trust scheduler once scoring is enabled or the corpus has gold (5 s
-        cache); before that it keeps V1's coverage-first order with its target vote count."""
+    async def trust_scheduling(self, db, kind) -> bool:
+        """/next uses the trust scheduler for a kind once scoring is enabled or a published corpus
+        has gold of the kind (5 s cache); before that it keeps V1's coverage-first order with its
+        target vote count."""
         now = time.monotonic()
-        cached = self._scheduling.get(corpus_id)
+        cached = self._scheduling.get(kind)
         if cached is not None and now - cached[1] < 5:
             return cached[0]
         enabled = (await db.execute(select(Setting.value).where(Setting.key == "scoring_enabled"))).scalar_one_or_none()
-        gold = (await db.execute(select(Gold.item_id).where(Gold.corpus_id == corpus_id).limit(1))).first() is not None
-        self._scheduling[corpus_id] = (enabled is True or gold, now)
-        return self._scheduling[corpus_id][0]
+        gold = (await db.execute(select(Gold.item_id).join(Corpus, Corpus.id == Gold.corpus_id).where(
+            Gold.kind == kind, Corpus.status == "published").limit(1))).first() is not None
+        self._scheduling[kind] = (enabled is True or gold, now)
+        return self._scheduling[kind][0]
 
     def forget_settings(self):
         self._accepting = None
