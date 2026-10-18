@@ -6,8 +6,9 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy import String, and_, cast, func, or_, select
 
+from ..scoring import validate_params
 from .auth import Principal
-from .models import AdminEvent, Annotator, Corpus, Judgment
+from .models import AdminEvent, Annotator, Corpus, Judgment, Setting
 
 
 def failure(status, code, **values):
@@ -74,3 +75,14 @@ def definite_votes(corpus_id):
               .order_by(Judgment.item_id, Judgment.annotator_id, Judgment.revision.desc())).subquery()
     return (select(latest.c.item_id, func.count().filter(latest.c.answer != "unsure").label("n"))
             .group_by(latest.c.item_id)).subquery()
+
+
+async def setting(db, key, default=None):
+    """A label_setting value (inside the caller's transaction)."""
+    value = (await db.execute(select(Setting.value).where(Setting.key == key))).scalar_one_or_none()
+    return default if value is None else value
+
+
+async def scoring_params(db) -> dict:
+    """The live scoring parameters (validated; written only through PUT scoring/params)."""
+    return validate_params(await setting(db, "scoring_params"))

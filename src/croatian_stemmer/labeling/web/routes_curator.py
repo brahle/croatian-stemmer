@@ -17,9 +17,10 @@ from sqlalchemy import String, cast, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from ..schema import FIELDS
-from .common import Caller, corpus_json, excluded_annotators, failure
+from .common import Caller, corpus_json, excluded_annotators, failure, scoring_params
 from .licenses import allowed
-from .models import AdminEvent, Annotator, Corpus, ErasureRequest, Item, Judgment, Setting
+from .models import AdminEvent, Annotator, Corpus, ErasureRequest, Item, ItemAudit, ItemState, Judgment, Setting
+from .scheduler import audit_key, item_bits
 from .requests import Candidate, ImportRequest, PublishRequest, SettingsRequest, StatusRequest
 
 
@@ -34,6 +35,25 @@ def register(app, ctx):
         if corpus is None:
             raise failure(404, "not_found")
         return corpus
+
+    async def item_rows(db, corpus_id, unique):
+        """Every imported item's queue row and its immutable membership row (with the
+        keyed sampling bits), in the import's transaction. A re-import keeps both."""
+        key = await audit_key(db)
+        params = await scoring_params(db)
+        ids = list(unique)
+        for start in range(0, len(ids), 1000):
+            chunk = ids[start:start + 1000]
+            await db.execute(insert(ItemState).values([
+                {"corpus_id": corpus_id, "item_id": item_id, "kind": unique[item_id].kind} for item_id in chunk])
+                .on_conflict_do_nothing())
+            audits = []
+            for item_id in chunk:
+                sample, review, rank = item_bits(key, corpus_id, item_id, params["audit_sample_rate"],
+                                                 params["review_sample_rate"])
+                audits.append({"corpus_id": corpus_id, "item_id": item_id, "audit_sample": sample,
+                               "review_sample": review, "audit_rank": rank})
+            await db.execute(insert(ItemAudit).values(audits).on_conflict_do_nothing())
 
     # ---- corpora -------------------------------------------------------------
 
@@ -76,6 +96,7 @@ def register(app, ctx):
                     batch.clear()
             if batch:
                 await db.execute(insert(Item), batch)
+            await item_rows(db, corpus.id, unique)
             event(db, caller, "corpus.import", corpus.id,
                   {"name": data.name, "added": added, "already_present": len(existing)})
         return {"corpus": corpus_json(corpus), "added": added, "already_present": len(existing)}

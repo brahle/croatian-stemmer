@@ -1,6 +1,9 @@
 """Shared, synthetic fixtures for the web tests. Nothing here is dataset gold."""
 import os
+import subprocess
+import sys
 import time
+from pathlib import Path
 from uuid import uuid4
 
 import jwt
@@ -26,6 +29,37 @@ def database_url_for_tests():
     if not dsn.rsplit("/", 1)[-1].endswith("_test"):
         raise ValueError("Use a dedicated *_test database; do not run against human labels")
     return dsn
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def alembic(url, *args, allow_drop=None):
+    """Run alembic against `url` in a subprocess (as the init container does)."""
+    env = {k: v for k, v in os.environ.items() if k != "LABELING_MIGRATION_ALLOW_DROP"}
+    env["LABELING_DATABASE_URL"] = url
+    if allow_drop is not None:
+        env["LABELING_MIGRATION_ALLOW_DROP"] = allow_drop
+    return subprocess.run([sys.executable, "-m", "alembic", *args], cwd=ROOT, env=env,
+                          capture_output=True, text=True, timeout=300)
+
+
+def plain(url):
+    return url.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+
+def query(url, statement, script=False):
+    """One statement (or a script) on its own asyncpg connection, outside any event loop."""
+    import asyncio
+    import asyncpg
+
+    async def run():
+        connection = await asyncpg.connect(plain(url))
+        try:
+            return await (connection.execute if script else connection.fetch)(statement)
+        finally:
+            await connection.close()
+    return asyncio.run(run())
 
 
 def candidates(license="CC BY-SA 4.0", pairs=1):
