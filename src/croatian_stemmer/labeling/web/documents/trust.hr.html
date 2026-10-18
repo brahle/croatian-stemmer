@@ -1,15 +1,17 @@
 <!doctype html>
-<!-- Tekst pregledava i objavljuje voditelj obrade (vlasnik); vanjskog pravnog pregleda nema
-     (odluka vlasnika 5ee0e7ef). The controller (owner) reviews and publishes this text; there is no
-     external legal review. The English version (trust.en.html) and this one must say the same thing
-     and carry the same version. This page is information, not part of the consent gate; the legal
-     description of the processing is section 9 of the privacy notice. The formulas in the appendix
-     must match the scoring code; a test checks each line verbatim. -->
+<!-- Tekst pregledava i objavljuje voditelj obrade (vlasnik); vanjskog pravnog pregleda nema.
+     The controller (owner) reviews and publishes this text; there is no external legal review.
+     The English version (trust.en.html) and this one must say the same thing and carry the same
+     version. This page is information, not part of the consent gate; the legal description of the
+     processing is section 9 of the privacy notice. Parameter values (thresholds, rates, counts) are
+     deliberately not on this page: they live in docs/trust.md, which the page links, so tuning
+     them does not change this text. The formulas in the appendix must match docs/trust.md; a test
+     checks each line verbatim. -->
 <html lang="hr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.1">
+<meta name="document-version" content="2.0">
 <title>Kako radi pouzdanost — označavanje hrvatskih lema</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -17,83 +19,79 @@
 <main>
 <p class="crumbs"><a href="/?lang=hr">Natrag na označavanje</a> · <a href="/legal/trust.en" hreflang="en" lang="en">English</a></p>
 <h1>Kako radi pouzdanost</h1>
-<p class="meta">Verzija 1.1 (18. listopada 2026.). Voditelj obrade: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+<p class="meta">Verzija 2.0 (18. listopada 2026.). Voditelj obrade: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
 
 <p>Ova stranica objašnjava kako stranica {{app_host}} procjenjuje pouzdanost odgovora i kako iz njih nastaju oznake u skupu podataka. Služi kao informacija; ne tražimo da je prihvatite. Pravni opis te obrade, pravnu osnovu i Vaša prava navodi <a href="/legal/privacy.hr#pouzdanost">obavijest o privatnosti</a> (odjeljak 9).</p>
+<p>Stranica opisuje pravila koja se ne mijenjaju. Točni pragovi i postavke povremeno se podešavaju; njihove trenutačne vrijednosti navodi <a href="https://github.com/brahle/croatian-stemmer/blob/main/docs/trust.md" rel="noopener noreferrer">tehnički opis modela</a> u repozitoriju croatian-stemmer na GitHubu (na engleskom).</p>
 
 <h2 id="ukratko">1. Ukratko</h2>
-<p>Svi se odgovori ne broje jednako. Za svakog sudionika i svaku vrstu zadatka (parovi riječi, leme, korijeni) aplikacija procjenjuje koliko su mu odgovori točni i prema tome im daje težinu. Primjer se smatra riješenim tek kada se na njemu slaže dovoljno pouzdanih odgovora. Procjene se ponovno izračunavaju otprilike svakih 10 minuta iz svih dotadašnjih odgovora, pa se novi odgovori u njima pokazuju s malim zakašnjenjem.</p>
+<p>Svi se odgovori ne broje jednako. Za svakog sudionika i svaku vrstu zadatka (parovi riječi, leme, korijeni) aplikacija procjenjuje koliko su mu odgovori točni i prema tome im daje težinu. Primjer se smatra riješenim tek kada se na njemu slaže dovoljno pouzdanih odgovora. Procjene se redovito ponovno izračunavaju iz svih dotadašnjih odgovora, pa se novi odgovori u njima pokazuju s malim zakašnjenjem.</p>
+<p>Procjena utječe samo na tri stvari: koliko se Vaši odgovori broje, koje primjere dobivate i jesu li Vaši odgovori privremeno izdvojeni radi pregleda (odjeljak 7). Izvan ove stranice nema nikakav učinak, a o Vama kao sudioniku nikada se ništa ne objavljuje.</p>
 
 <h2 id="provjere">2. Primjeri s poznatim odgovorom</h2>
-<p>Među primjere su bez najave umiješani primjeri čiji je točan odgovor unaprijed poznat. Većina sudionika dobiva ih na otprilike svakom desetom prikazu, a etablirani sudionici na svakom dvadesetom. Otprilike četvrtina tih provjera su primjeri na kojima je prijedlog iz korpusa pogrešan. Odgovor na takav primjer uzima se u obzir tek od sljedećeg dana. Koji su od Vaših odgovora bili provjere na primjerima koji se još koriste ne pokazuju ni stranica ni datoteka s Vašim podacima, jer bi inače otkrile te primjere; na zahtjev poslan e-poštom te primjere povlačimo iz upotrebe i šaljemo Vam pojedinosti u roku od mjesec dana.</p>
+<p>Među primjere su bez najave umiješani primjeri čiji je točan odgovor unaprijed poznat. Sudionici na nižim razinama i oni u stanci za pregled dobivaju ih češće, a etablirani sudionici rjeđe. Neke od tih provjera su primjeri na kojima je prijedlog iz korpusa pogrešan. Odgovor na takav primjer uzima se u obzir tek od sljedećeg dana. Koji su od Vaših odgovora bili provjere na primjerima koji se još koriste ne pokazuju ni stranica ni datoteka s Vašim podacima, jer bi inače otkrile te primjere; na zahtjev poslan e-poštom te primjere povlačimo iz upotrebe i šaljemo Vam pojedinosti u roku od mjesec dana.</p>
 
 <h2 id="bez-prijedloga">3. Primjeri bez prijedloga</h2>
-<p>Otprilike petina primjera parova riječi i lema prikazuje se bez prijedloga iz korpusa: redak s prijedlogom ne prikazuje se, a polje za lemu je prazno. Tako vidimo procjenjujete li sami ili samo potvrđujete prijedlog. Udio je isti za primjere s poznatim odgovorom i za ostale, pa se iz prikaza bez prijedloga ne može zaključiti koji je primjer provjera.</p>
+<p>Dio primjera parova riječi i lema prikazuje se bez prijedloga iz korpusa: redak s prijedlogom ne prikazuje se, a polje za lemu je prazno. Tako vidimo procjenjujete li sami ili samo potvrđujete prijedlog. Udio je isti za primjere s poznatim odgovorom i za ostale, pa se iz prikaza bez prijedloga ne može zaključiti koji je primjer provjera.</p>
 
 <h2 id="provjera-znanja">4. Provjera znanja</h2>
-<p>Prvih 12 primjera svake vrste zadatka najavljena je provjera znanja („Provjera znanja n/12”). Ti se primjeri uvijek prikazuju bez prijedloga. Broje se odgovori kojima ste se odlučili; „Nisam siguran/na” se ne broji. Ako točno odgovorite na najmanje 9 od 12, postajete kvalificirani za tu vrstu. Provjera se ne ponavlja. Ako je ne položite, sudjelujete dalje na razini „nova”, a etabliranu razinu i dalje možete doseći preko primjera s poznatim odgovorom.</p>
+<p>Prvi primjeri svake vrste zadatka čine najavljenu provjeru znanja; zaslon to navodi i pokazuje dokle ste stigli. Ti se primjeri uvijek prikazuju bez prijedloga. Broje se odgovori kojima ste se odlučili; „Nisam siguran/na” se ne broji. Ako na dovoljno njih odgovorite točno, postajete kvalificirani za tu vrstu. Provjera se ne ponavlja. Ako je ne položite, sudjelujete dalje na razini „nova”, a etabliranu razinu i dalje možete doseći preko primjera s poznatim odgovorom.</p>
 
 <h2 id="razine">5. Razine</h2>
 <p>Razina se određuje zasebno za svaku vrstu zadatka:</p>
 <ul>
 <li><strong>nova</strong>: svatko na početku.</li>
 <li><strong>kvalificirana</strong>: položena provjera znanja za tu vrstu.</li>
-<li><strong>etablirana</strong>: najmanje 30 provjera s poznatim odgovorom koje razlikuju znanje od potvrđivanja prijedloga (primjeri prikazani bez prijedloga ili s pogrešnim prijedlogom; za korijene sve provjere), dovoljno visoka donja granica procjene točnosti iz tih provjera (0,75), najmanje 100 odgovora kojima ste se odlučili te najmanje 5 provjera na kojima je prijedlog pogrešan, od kojih je barem 60 % točno (za korijene: najmanje 5 provjera za svaki od dvaju mogućih odgovora, s barem 60 % točnih za svaki). Razina ostaje dok donja granica ne padne ispod 0,70 i dok na tim teškim primjerima imate barem 50 % točnih. Etablirana razina moguća je tek kada za tu vrstu postoji dovoljno primjera s poznatim odgovorom i barem jedan stručnjak. Slaganje s drugim sudionicima nikada ne donosi višu razinu.</li>
+<li><strong>etablirana</strong>: dovoljno provjera s poznatim odgovorom koje razlikuju znanje od potvrđivanja prijedloga (primjeri prikazani bez prijedloga ili s pogrešnim prijedlogom; za korijene sve provjere), dovoljno visoka točnost na njima, dovoljno odgovora kojima ste se odlučili te dovoljno točnih odgovora na primjerima na kojima je prijedlog pogrešan. Razina ostaje dok je točnost na tim provjerama i dalje dovoljno dobra. Etablirana razina moguća je tek kada za tu vrstu postoji dovoljno primjera s poznatim odgovorom i barem jedan stručnjak. Slaganje s drugim sudionicima nikada ne donosi višu razinu.</li>
 <li><strong>stručnjak</strong>: osobe s popisa pouzdanih stručnjaka koji vodi voditelj obrade.</li>
 </ul>
-<p>Svaka razina ima gornju granicu procjene: nova 0,78, kvalificirana 0,80, etablirana 0,95, stručnjak 0,98. Koliko god netko točno odgovarao, njegova procjena ne može prijeći granicu njegove razine. Time je ograničeno koliko jedan račun može utjecati na rezultat. Donja granica je 0,50: odgovori vrlo nepouzdanog sudionika tada se jednostavno ne uzimaju u obzir, a ne broje se kao suprotni.</p>
+<p>Svaka razina ima gornju granicu procjene, višu za više razine. Koliko god netko točno odgovarao, njegova procjena ne može prijeći granicu njegove razine, čime je ograničeno koliko jedan račun može utjecati na rezultat. Donja granica je 0,50, razina nagađanja: odgovori vrlo nepouzdanog sudionika tada se jednostavno ne uzimaju u obzir, a ne broje se kao suprotni.</p>
 
 <h2 id="rjesenje">6. Kada je primjer riješen</h2>
-<p>Primjer je riješen kada je vjerojatnost jednog odgovora najmanje 95 %, kada su ga odabrale najmanje dvije različite osobe, svaka s procjenom točnosti od najmanje 0,70, i kada je među njima barem jedna etablirana osoba ili stručnjak. Jedan odgovor stručnjaka nikada sam ne rješava primjer. Rješenje je privremeno dok se na uzorku od 30 primjera ne potvrdi da se tako riješeni primjeri slažu s odgovorom voditelja obrade (najmanje 29 od 30). Na primjerima koje voditelj obrade sam provjeri njegov je odgovor konačan.</p>
+<p>Primjer je riješen kada je jedan odgovor vrlo vjerojatan, kada su ga odabrale najmanje dvije različite osobe s dovoljno dobrom procjenom točnosti i kada je među njima barem jedna etablirana osoba ili stručnjak. Jedan odgovor stručnjaka nikada sam ne rješava primjer. Rješenje je privremeno dok se na uzorku primjera ne potvrdi da se tako riješeni primjeri slažu s odgovorom voditelja obrade. Na primjerima koje voditelj obrade sam provjeri njegov je odgovor konačan.</p>
 
 <h2 id="stanka">7. Znakovi moguće zlouporabe i stanka za pregled</h2>
 <p>Svaki izračun traži ove znakove:</p>
 <ul>
-<li>vrlo brzo odgovaranje (medijan vremena zadnjih 30 odgovora kraći je od jedne sekunde ili od četvrtine medijana stručnjaka);</li>
-<li>najmanje 12 jednakih odgovora zaredom na parovima riječi ili korijenima;</li>
-<li>manje od 60 % točnih odgovora na zadnjih 20 primjera s poznatim odgovorom (nakon najmanje 12);</li>
-<li>odgovori koji ponavljaju pogrešan prijedlog: na najmanje 5 primjera s pogrešnim prijedlogom najviše 40 % točnih, dok je na ostalim provjerama barem 90 % točnih;</li>
-<li>na primjerima na koje je odgovorio i stručnjak, više od 30 % od najmanje 10 odgovora razlikuje se od odgovora stručnjaka;</li>
-<li>najmanje 400 odgovora u jednom satu, zajedno s vrlo brzim odgovaranjem.</li>
+<li>vrlo brzo odgovaranje, brže nego što dopušta pažljivo čitanje;</li>
+<li>dug niz jednakih odgovora na parovima riječi ili korijenima;</li>
+<li>niska točnost na zadnjim primjerima s poznatim odgovorom;</li>
+<li>odgovori koji ponavljaju pogrešan prijedlog, dok su ostale provjere uglavnom točne;</li>
+<li>na primjerima na koje je odgovorio i stručnjak, često neslaganje s odgovorom stručnjaka;</li>
+<li>vrlo velik broj odgovora u kratkom vremenu, zajedno s vrlo brzim odgovaranjem.</li>
 </ul>
-<p>Kada se u jednom izračunu pojave dva različita znaka, počinje automatska stanka za pregled (status „privremeno izdvojen”). Vaši se odgovori tada ne uzimaju u obzir i dobivate više primjera s poznatim odgovorom, ali i dalje možete označavati, preuzeti podatke i izbrisati profil. Stanka se na stranici ne najavljuje i ne prikazuje, jer je može izazvati i iskrena pogreška; vidi se, s razlozima i vrijednostima, u datoteci koju preuzimate na stranici „Moji podaci”. Voditelj obrade pregledava stanku u roku od 14 dana i odlučuje: ukinuti je, zadržati je ili blokirati profil. Ako nitko ne odluči, stanka prestaje automatski nakon 14 dana. Blokiranje nikada nije automatsko: odlučuje čovjek, uz razlog koji Vam se prikazuje. Stručnjaci nikada ne ulaze u stanku automatski. Ako izbrišete profil dok je u stanci ili blokiran, Vaši se odgovori brišu.</p>
+<p>Jedan znak sam po sebi ne pokreće ništa. Kada se u jednom izračunu pojave dva različita znaka, počinje automatska stanka za pregled (status „privremeno izdvojen”). Vaši se odgovori tada ne uzimaju u obzir i dobivate više primjera s poznatim odgovorom, ali i dalje možete označavati, preuzeti podatke i izbrisati profil. Stanka se na stranici ne najavljuje i ne prikazuje, jer je može izazvati i iskrena pogreška; vidi se, s razlozima i vrijednostima, u datoteci koju preuzimate na stranici „Moji podaci”. Voditelj obrade pregledava stanku u roku od 14 dana i odlučuje: ukinuti je, zadržati je ili blokirati profil. Ako nitko ne odluči, stanka prestaje automatski nakon 14 dana. Blokiranje nikada nije automatsko: odlučuje čovjek, uz razlog koji Vam se prikazuje. Stručnjaci nikada ne ulaze u stanku automatski. Ako izbrišete profil dok je u stanci ili blokiran, Vaši se odgovori brišu.</p>
 
 <h2 id="prigovor">8. Prigovor i pitanja</h2>
 <p>Ako se ne slažete s procjenom ili s odlukom o svom profilu, pišite na <a href="mailto:{{controller_email}}">{{controller_email}}</a> i čovjek će je preispitati. Protiv same procjene možete uložiti prigovor istim putem. Bez procjene ne možemo koristiti Vaše odgovore, pa je posljedica prigovora da ih više ne koristimo: Vaš profil blokiramo s razlogom „prigovor” i tako Vam to i prikazujemo. Ponudit ćemo Vam i brisanje profila.</p>
 
 <h2 id="moji-podaci">9. Što vidite na stranici „Moji podaci”</h2>
-<p>U odjeljku „Pouzdanost” za svaku vrstu zadatka vidite razinu i procjenu:</p>
-<ul>
-<li><strong>visoka</strong>: procjena točnosti najmanje 0,85;</li>
-<li><strong>dobra</strong>: najmanje 0,75;</li>
-<li><strong>treba pažnje</strong>: ispod 0,75;</li>
-<li><strong>nedovoljno podataka</strong>: manje od 12 provjera s poznatim odgovorom.</li>
-</ul>
-<p>Broj provjera zaokružen je naniže na desetice, a slaganje s riješenim primjerima na 5 % (prikazuje se kada imate barem 20 riješenih primjera). Stanka za pregled tu se ne prikazuje; blokada se prikazuje, s razlogom. Ovaj odjeljak je pojednostavljen prikaz. Potpuni podaci nalaze se u datoteci (JSON) koju tamo preuzimate: svaki sačuvani izračun (30 dana) s razinom, procjenom, težinom, brojem provjera i znakovima moguće zlouporabe s vrijednostima, te sve promjene statusa i razine, uz objašnjenje svakog polja.</p>
+<p>U odjeljku „Pouzdanost” za svaku vrstu zadatka vidite razinu i opisnu procjenu: <strong>visoka</strong>, <strong>dobra</strong>, <strong>treba pažnje</strong> ili <strong>nedovoljno podataka</strong> (još premalo provjera s poznatim odgovorom). Broj provjera i slaganje s riješenim primjerima prikazuju se zaokruženo. Stanka za pregled tu se ne prikazuje; blokada se prikazuje, s razlogom. Ovaj odjeljak je pojednostavljen prikaz. Potpuni podaci nalaze se u datoteci (JSON) koju tamo preuzimate: svaki sačuvani izračun (30 dana) s razinom, procjenom, težinom, brojem provjera i znakovima moguće zlouporabe s vrijednostima, te sve promjene statusa i razine, uz objašnjenje svakog polja.</p>
 
 <h2 id="javno">10. Što je javno</h2>
-<p>Javna izdanja skupa podataka, objavljena kao datoteke uz izdanja repozitorija croatian-stemmer na GitHubu, sadrže samo zbirne oznake primjera. Ne sadrže oznake sudionika, pojedinačne odgovore, razine, težine, procjene ni broj odgovora.</p>
+<p>Javna izdanja skupa podataka, objavljena kao datoteke uz izdanja repozitorija croatian-stemmer na GitHubu, sadrže samo zbirne oznake primjera. Ne sadrže oznake sudionika, pojedinačne odgovore, razine, težine, procjene ni broj odgovora. O pojedinom sudioniku ne objavljuje se ništa.</p>
 
 <h2 id="appendix">Dodatak: formule</h2>
 <pre>w(θ, K) = ln(θ · (K − 1) / (1 − θ))
 P(z = c | votes) ∝ π_c · exp(Σ w(θ_a, K) over the votes for c)
 θ⁽⁰⁾ = clip((α₀ + h) / (α₀ + β₀ + h + m))
 s_a += λ · q(c(v)),  u_a += λ · (1 − q(c(v)))
-s_a + u_a ≤ max(h + m, 12)
+s_a + u_a ≤ ρ · max(h + m, f)
 θ⁽ᵗ⁾ = clip((α₀ + h + s) / (α₀ + β₀ + h + m + s + u))
 θ_lb = μ − 1.645 · √(μ(1 − μ) / (α₀ + β₀ + n + 1)),  μ = (α₀ + hits) / (α₀ + β₀ + n)
 priority = 1 − (p₁ − p₂)</pre>
 <ul>
 <li><strong>θ</strong> (θ_a): procjena točnosti osobe a za jednu vrstu zadatka, vjerojatnost da je njezin odgovor točan. <strong>clip</strong> je ograničava na raspon od 0,50 do gornje granice razine.</li>
-<li><strong>w(θ, K)</strong>: težina jednog odgovora; <strong>K</strong> je broj mogućih odgovora (2 za parove riječi i korijene; za leme broj različitih predloženih lema plus jedan, a najmanje 3); <strong>ln</strong> je prirodni logaritam.</li>
+<li><strong>w(θ, K)</strong>: težina jednog odgovora; <strong>K</strong> je broj mogućih odgovora (2 za parove riječi i korijene; za leme broj različitih predloženih lema plus jedan, uz najmanju vrijednost); <strong>ln</strong> je prirodni logaritam.</li>
 <li><strong>P(z = c | votes)</strong>: vjerojatnost da je točan odgovor primjera <strong>c</strong>, s obzirom na dane odgovore (votes); <strong>π_c</strong> je početna vjerojatnost odgovora c; zbroj (Σ) ide preko težina svih odgovora za c; ∝ znači „razmjerno”, a vjerojatnosti se zatim svode na zbroj 1.</li>
-<li><strong>θ⁽⁰⁾</strong>: početna procjena; <strong>α₀</strong> i <strong>β₀</strong> su početne vrijednosti (4 i 2; za stručnjake 18 i 2); <strong>h</strong> i <strong>m</strong> su broj točnih i netočnih odgovora na primjerima s poznatim odgovorom.</li>
-<li><strong>s_a</strong> i <strong>u_a</strong>: očekivani broj točnih i netočnih odgovora osobe a izveden iz slaganja s drugima; <strong>λ</strong> = 0,5 (takav dokaz vrijedi upola manje od provjere); <strong>q(c(v))</strong> je vjerojatnost odgovora c(v) koji je osoba dala u odgovoru v, izračunata samo iz tuđih odgovora na isti primjer.</li>
-<li><strong>s_a + u_a ≤ max(h + m, 12)</strong>: dokazi iz slaganja s drugima ne mogu nadmašiti dokaze iz provjera, koliko god se ljudi međusobno slagalo.</li>
-<li><strong>θ⁽ᵗ⁾</strong>: procjena nakon t-tog prolaza (s = s_a, u = u_a); izračun ima 10 prolaza.</li>
+<li><strong>θ⁽⁰⁾</strong>: početna procjena; <strong>α₀</strong> i <strong>β₀</strong> su početne vrijednosti (više za stručnjake); <strong>h</strong> i <strong>m</strong> su broj točnih i netočnih odgovora na primjerima s poznatim odgovorom.</li>
+<li><strong>s_a</strong> i <strong>u_a</strong>: očekivani broj točnih i netočnih odgovora osobe a izveden iz slaganja s drugima; <strong>λ</strong> je manji od 1, pa takav dokaz vrijedi manje od provjere; <strong>q(c(v))</strong> je vjerojatnost odgovora c(v) koji je osoba dala u odgovoru v, izračunata samo iz tuđih odgovora na isti primjer.</li>
+<li><strong>s_a + u_a ≤ ρ · max(h + m, f)</strong>: dokazi iz slaganja s drugima ograničeni su dokazima iz provjera (<strong>ρ</strong> i <strong>f</strong> su stalne postavke), koliko god se ljudi međusobno slagalo.</li>
+<li><strong>θ⁽ᵗ⁾</strong>: procjena nakon t-tog prolaza (s = s_a, u = u_a); izračun ima stalan broj prolaza.</li>
 <li><strong>θ_lb</strong>: donja granica procjene (približno 5. percentil) iz provjera koje razlikuju znanje od potvrđivanja prijedloga; <strong>n</strong> je broj takvih provjera, <strong>hits</strong> broj točnih; služi za napredovanje na etabliranu razinu.</li>
 <li><strong>priority</strong>: prednost nerazriješenog primjera pri raspodjeli; <strong>p₁</strong> i <strong>p₂</strong> su dvije najveće vjerojatnosti odgovora, pa primjeri kod kojih je razlika manja dobivaju veću prednost.</li>
 </ul>
+<p>Trenutačne vrijednosti svih postavki navodi <a href="https://github.com/brahle/croatian-stemmer/blob/main/docs/trust.md" rel="noopener noreferrer">tehnički opis modela</a>.</p>
 
 <p class="meta">Povezano: <a href="/legal/privacy.hr">Obavijest o privatnosti</a> · <a href="/legal/terms.hr">Uvjeti sudjelovanja i licencija</a> · <a href="/legal/participation.hr">Izjava o sudjelovanju</a> · <a href="/static/guidelines.hr.html">Smjernice za označavanje</a></p>
 </main>

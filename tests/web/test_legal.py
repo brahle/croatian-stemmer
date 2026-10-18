@@ -7,7 +7,7 @@ pytest.importorskip("fastapi")
 from labeling_support import make_settings
 
 DOCS = [f"{doc}.{lang}" for doc in ("privacy", "terms", "participation", "storage", "trust") for lang in ("hr", "en")]
-VERSIONS = {"privacy": "1.3", "terms": "1.1", "participation": "1.0", "storage": "1.1", "trust": "1.1"}
+VERSIONS = {"privacy": "1.3", "terms": "1.1", "participation": "1.0", "storage": "1.1", "trust": "2.0"}
 ROOT = Path(__file__).resolve().parents[2]
 FORMULAS = ROOT / "docs" / "trust.md"
 
@@ -163,3 +163,17 @@ async def test_trust_page_carries_the_formulas_of_docs_trust_md(lang):
     for line in block:
         assert line in page, line
     assert 'id="appendix"' in body
+
+
+@pytest.mark.parametrize("lang", ["hr", "en"])
+@pytest.mark.asyncio
+async def test_trust_page_keeps_the_promises_but_no_parameter_values(lang):
+    """Trust page 2.0: the 14-day review limit and the 30-day retention stay; thresholds and
+    rates live in docs/trust.md, which the page links, so tuning them does not change the page."""
+    async with app_client() as client:
+        body = (await client.get(f"/legal/trust.{lang}")).text
+    assert ("14 dana" if lang == "hr" else "14 days") in body
+    assert ("30 dana" if lang == "hr" else "30 days") in body
+    assert "github.com/brahle/croatian-stemmer/blob/main/docs/trust.md" in body
+    for value in ("0.78", "0,78", "0.95", "0,95", "0.70", "0,70", "95 %", "95%", "29 od 30", "29 of 30"):
+        assert value not in body, value
