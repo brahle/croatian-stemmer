@@ -33,7 +33,7 @@ async def readiness(api):
 async def test_a_supplement_fills_the_wrong_suggestion_pools(fresh_api, tmp_path):
     api = unlimited(await fresh_api())
     corpus_file = synthetic_conllu(tmp_path / "corpus.conllu", lemmas=120)
-    provenance = dict(source_uri="urn:test:reserve", license="CC BY-SA 4.0")
+    provenance = dict(source_uri="urn:test:supplement", license="CC BY-SA 4.0")
     records, _ = prepare(corpus_file, **provenance, pair_count=400, word_count=100, seed=2)
     candidates = write(tmp_path / "candidates.jsonl", records)
     assert (await imported(api, records))["added"] == len(records)
@@ -84,7 +84,7 @@ async def test_a_supplement_fills_the_wrong_suggestion_pools(fresh_api, tmp_path
 async def test_reserve_items_are_never_ordinary_or_expert_work(fresh_api, tmp_path):
     api = unlimited(await fresh_api())
     corpus_file = synthetic_conllu(tmp_path / "corpus.conllu", lemmas=40)
-    records, _ = prepare(corpus_file, source_uri="urn:test:reserve", license="CC BY-SA 4.0", pair_count=30,
+    records, _ = prepare(corpus_file, source_uri="urn:test:supplement", license="CC BY-SA 4.0", pair_count=30,
                          word_count=10, seed=1, gold_reserve_size=8)
     reserve = {row["item_id"] for row in records if is_reserve(row["sampling_stratum"])}
     assert len(reserve) == 32
@@ -120,3 +120,54 @@ async def test_reserve_items_are_never_ordinary_or_expert_work(fresh_api, tmp_pa
     await make_anchor(api, "owner")  # the seed queue runs while the suggestion-wrong pool is empty
     assert not set(await everything("owner", "lemma", "confirmed")) & reserve
     assert not set(await everything("owner", "pair", "different")) & reserve
+
+
+async def test_item_detail_never_returns_an_unserved_reserve_item(fresh_api, tmp_path):
+    api = unlimited(await fresh_api())
+    corpus_file = synthetic_conllu(tmp_path / "corpus.conllu", lemmas=30)
+    records, _ = prepare(corpus_file, source_uri="urn:test:supplement", license="CC BY-SA 4.0", pair_count=10,
+                         word_count=4, gold_reserve_size=4)
+    await imported(api, records)
+    corpus = records[0]["corpus_id"]
+    await api.request("POST", f"/api/corpora/{corpus}/publish", "curator", True, json={"labels_license": "CC BY-SA 4.0"})
+    await profiled(api, "alice")
+    reserve = next(r for r in records if is_reserve(r["sampling_stratum"]))
+    plain = next(r for r in records if not is_reserve(r["sampling_stratum"]))
+    path = lambda r: f'/api/corpora/{corpus}/items/{r["item_id"]}'
+    assert (await api.request("GET", path(plain), "alice")).status_code == 200
+    missing = await api.request("GET", f"/api/corpora/{corpus}/items/00000000-0000-0000-0000-000000000000", "alice")
+    hidden = await api.request("GET", path(reserve), "alice")
+    assert hidden.status_code == 404 and hidden.json() == missing.json()
+    await api.consent("curator", True)
+    assert (await api.request("GET", path(reserve), "curator", True)).status_code == 200
+    # Once served (as a check), it is the person's item like any other.
+    await api.sql("INSERT INTO label_assignment (annotator_id, corpus_id, item_id, first_shown_at, last_shown_at, "
+                  "shown_count, presentation) VALUES (:a, :c, :i, now(), now(), 1, 'shown')",
+                  a=await api.annotator_id("alice"), c=corpus, i=reserve["item_id"])
+    assert (await api.request("GET", path(reserve), "alice")).status_code == 200
+
+
+async def test_reserve_items_are_not_open_work_in_counts_or_corpus_order(fresh_api, tmp_path):
+    api = unlimited(await fresh_api())
+    corpora = []
+    for name, lemmas, pairs, reserve in (("x", 30, 2, 10), ("y", 31, 4, 0)):
+        path = synthetic_conllu(tmp_path / f"{name}.conllu", lemmas=lemmas)
+        rows, _ = prepare(path, source_uri="urn:test:supplement", license="CC BY-SA 4.0", pair_count=pairs,
+                          word_count=0, gold_reserve_size=reserve)
+        await imported(api, rows, name=name)
+        corpus = rows[0]["corpus_id"]
+        await api.request("POST", f"/api/corpora/{corpus}/publish", "curator", True,
+                          json={"labels_license": "CC BY-SA 4.0"})
+        ordinary = [r for r in rows if r["kind"] == "pair" and not is_reserve(r["sampling_stratum"])]
+        await api.sql("UPDATE label_item_state SET state = 'resolved' WHERE item_id = :i", i=ordinary[0]["item_id"])
+        corpora.append((corpus, rows))
+    (x, x_rows), (y, _) = corpora
+    overview = (await api.request("GET", "/api/admin/overview", "curator", True)).json()
+    states = {c["id"]: c["kinds"]["pair"] for c in overview["corpora"]}
+    reserve_pairs = sum(r["kind"] == "pair" and is_reserve(r["sampling_stratum"]) for r in x_rows)
+    assert states[x] == {"open": 1, "resolved": 1, "reserve": reserve_pairs}
+    assert states[y] == {"open": 3, "resolved": 1}
+    # /api/next starts with the corpus with the lowest resolved share of real work: y (1/4), not x (1/2).
+    await profiled(api, "alice")
+    served = (await api.request("GET", "/api/next", "alice", params={"kind": "pair"})).json()
+    assert served["item"]["candidate"]["corpus_id"] == y

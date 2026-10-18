@@ -10,6 +10,9 @@ from croatian_stemmer.labeling.candidates import prepare
 from croatian_stemmer.labeling.gold import build
 
 
+SECRET = "a-private-test-seed-0123456789"
+
+
 def name(n):
     """An alphabetic word for a number (no digits in forms or lemmas)."""
     letters = string.ascii_lowercase
@@ -73,7 +76,7 @@ def test_builder_output_is_byte_identical_and_exclusions_hold(corpus, tmp_path, 
     for n in (1, 2):
         output = tmp_path / f"gold-{n}.jsonl"
         main(["gold", str(path), "--candidates", str(candidates), "--per-kind", "50", "--split", "qualification=20",
-              "--allow-short", "--output", str(output)])
+              "--seed", SECRET, "--allow-short", "--output", str(output)])
         outputs.append(output.read_bytes())
         receipt = json.loads(capsys.readouterr().out)
     assert outputs[0] == outputs[1] and receipt["batch"]
@@ -99,7 +102,7 @@ def test_candidates_from_another_corpus_are_refused(corpus, tmp_path):
 # ---- gold reserve, wrong-suggestion gold, coverage (0.3.4) -------------------------------
 
 from croatian_stemmer.labeling.candidates import RESERVE_STRATA, index_conllu, settled_lemma
-from croatian_stemmer.labeling.gold import check, coverage, needed
+from croatian_stemmer.labeling.gold import check, coverage, live_pools, needed
 
 
 def write(path, rows):
@@ -120,9 +123,12 @@ def test_needed_covers_the_calibration_hold_out():
 
 def test_gold_reserve_is_settled_corpus_truth_and_leaves_the_sample_alone(corpus):
     path, _, records = corpus
-    kwargs = dict(source_uri="urn:test:gold", license="test fixture", pair_count=600, word_count=150, seed=3)
+    kwargs = dict(source_uri="urn:test:gold", license="test fixture", pair_count=600, word_count=150, seed=3,
+                  reserve_secret=SECRET)
     with_reserve, receipt = prepare(path, **kwargs, gold_reserve_size=20)
-    assert with_reserve[:len(records)] == records  # the ordinary sample is unchanged
+    ordinary = [r for r in with_reserve if not r["sampling_stratum"].startswith("gold_reserve_")]
+    records = ordinary  # with a reserve the ordinary sample is drawn from the secret
+    assert len(ordinary) == len(prepare(path, **{**kwargs, "reserve_secret": None})[0])
     assert prepare(path, **kwargs, gold_reserve_size=20) == (with_reserve, receipt)
     reserve = with_reserve[len(records):]
     assert Counter(r["sampling_stratum"] for r in reserve) == {stratum: 20 for stratum in RESERVE_STRATA}
@@ -267,3 +273,79 @@ def test_coverage_counts_stem_balance_when_stem_gold_exists():
     report = coverage(rows)
     assert report["kinds"]["stem"]["status"] == "short"  # every class needs a quarter
     assert not report["ok"]
+
+
+def test_seeds_are_private_and_never_public_defaults(corpus, tmp_path, capsys):
+    """Which items are gold or reserve must not be reproducible from public inputs."""
+    path, candidates, records = corpus
+    for bad in ("1", "0", 1, "short-seed"):
+        with pytest.raises(ValueError, match="private seed"):
+            build(path, candidates, seed=bad)
+        with pytest.raises(ValueError, match="private seed"):
+            prepare(path, source_uri="urn:test:gold", license="test fixture", pair_count=0, word_count=0,
+                    gold_reserve_size=5, reserve_secret=bad)
+    with pytest.raises(SystemExit):
+        main(["gold", str(path), "--candidates", str(candidates), "--seed", "1", "--output", str(tmp_path / "g")])
+    capsys.readouterr()
+    # Without a seed each run draws its own, records it in the receipt and selects differently.
+    (a, ra), (b, rb) = build(path, candidates, per_kind=40), build(path, candidates, per_kind=40)
+    assert ra["seed"] != rb["seed"] and len(ra["seed"]) == 32
+    assert {r["item_id"] for r in a} != {r["item_id"] for r in b}
+    assert build(path, candidates, per_kind=40, seed=ra["seed"])[0] == a
+    # The reserve, and with it the ordinary sample, follow the secret: the receipt rebuilds them,
+    # the public seed does not.
+    kwargs = dict(source_uri="urn:test:gold", license="test fixture", pair_count=100, word_count=20, seed=3,
+                  gold_reserve_size=5)
+    one, receipt = prepare(path, **kwargs)
+    assert prepare(path, **kwargs, reserve_secret=receipt["gold_reserve"]["secret"])[0] == one
+    public, _ = prepare(path, **{**kwargs, "gold_reserve_size": 0})
+    plain = [r for r in one if not r["sampling_stratum"].startswith("gold_reserve_")]
+    assert {r["item_id"] for r in plain} != {r["item_id"] for r in public}
+    # Every id has the ordinary form (kind, occurrences, stem): it does not tell a reserve item.
+    from uuid import NAMESPACE_URL, uuid5
+    for r in one:
+        identity = json.dumps([r["kind"], r["word_ref"], r["other_word_ref"], r["proposed_stem"]], ensure_ascii=False)
+        assert r["item_id"] == str(uuid5(NAMESPACE_URL, r["corpus_id"] + ":" + identity))
+
+
+def test_a_supplement_never_repeats_an_occurrence(corpus, tmp_path, capsys):
+    path, _, records = corpus
+    # An ordinary sample with another seed overlaps the earlier file: overlapping rows are dropped.
+    extra, receipt = prepare(path, source_uri="urn:test:gold", license="test fixture", pair_count=600,
+                             word_count=150, seed=4, supplement=records)
+    used = {ref for r in records for ref in (r["word_ref"], r["other_word_ref"]) if ref}
+    assert all(not {r["word_ref"], r["other_word_ref"]} & used for r in extra)
+    assert receipt["prepared_pairs"] == sum(r["kind"] == "pair" for r in extra)
+    # The command defaults to no ordinary items with --supplement.
+    earlier = write(tmp_path / "earlier.jsonl", records)
+    out = tmp_path / "extra.jsonl"
+    main(["prepare", str(path), "--source-uri", "urn:test:gold", "--license", "test fixture", "--gold-reserve", "3",
+          "--supplement", str(earlier), "--output", str(out)])
+    rows = [json.loads(line) for line in out.read_text().splitlines()]
+    assert len(rows) == 12 and all(r["sampling_stratum"].startswith("gold_reserve_") for r in rows)
+    assert len(json.loads(capsys.readouterr().out)["gold_reserve"]["secret"]) == 32
+
+
+def test_with_rows_are_deduplicated_conflicts_refused_and_live_pools_used(corpus, tmp_path):
+    path, candidates, records = corpus
+    first, _ = build(path, candidates, per_kind=60, qualification=20)
+    _, receipt = build(path, candidates, existing=first + first, per_kind=10)
+    assert receipt["existing_rows"] == len(first)
+    assert receipt["coverage"]["upper_bound"] is True
+    flipped = dict(first[0], answer="different" if first[0]["answer"] == "same" else "same") \
+        if first[0]["kind"] == "pair" else dict(first[0], lemma="drugo")
+    with pytest.raises(ValueError, match="two different answers"):
+        build(path, candidates, existing=first + [flipped])
+    # Live pools: what the site has counts as it is; the --with rows do not inflate it.
+    overview = {"readiness": {kind: {"pools": {"qualification": {"all": 60}, "audit": {"all": 72},
+                                               "wrong_suggestion": 0}} for kind in ("pair", "lemma")}}
+    overview["readiness"]["stem"] = {"pools": {"qualification": {}, "audit": {}, "wrong_suggestion": None}}
+    live = live_pools(overview)
+    _, receipt = build(path, candidates, existing=first, per_kind=10, live=live)
+    lemma = receipt["coverage"]["kinds"]["lemma"]
+    assert receipt["coverage"]["live"] and not receipt["coverage"]["upper_bound"]
+    assert lemma["audit"]["live"] == 72 and lemma["audit"]["needed"] == needed(28, 10)
+    assert lemma["qualification"]["needed"] == 0 and lemma["wrong_suggestion"]["ok"] is False
+    listing = {"pools": [{"kind": "pair", "pool": "audit", "status": "active", "suggestion_agrees": False, "n": 20},
+                         {"kind": "pair", "pool": "audit", "status": "retired", "suggestion_agrees": False, "n": 9}]}
+    assert live_pools(listing)["pair"] == {"qualification": {}, "audit": {"all": 20}, "wrong": 20}

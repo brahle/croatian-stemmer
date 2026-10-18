@@ -4,6 +4,7 @@ import hashlib
 import itertools
 import json
 import random
+import secrets
 import unicodedata
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -153,6 +154,22 @@ def _check_provenance(source_uri, license):
         raise ValueError("invalid source provenance")
 
 
+MIN_SECRET = 16
+
+
+def private_seed(value=None) -> str:
+    """A seed nobody can guess: the given one (at least 16 characters, so not a small
+    number from the documentation) or 128 fresh random bits. Which items are gold or
+    reserve must not be reproducible from public inputs; keep the receipt that records
+    it private."""
+    if value is None:
+        return secrets.token_hex(16)
+    if not isinstance(value, str) or len(value.strip()) < MIN_SECRET:
+        raise ValueError(f"a private seed needs at least {MIN_SECRET} characters (omit it to draw a random one); "
+                         "a public or guessable seed lets anyone reconstruct the known-answer items")
+    return value
+
+
 class Records:
     """Candidate rows of one corpus in the versioned candidate schema (v1)."""
 
@@ -163,15 +180,14 @@ class Records:
         self.algorithm = algorithm_sha256()
 
     def candidate(self, left, kind, *, right=None, stratum="word_suggestion", lemma=None, other_lemma=None):
-        """lemma/other_lemma override the suggestions shown (gold-reserve decoys only); the
-        identity then includes the stratum and both suggestions, so a decoy never shares an
-        item id with an ordinary item on the same occurrences."""
+        """lemma/other_lemma override the suggestions shown (gold-reserve decoys only). The id
+        has the same form for every item (kind, occurrences, stem), so it says nothing about
+        whether an item is a reserve item; reserve items use occurrences no other item uses,
+        so their ids never collide with an ordinary item's."""
         proposed_stem = stem(left.word) if kind == "stem" else ""
         proposed = left.lemma if lemma is None else lemma
         other_proposed = (right.lemma if right else "") if other_lemma is None else other_lemma
         parts = [kind, left.ref, right.ref if right else "", proposed_stem]
-        if is_reserve(stratum):
-            parts += [stratum, proposed, other_proposed]
         identity = json.dumps(parts, ensure_ascii=False)
         return {**self.base,
                 "item_id": str(uuid5(NAMESPACE_URL, self.corpus_id + ":" + identity)),
@@ -371,15 +387,19 @@ def read_candidates(path: Path) -> list[dict]:
 
 def prepare(path: Path, *, source_uri: str, license: str,
             pair_count: int = 10000, word_count: int = 1000, seed: int = 0,
-            gold_reserve_size: int = 0, min_freq: int = 5, supplement=()):
+            gold_reserve_size: int = 0, min_freq: int = 5, supplement=(), reserve_secret=None):
     """Deterministic stratified candidates; source guesses are not answers.
 
-    gold_reserve_size: items per gold-reserve stratum (gold_reserve), drawn with their
-    own seeded generator so the ordinary sample is the same with or without them.
+    gold_reserve_size: items per gold-reserve stratum (gold_reserve). With a reserve, both
+    the reserve and the ordinary sample are drawn from the private reserve secret instead
+    of `seed`, so neither can be rebuilt from public inputs.
     supplement: candidate rows already prepared from this corpus (an earlier file). The
     output then holds only new item ids and never reuses their occurrences; provenance
-    must match theirs."""
+    must match theirs, and an ordinary item that would reuse one of their occurrences is
+    left out. reserve_secret: the private seed of the reserve (private_seed); drawn at
+    random when not given and reported only in the receipt, which must stay private."""
     _check_provenance(source_uri, license)
+    secret = private_seed(reserve_secret) if gold_reserve_size else ""
     if (type(pair_count) is not int or type(word_count) is not int or type(gold_reserve_size) is not int
             or pair_count < 0 or word_count < 0 or gold_reserve_size < 0
             or pair_count + word_count + gold_reserve_size == 0):
@@ -403,22 +423,34 @@ def prepare(path: Path, *, source_uri: str, license: str,
             raise ValueError("the supplemented candidates have a different corpus or provenance "
                              "(corpus_sha256, source URI and license must be the same)")
     records = Records(corpus_id=corpus_id, corpus_sha256=raw_digest, source_uri=source_uri, license=license)
-    rows, n_pairs = sample(tokens, records, pair_count=pair_count, word_count=word_count, rng=random.Random(seed))
+    # With a reserve the ordinary sample is drawn from the secret too: a sample anyone can
+    # reproduce from the public corpus and seed would reveal the reserve as its complement.
+    rng = random.Random(f"sample:{secret}") if secret else random.Random(seed)
+    rows, n_pairs = sample(tokens, records, pair_count=pair_count, word_count=word_count, rng=rng)
+
+    def refs(row):
+        return {ref for ref in (row["word_ref"], row["other_word_ref"]) if ref}
+
     existing_ids = {row["item_id"] for row in supplement}
-    rows = [row for row in rows if row["item_id"] not in existing_ids]
-    used = {ref for row in supplement + rows for ref in (row["word_ref"], row["other_word_ref"]) if ref}
+    existing_refs = {ref for row in supplement for ref in refs(row)}
+    # A supplement never repeats an occurrence: same id, or a new item on a used occurrence.
+    rows = [row for row in rows if row["item_id"] not in existing_ids and not refs(row) & existing_refs]
+    used = existing_refs | {ref for row in rows for ref in refs(row)}
     reserve, reserve_counts = gold_reserve(index, records, size=gold_reserve_size,
-                                           min_freq=min_freq, rng=random.Random(f"gold-reserve:{seed}"),
+                                           min_freq=min_freq, rng=random.Random(f"gold-reserve:{secret}"),
                                            used_refs=used)
     rows += [row for row in reserve if row["item_id"] not in existing_ids]
     receipt = {"candidate_schema_version": 1, "corpus_id": corpus_id,
                "corpus_sha256": raw_digest, "source_uri": source_uri, "license": license,
                "seed": seed, "unique_form_lemma_pos_suggestions": len(tokens),
-               "requested_pairs": pair_count, "prepared_pairs": n_pairs,
+               "requested_pairs": pair_count,
+               "prepared_pairs": sum(r["kind"] == "pair" and not is_reserve(r["sampling_stratum"]) for r in rows),
                "prepared_lemma_items": sum(r["kind"] == "lemma" and not is_reserve(r["sampling_stratum"]) for r in rows),
                "prepared_stem_items": sum(r["kind"] == "stem" for r in rows),
                "human_judgments": 0, "algorithm_sha256": records.algorithm}
     if gold_reserve_size or supplement:
-        receipt.update({"gold_reserve": {"size": gold_reserve_size, "min_freq": min_freq, **reserve_counts},
+        # The secret is in the receipt only: keep the receipt private (never commit or publish it).
+        receipt.update({"gold_reserve": {"size": gold_reserve_size, "min_freq": min_freq, "secret": secret or None,
+                                         **reserve_counts},
                         "supplement": {"existing_items": len(supplement), "new_items": len(rows)}})
     return rows, receipt

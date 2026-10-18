@@ -33,9 +33,14 @@ lemma of another word with the same stem, or else the form itself, as the lemma;
 `gold_reserve_pair_decoy_same` shows two forms of different lemmas (forms the stemmer
 merges first, then forms sharing their first four letters) with one lemma for both;
 `gold_reserve_pair_decoy_different` shows two forms of one lemma with a decoy lemma on
-one of them. The reserve has its own seeded generator, so the ordinary sample is
-identical with or without it, and no reserve item reuses an occurrence another item
-uses (a form may come back in another sentence). The web app never serves a reserve
+one of them. No reserve item reuses an occurrence another item uses (a form may come
+back in another sentence), and every item id has the same form (kind, occurrences, stem),
+so an id does not tell a reserve item. The reserve is drawn from a private secret
+(`--reserve-secret`, at least 16 characters; drawn at random when omitted and printed only
+in the receipt); in a run with a reserve the ordinary sample is drawn from the secret too,
+because a sample anyone can reproduce from the public corpus and the documented `--seed`
+would reveal the reserve as its complement. **Keep the receipt private** (outside the
+repository, never published): with it anyone could rebuild the reserve. The web app never serves a reserve
 item as ordinary or expert work (only as a known-answer check once it is gold), leaves
 reserve items out of progress counts, and `release` never publishes one, so the decoys
 neither bias the crowd sample nor reach a release. Reserve items that do not become
@@ -43,20 +48,22 @@ gold (for example those in the calibration sample) are never shown; the rest sta
 available for later top-ups when checks are served out or disclosed.
 
 To add a reserve to a corpus that is already imported, prepare a supplement: only new
-item ids of the same corpus, never reusing an occurrence of the earlier file, and
-refused unless the corpus hash, source URI and licence are the same:
+item ids of the same corpus, never reusing an occurrence of the earlier file (an ordinary
+item that would is left out), and refused unless the corpus hash, source URI and licence
+are the same. With `--supplement`, `--pairs` and `--word-items` default to 0:
 
 ```sh
 croatian-stemmer-labels prepare path/to/corpus.conllu \
   --source-uri https://example.org/corpus-record --license 'SOURCE-LICENSE' \
-  --pairs 0 --word-items 0 --gold-reserve 200 \
-  --supplement candidates.jsonl --output candidates-extra.jsonl
+  --gold-reserve 200 --supplement candidates.jsonl \
+  --output candidates-extra.jsonl > candidates-extra.receipt.json  # private
 ```
 
 Import it like any candidates file: the import adds new items to an existing corpus with
 the same provenance, reports existing ids as `already_present` and leaves them unchanged,
 and refuses a different hash, source or licence (409 `corpus_provenance_conflict`) or a
 changed question under an existing id (409 `immutable_item_conflict`).
+
 Candidate JSONL has its own versioned schema and no answer, annotator, or human
 annotation identifier. Same-lemma suggestions, stem-collision suggestions and
 random different-lemma suggestions are sampling strata, not gold labels. Review
@@ -139,11 +146,16 @@ and exits non-zero with a message on any error.
 ```sh
 croatian-stemmer-labels gold path/to/corpus.conllu --candidates candidates.jsonl \
   [--candidates candidates-extra.jsonl] [--with gold-1.jsonl] \
-  --min-freq 5 --per-kind 400 --seed 1 --split qualification=80 --wrong-suggestion 30 \
-  [--exclude used-ids.txt] [--params params.json] [--allow-short] --output gold.jsonl
+  --min-freq 5 --per-kind 400 --split qualification=80 --wrong-suggestion 30 \
+  [--seed PRIVATE] [--exclude used-ids.txt] [--live overview.json] [--params params.json] \
+  [--allow-short] --output gold.jsonl > gold.receipt.json  # private
 ```
 
-The defaults are the values shown. The candidates must be the files the corpus was
+The defaults are the values shown. The selection is seeded by a private seed (`--seed`,
+at least 16 characters; drawn at random when omitted and recorded only in the receipt):
+with a public seed anyone could rebuild which items are known answers from the public
+corpus and the documented options, and answer exactly those with care. Keep the receipt
+private. The candidates must be the files the corpus was
 imported from (repeat `--candidates` for a supplement): every row's `corpus_sha256` must
 equal the corpus's, and the corpus must not change while the command reads it. A candidate
 becomes a known-answer item only when the corpus settles it beyond doubt: every form shown
@@ -162,8 +174,9 @@ other way), always in the audit pool, with a basis ending in `_against_suggestio
 rest of `--per-kind` agrees with the suggestion, at most 60 % `same` for `pair`; the first
 N of those per kind (`--split qualification=N`) go to the qualification pool and the rest
 to the audit pool. `--exclude` takes a file of item ids, one per line, never to use.
-`--with` takes gold files already imported: their items are not used again and they
-count in the coverage, which is how a top-up is built. Identical inputs and options give
+`--with` takes gold files already imported: their items are not used again (a repeated
+item counts once; one with two different answers is refused) and they count in the
+coverage, which is how a top-up is built. Identical inputs, options and seed give
 identical bytes. The receipt names the batch id, input hashes, options, eligible counts
 (`/against_suggestion` for decoys), counts per kind, pool, answer and basis, and the
 coverage, and states `human_judgments: 0`.
@@ -177,8 +190,14 @@ for 60, 133 more rows for the audit pool of 100 and 22 suggestion-wrong rows for
 targets come from `DEFAULT_PARAMS`, or from `--params` (a parameter set as the dashboard
 shows it). **When a `pair` or `lemma` pool is short the command still writes the file
 but exits with status 3** (`--allow-short` exits 0); `stem` is reported as `EXPERT ONLY`
-and never fails the command. The live pools in "Bodovanje" stay authoritative: the hold-out
-is decided per item by a keyed hash the builder cannot see.
+and never fails the command. The live pools stay authoritative: the hold-out is decided
+per item by a keyed hash the builder cannot see, and gold can since have been retired,
+contested or served out. Without `--live`, rows from `--with` files count as if all
+were imported and still active, and the report says it is an **upper bound**. With
+`--live FILE` (the JSON of `GET /api/admin/overview`, which the dashboard's "Pregled" tab
+loads, or of `GET /api/admin/gold`) the site's active pools count as they are, the
+`--with` rows only exclude their items, and the new rows must fill what is missing; the
+table then has a `live` column.
 
 Stem known answers cannot come from a lemmatised corpus. A stem is acceptable when every
 usual form of its lemma reduces to it and no word of another meaning does (the
@@ -193,7 +212,8 @@ then 30 audit items, each class at least a quarter), or the curator sets it per 
 
 ```sh
 croatian-stemmer-labels gold-check gold-1.jsonl [gold-2.jsonl ...] \
-  --candidates candidates.jsonl [--candidates candidates-extra.jsonl] [--params params.json]
+  --candidates candidates.jsonl [--candidates candidates-extra.jsonl] [--live overview.json] \
+  [--params params.json]
 ```
 
 It reads the gold files in import order and fails (exit 2, with the line) on a line the

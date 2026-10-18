@@ -304,11 +304,32 @@ async def test_import_writes_queue_and_membership_rows_once(api):
     assert (await api.sql(audit, c=corpus)).all() == bits
 
 
-@pytest.mark.parametrize("parameter", ["offset", "after"])
+async def test_my_items_page_by_an_opaque_cursor_in_showing_order(api):
+    rows = await api.imported(candidates(pairs=3))
+    pairs = [r for r in rows if r["kind"] == "pair"]
+    await api.consent("alice")
+    for row in reversed(pairs):  # shown (and answered) in the reverse of the import order
+        assert (await api.request("POST", answer_path(row), "alice", json=answer(0, "same"))).status_code == 200
+    seen, after = [], ""
+    for _ in range(5):
+        page = (await api.request("GET", root(pairs[0]) + "/items", "alice",
+                                  params={"state": "mine_labelled", "after": after})).json()
+        assert all("ordinal" not in item for item in page["items"])
+        seen += [item["candidate"]["item_id"] for item in page["items"]]
+        if not page["items"]:
+            break
+        after = page["items"][-1]["cursor"]
+    assert seen == [r["item_id"] for r in reversed(pairs)]
+    for bad in ("5", "-1", "1~not-a-uuid", "x" * 81):
+        r = await api.request("GET", root(pairs[0]) + "/items", "alice", params={"after": bad})
+        assert r.status_code == 422
+
+
+@pytest.mark.parametrize("parameter", ["offset"])
 async def test_pagination_rejects_postgres_integer_overflow(api, parameter):
     rows = await api.imported()
     await api.consent("alice")
-    route = "/api/corpora" if parameter == "offset" else root(rows[0]) + "/items"
+    route = "/api/corpora"
     maximum = 2**31 - 1
     assert (await api.request("GET", route, "alice", params={parameter: maximum})).status_code == 200
     for value in (maximum + 1, 10**20):

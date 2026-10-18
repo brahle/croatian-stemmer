@@ -580,10 +580,12 @@ def register(app, ctx):
         async with db.begin():
             params = await scoring_params(db)
             enabled = (await db.execute(select(Setting.value).where(Setting.key == "scoring_enabled"))).scalar_one_or_none()
+            # Gold-reserve items are not open work: they are counted on their own ("reserve").
             counts = (await db.execute(text("""
-                SELECT c.id, c.name, s.kind, s.state, count(*) FROM label_corpus c
+                SELECT c.id, c.name, s.kind, CASE WHEN s.reserve THEN 'reserve' ELSE s.state END AS state, count(*)
+                FROM label_corpus c
                 JOIN label_item_state s ON s.corpus_id = c.id WHERE c.status <> 'archived'
-                GROUP BY c.id, c.name, s.kind, s.state ORDER BY c.name, c.id, s.kind, s.state"""))).all()
+                GROUP BY 1, 2, 3, 4 ORDER BY c.name, c.id, s.kind, 4"""))).all()
             ready = {kind: await live_readiness(db, params, kind) for kind in ("pair", "lemma", "stem")}
             run = (await db.execute(select(ScoringRun).where(ScoringRun.status == "done")
                                     .order_by(ScoringRun.finished_at.desc()).limit(1))).scalar_one_or_none()
@@ -736,20 +738,25 @@ def register(app, ctx):
             if await stale(db, run.watermark, run.id):
                 raise failure(409, "run_stale")
             rows = (await db.execute(text("""
-                SELECT p.corpus_id, p.item_id, g.pool, g.status FROM label_item_posterior p
+                SELECT p.corpus_id, p.item_id, g.pool, g.status, s.reserve FROM label_item_posterior p
+                JOIN label_item_state s ON s.corpus_id = p.corpus_id AND s.item_id = p.item_id
                 LEFT JOIN label_gold g ON g.corpus_id = p.corpus_id AND g.item_id = p.item_id
                 WHERE p.run_id = :r AND p.state = 'resolved' AND p.releasable"""), {"r": run_id})).all()
             released = {r.item_id: r for r in rows}
             if data is not None and data.item_ids is not None:
                 unknown = [i for i in data.item_ids if i not in released]
+                # A gold-reserve item is never released (release.py leaves it out), so never disclosed.
+                reserve = [str(i) for i in data.item_ids if i in released and released[i].reserve]
                 in_use = [str(i) for i in data.item_ids if i in released and (
                     released[i].pool == "qualification" or released[i].status == "active")]
+                if reserve:
+                    raise failure(409, "reserve_item", items=reserve)
                 if unknown or in_use:
                     raise failure(409, "gold_in_use" if in_use else "not_released", items=in_use or
                                   [str(i) for i in unknown])
                 chosen = [released[i] for i in data.item_ids]
             else:
-                chosen = [r for r in rows if not (r.pool == "qualification" or r.status == "active")]
+                chosen = [r for r in rows if not (r.pool == "qualification" or r.status == "active" or r.reserve)]
             disclosed = {(r[0], r[1]) for r in (await db.execute(text(
                 "SELECT corpus_id, item_id FROM label_trust_event WHERE kind = 'gold.disclosed'"))).all()}
             count = 0

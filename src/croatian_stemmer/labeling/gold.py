@@ -18,7 +18,7 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from .candidates import index_conllu, related, reservoir, settled_lemma
+from .candidates import index_conllu, private_seed, related, reservoir, settled_lemma
 from .schema import digest, word
 from .scoring import DEFAULT_PARAMS, answer_class, suggested_class, validate_params
 
@@ -117,42 +117,77 @@ def needed(target, hold_out_rate, confidence=CONFIDENCE):
         n += 1
 
 
-def coverage(rows, params=None):
+def live_pools(data):
+    """{kind: {"qualification": {class: n}, "audit": {class: n}, "wrong": n}}: the active gold
+    pools of the live site, from the JSON of GET /api/admin/overview (its `readiness`) or of
+    GET /api/admin/gold (its `pools`). Classes are the stem answers, or `all`."""
+    pools = {kind: {"qualification": {}, "audit": {}, "wrong": 0} for kind in KINDS}
+    if isinstance(data, dict) and isinstance(data.get("readiness"), dict):
+        for kind in KINDS:
+            found = data["readiness"][kind]["pools"]
+            pools[kind] = {"qualification": dict(found["qualification"]), "audit": dict(found["audit"]),
+                           "wrong": int(found.get("wrong_suggestion") or 0)}
+        return pools
+    if isinstance(data, dict) and isinstance(data.get("pools"), list):
+        for row in data["pools"]:
+            if row["status"] != "active":
+                continue
+            bucket = pools[row["kind"]][row["pool"]]
+            bucket["all"] = bucket.get("all", 0) + row["n"]
+            if row["pool"] == "audit" and row["suggestion_agrees"] is False:
+                pools[row["kind"]]["wrong"] += row["n"]
+        return pools
+    raise ValueError("live pools: expected the JSON of /api/admin/overview or /api/admin/gold")
+
+
+def coverage(rows, params=None, live=None, upper_bound=False):
     """Per kind, the pools a gold import of `rows` (dicts with kind, pool, answer and
     agrees, in import order) gives, against the readiness targets of `params`.
 
     The import fills each kind's qualification pool up to its target and sends the rest
     to audit; it holds out calibration-sampled items (audit_sample_rate per cent). A pool
     is `ok` when it meets its target after that hold-out with probability >= 0.999.
+    `live` (live_pools) holds the site's active pools, counted as they are; the rows then
+    only need to fill the rest. Without it, earlier gold counted among `rows` is an upper
+    bound (`upper_bound`): retired, contested or served-out items are not known offline.
     Stem gold cannot come from a corpus: an empty stem pool is reported as
     `expert_only` and does not make the report fail."""
     params = validate_params(params if params is not None else DEFAULT_PARAMS)
     r, rate = params["readiness"], params["audit_sample_rate"]
-    report = {"hold_out_rate": rate, "confidence": CONFIDENCE, "kinds": {}}
+    report = {"hold_out_rate": rate, "confidence": CONFIDENCE, "live": live is not None,
+              "upper_bound": bool(upper_bound and live is None), "kinds": {}}
     ok = True
     for kind in KINDS:
         mine = [row for row in rows if row["kind"] == kind]
+        have = (live or {}).get(kind) or {"qualification": {}, "audit": {}, "wrong": 0}
+        live_q, live_a, live_w = sum(have["qualification"].values()), sum(have["audit"].values()), have["wrong"]
         n_q = sum(row["pool"] == "qualification" for row in mine)
         n_a = len(mine) - n_q
         wrong = sum(row["pool"] == "audit" and row["agrees"] is False for row in mine)
         t_q = r["stem_qualification_pool" if kind == "stem" else "qualification_pool"]
         t_a = r["stem_audit_pool" if kind == "stem" else "audit_pool"]
-        q_needed = needed(t_q, rate)
+        room = max(0, t_q - live_q)
+        q_needed = needed(room, rate)
         q_ok = n_q >= q_needed
-        a_needed = needed(t_q + t_a, rate) - t_q if q_ok else needed(t_a, rate)
-        routed = n_a + max(0, n_q - t_q)
-        entry = {"qualification": {"rows": n_q, "target": t_q, "needed": q_needed, "ok": q_ok},
-                 "audit": {"rows": routed, "target": t_a, "needed": a_needed, "ok": routed >= a_needed}}
+        if live is None:
+            a_needed = needed(t_q + t_a, rate) - t_q if q_ok else needed(t_a, rate)
+            routed = n_a + max(0, n_q - t_q)
+        else:  # the live audit pool is certain; new qualification rows fill the room first
+            a_needed = needed(max(0, t_a - live_a), rate)
+            routed = n_a + max(0, n_q - q_needed)
+        entry = {"qualification": {"live": live_q, "rows": n_q, "target": t_q, "needed": q_needed, "ok": q_ok},
+                 "audit": {"live": live_a, "rows": routed, "target": t_a, "needed": a_needed, "ok": routed >= a_needed}}
         if kind == "stem":
             share = r["minority_class_share"]
             for pool, rows_in_pool in (("qualification", [x for x in mine if x["pool"] == "qualification"]),
                                        ("audit", [x for x in mine if x["pool"] == "audit"])):
                 classes = Counter(x["answer"] for x in rows_in_pool)
+                classes.update({c: n for c, n in have[pool].items() if c in ANSWERS["stem"]})
                 entry[pool]["classes"] = {c: classes.get(c, 0) for c in ANSWERS["stem"]}
-                least = math.ceil(share * entry[pool]["needed"])
+                least = math.ceil(share * (entry[pool]["needed"] + entry[pool]["live"]))
                 entry[pool]["minority_needed"] = least
                 entry[pool]["ok"] = entry[pool]["ok"] and all(classes.get(c, 0) >= least for c in ANSWERS["stem"])
-            if not mine:
+            if not mine and not live_q + live_a:
                 entry["status"] = "expert_only"
                 entry["note"] = ("stem known answers are not derivable from a lemmatised corpus; they come from "
                                  "the trusted list (anchor answers through the seed queue) or curator decisions")
@@ -160,9 +195,9 @@ def coverage(rows, params=None):
                 entry["status"] = "ok" if entry["qualification"]["ok"] and entry["audit"]["ok"] else "short"
                 ok = ok and entry["status"] == "ok"
         else:
-            w_needed = needed(r["wrong_suggestion_pool"], rate)
-            entry["wrong_suggestion"] = {"rows": wrong, "target": r["wrong_suggestion_pool"], "needed": w_needed,
-                                         "ok": wrong >= w_needed}
+            w_needed = needed(max(0, r["wrong_suggestion_pool"] - live_w), rate)
+            entry["wrong_suggestion"] = {"live": live_w, "rows": wrong, "target": r["wrong_suggestion_pool"],
+                                         "needed": w_needed, "ok": wrong >= w_needed}
             entry["status"] = "ok" if all(entry[p]["ok"] for p in ("qualification", "audit", "wrong_suggestion")) \
                 else "short"
             ok = ok and entry["status"] == "ok"
@@ -175,7 +210,7 @@ def coverage_table(report) -> str:
     """The coverage report as text, for a terminal."""
     lines = [f"Gold coverage against the readiness targets (calibration hold-out {report['hold_out_rate']} %, "
              f"each pool met with probability >= {report['confidence']}):",
-             f"  {'kind':6} {'pool':17} {'rows':>6} {'needed':>7} {'target':>7}  status"]
+             f"  {'kind':6} {'pool':17} {'live':>6} {'rows':>6} {'needed':>7} {'target':>7}  status"]
     for kind, entry in report["kinds"].items():
         for pool in ("qualification", "audit", "wrong_suggestion"):
             if pool not in entry:
@@ -186,9 +221,14 @@ def coverage_table(report) -> str:
                 extra = "  (" + ", ".join(f"{c} {n}" for c, n in p["classes"].items()) + \
                         f"; each class needs {p['minority_needed']})"
             state = "ok" if p["ok"] else ("EXPERT ONLY" if entry["status"] == "expert_only" else "SHORT")
-            lines.append(f"  {kind:6} {pool:17} {p['rows']:>6} {p['needed']:>7} {p['target']:>7}  {state}{extra}")
+            live = p["live"] if report.get("live") else "-"
+            lines.append(f"  {kind:6} {pool:17} {live:>6} {p['rows']:>6} {p['needed']:>7} {p['target']:>7}  "
+                         f"{state}{extra}")
         if entry.get("note"):
             lines.append(f"  {kind:6} {entry['note']}")
+    if report.get("upper_bound"):
+        lines.append("UPPER BOUND: the earlier gold files count as if every row were imported and still active. "
+                     "Pass --live with the site's /api/admin/overview JSON for the real pools.")
     lines.append("All pair and lemma pools are covered." if report["ok"] else
                  "SHORT: some pools cannot reach readiness from this gold. See docs/labeling.md "
                  "(prepare --gold-reserve, gold --wrong-suggestion).")
@@ -221,7 +261,7 @@ def check_row(row, candidates):
     return candidate
 
 
-def check(gold_paths, candidate_paths, params=None):
+def check(gold_paths, candidate_paths, params=None, live=None):
     """Verify gold files (in import order) against their candidates and the readiness
     targets: every line valid, no item with two different answers, and the coverage."""
     candidates, _ = load_candidates(candidate_paths)
@@ -241,20 +281,24 @@ def check(gold_paths, candidate_paths, params=None):
             seen[row["item_id"]] = label
             rows.append({"kind": row["kind"], "pool": row["pool"], "answer": row["answer"],
                          "agrees": agrees(candidate, *label)})
-    report = coverage(rows, params)
+    report = coverage(rows, params, live=live)
     report["rows"] = len(rows)
     report["duplicates"] = duplicates
     return report
 
 
-def build(corpus: Path, candidates, *, min_freq=5, per_kind=400, seed=1, qualification=80, wrong=30, exclude=(),
-          existing=(), params=None):
-    """(rows, receipt). Deterministic: identical inputs and options give identical bytes.
+def build(corpus: Path, candidates, *, min_freq=5, per_kind=400, seed=None, qualification=80, wrong=30, exclude=(),
+          existing=(), params=None, live=None):
+    """(rows, receipt). Deterministic for a given private seed: identical inputs and options give
+    identical bytes. seed: private_seed(); drawn at random when not given and recorded in the
+    receipt only (which items are gold must not be reproducible from public inputs).
 
     candidates: one path or a list (an original file and its supplements). existing: gold
     rows already imported (from earlier gold files); their items are never used again and
-    they count towards the coverage in the receipt. wrong: suggestion-wrong items per kind,
-    all in the audit pool, part of per_kind."""
+    they count towards the coverage in the receipt (an upper bound unless `live` gives the
+    site's active pools). wrong: suggestion-wrong items per kind, all in the audit pool,
+    part of per_kind."""
+    seed = private_seed(seed)
     if min_freq < 1 or per_kind < 1 or qualification < 0 or wrong < 0:
         raise ValueError("min-freq and per-kind must be positive, the qualification split and wrong count "
                          "non-negative")
@@ -267,14 +311,20 @@ def build(corpus: Path, candidates, *, min_freq=5, per_kind=400, seed=1, qualifi
     if digest(corpus) != corpus_digest:
         raise ValueError("corpus changed while building gold")
     existing = list(existing)
-    known = []
+    known, labels = [], {}
     for number, row in enumerate(existing, 1):
         try:
             candidate = check_row(row, by_id)
         except (ValueError, KeyError, TypeError) as exc:
             raise ValueError(f"existing gold line {number}: {exc}") from None
+        label = (row["answer"], row.get("lemma", ""))
+        if row["item_id"] in labels:  # the same item in two earlier files: once, or a conflict
+            if labels[row["item_id"]] != label:
+                raise ValueError(f"existing gold line {number}: item {row['item_id']} has two different answers")
+            continue
+        labels[row["item_id"]] = label
         known.append({"kind": row["kind"], "pool": row["pool"], "answer": row["answer"],
-                      "agrees": agrees(candidate, row["answer"], row.get("lemma", ""))})
+                      "agrees": agrees(candidate, *label)})
     excluded = set(exclude) | {row["item_id"] for row in existing}
     eligible = defaultdict(list)  # (kind, answer, agrees) -> [(candidate, answer, lemma, basis, agrees)]
     for row in by_id.values():
@@ -332,7 +382,8 @@ def build(corpus: Path, candidates, *, min_freq=5, per_kind=400, seed=1, qualifi
                             for (kind, answer, agree), found in sorted(eligible.items(), key=lambda kv: str(kv[0]))},
                "counts": [{"kind": k, "pool": p, "answer": a, "basis": b, "n": n}
                           for (k, p, a, b), n in sorted(receipt_counts.items())],
-               "existing_rows": len(existing),
-               "coverage": coverage(known + new, params),
+               "existing_rows": len(known),
+               "coverage": coverage(new if live is not None else known + new, params, live=live,
+                                    upper_bound=bool(known)),
                "human_judgments": 0}
     return out, receipt

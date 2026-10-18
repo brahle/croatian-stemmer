@@ -142,3 +142,30 @@ async def test_an_item_that_became_an_active_check_after_the_pinned_run_is_never
     recorded = await api.request("POST", f"/api/admin/scoring/runs/{run_id}/release", "curator", True)
     assert recorded.status_code == 200 and recorded.json()["disclosed"] == 0
     assert (await api.sql("SELECT count(*) FROM label_trust_event WHERE kind = 'gold.disclosed'")).scalar_one() == 0
+
+
+async def test_the_release_route_never_releases_or_discloses_a_reserve_item(fresh_api):
+    """A gold-reserve item (its decoy suggestion is wrong on purpose) is never released, so
+    recording a release refuses it and never discloses its (even retired) gold."""
+    api, rows, target, _ = await adjudicated(fresh_api)
+    where = {"c": target["corpus_id"], "i": target["item_id"]}
+    await api.sql("UPDATE label_item_state SET reserve = true WHERE corpus_id = :c AND item_id = :i", **where)
+    for kind, details in (("gold.set", {"pool": "audit", "answer": "same", "lemma": "", "source": "hr500k",
+                                        "basis": "test", "batch": None, "suggestion_agrees": True}),
+                          ("gold.retired", {"reason": "served_out"})):
+        event = (await api.sql("INSERT INTO label_trust_event (kind, corpus_id, item_id, details) "
+                               "VALUES (:k, :c, :i, CAST(:d AS jsonb)) RETURNING id", k=kind,
+                               d=json.dumps(details), **where)).scalar_one()
+    await api.sql("INSERT INTO label_gold (corpus_id, item_id, kind, pool, answer, lemma, source, suggestion_agrees, "
+                  "status, last_event_id) VALUES (:c, :i, 'pair', 'audit', 'same', '', 'hr500k', true, 'retired', :e)",
+                  e=event, **where)
+    [(run_id, _)] = await score_now(api)
+    assert (await api.sql("SELECT state FROM label_item_posterior WHERE run_id = :r AND item_id = :i",
+                          r=run_id, i=target["item_id"])).scalar_one() == "resolved"
+    assert (await api.request("POST", f"/api/admin/scoring/runs/{run_id}/pin", "curator", True)).status_code == 200
+    refused = await api.request("POST", f"/api/admin/scoring/runs/{run_id}/release", "curator", True,
+                                json={"item_ids": [target["item_id"]]})
+    assert refused.status_code == 409 and refused.json()["detail"] == {"code": "reserve_item",
+                                                                      "items": [target["item_id"]]}
+    recorded = await api.request("POST", f"/api/admin/scoring/runs/{run_id}/release", "curator", True)
+    assert recorded.status_code == 200 and recorded.json()["disclosed"] == 0

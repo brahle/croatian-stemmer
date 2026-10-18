@@ -115,7 +115,8 @@ def answer_path(row):
 
 # Gold is invisible to annotators (4.3.6): no non-curator response anywhere in the suite may
 # name gold, the audit machinery or a gold basis. Qualification is announced, so it may appear.
-HIDDEN = ("gold", "audit", "corpus_unambiguous", "anchor_consensus")
+# "ordinal": the import position would single out items imported together (a gold reserve).
+HIDDEN = ("gold", "audit", "corpus_unambiguous", "anchor_consensus", "ordinal", "reserve")
 
 
 def hidden_from_annotators(url, response):

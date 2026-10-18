@@ -20,12 +20,14 @@ def main(argv=None):
     candidates.add_argument("corpus", type=Path)
     candidates.add_argument("--source-uri", required=True)
     candidates.add_argument("--license", required=True)
-    candidates.add_argument("--pairs", type=int, default=10000)
-    candidates.add_argument("--word-items", type=int, default=1000)
+    candidates.add_argument("--pairs", type=int, help="default 10000, or 0 with --supplement")
+    candidates.add_argument("--word-items", type=int, help="default 1000, or 0 with --supplement")
     candidates.add_argument("--seed", type=int, default=0)
     candidates.add_argument("--gold-reserve", type=int, default=0, metavar="N",
                             help="N items per gold-reserve stratum, built to become gold from corpus truth")
     candidates.add_argument("--min-freq", type=int, default=5, help="settled-form frequency for the gold reserve")
+    candidates.add_argument("--reserve-secret", help="private seed of the gold reserve (at least 16 characters); "
+                                                     "drawn at random when omitted and printed only in the receipt")
     candidates.add_argument("--supplement", type=Path, metavar="CANDIDATES",
                             help="an earlier candidates file of this corpus: output only new items, never "
                                  "reusing its occurrences")
@@ -39,7 +41,8 @@ def main(argv=None):
                       help="the imported candidates file; repeat for its supplements")
     gold.add_argument("--min-freq", type=int, default=5)
     gold.add_argument("--per-kind", type=int, default=400)
-    gold.add_argument("--seed", type=int, default=1)
+    gold.add_argument("--seed", help="private seed (at least 16 characters); drawn at random when omitted and "
+                                     "printed only in the receipt, which must stay private")
     gold.add_argument("--split", default="qualification=80", help="qualification=N: the first N per kind")
     gold.add_argument("--wrong-suggestion", type=int, default=30, metavar="N",
                       help="suggestion-wrong audit items per kind (from gold-reserve decoys)")
@@ -47,12 +50,16 @@ def main(argv=None):
     gold.add_argument("--with", dest="existing", type=Path, action="append", default=[], metavar="GOLD",
                       help="gold already imported: its items are not used again and it counts in the coverage")
     gold.add_argument("--params", type=Path, help="scoring parameters (JSON) to check readiness against")
+    gold.add_argument("--live", type=Path, help="the site's active pools: JSON of /api/admin/overview or "
+                                               "/api/admin/gold")
     gold.add_argument("--allow-short", action="store_true", help="exit 0 even when a pool falls short")
     gold.add_argument("--output", required=True, type=Path)
     gold_check = commands.add_parser("gold-check", help="check gold files against their candidates and readiness")
     gold_check.add_argument("gold", nargs="+", type=Path, help="gold files, in import order")
     gold_check.add_argument("--candidates", required=True, type=Path, action="append")
     gold_check.add_argument("--params", type=Path, help="scoring parameters (JSON) to check readiness against")
+    gold_check.add_argument("--live", type=Path, help="the site's active pools: JSON of /api/admin/overview or "
+                                                     "/api/admin/gold")
     replay_ = commands.add_parser("score", help="replay a scoring run from its restricted bundle")
     replay_.add_argument("--bundle", required=True, type=Path, help="the run's bundle JSON (or a directory holding bundle.json)")
     replay_.add_argument("--output", required=True, type=Path, help="where to write the recomputed outputs (JSON)")
@@ -67,26 +74,29 @@ def main(argv=None):
     try:
         if args.command == "prepare":
             supplement = read_candidates(args.supplement) if args.supplement else ()
+            default_pairs, default_words = (0, 0) if args.supplement else (10000, 1000)
             records, receipt = prepare(args.corpus, source_uri=args.source_uri, license=args.license,
-                                       pair_count=args.pairs, word_count=args.word_items, seed=args.seed,
-                                       gold_reserve_size=args.gold_reserve, min_freq=args.min_freq,
-                                       supplement=supplement)
+                                       pair_count=default_pairs if args.pairs is None else args.pairs,
+                                       word_count=default_words if args.word_items is None else args.word_items,
+                                       seed=args.seed, gold_reserve_size=args.gold_reserve, min_freq=args.min_freq,
+                                       supplement=supplement, reserve_secret=args.reserve_secret)
             # Never overwrite either the caller's source or an existing export.
             with args.output.open("x", encoding="utf-8") as handle:
                 for record in records:
                     handle.write(json.dumps(record, ensure_ascii=False) + "\n")
             json.dump(receipt, sys.stdout, ensure_ascii=False)
         elif args.command == "gold":
-            from .gold import build, coverage_table, read_gold
+            from .gold import build, coverage_table, live_pools, read_gold
             name, _, value = args.split.partition("=")
             if name != "qualification" or not value.isdigit():
                 raise ValueError("--split must be qualification=N")
             exclude = args.exclude.read_text(encoding="utf-8").split() if args.exclude else ()
             existing = [row for path in args.existing for row in read_gold(path)]
             params = json.loads(args.params.read_text(encoding="utf-8")) if args.params else None
+            live = live_pools(json.loads(args.live.read_text(encoding="utf-8"))) if args.live else None
             rows, receipt = build(args.corpus, args.candidates, min_freq=args.min_freq, per_kind=args.per_kind,
                                   seed=args.seed, qualification=int(value), wrong=args.wrong_suggestion,
-                                  exclude=exclude, existing=existing, params=params)
+                                  exclude=exclude, existing=existing, params=params, live=live)
             with args.output.open("x", encoding="utf-8") as handle:
                 for row in rows:
                     handle.write(json.dumps(row, ensure_ascii=False) + "\n")
@@ -97,9 +107,10 @@ def main(argv=None):
                 sys.exit(3)
             return
         elif args.command == "gold-check":
-            from .gold import check, coverage_table
+            from .gold import check, coverage_table, live_pools
             params = json.loads(args.params.read_text(encoding="utf-8")) if args.params else None
-            report = check(args.gold, args.candidates, params)
+            live = live_pools(json.loads(args.live.read_text(encoding="utf-8"))) if args.live else None
+            report = check(args.gold, args.candidates, params, live=live)
             json.dump(report, sys.stdout, ensure_ascii=False)
             print()
             print(coverage_table(report), file=sys.stderr)

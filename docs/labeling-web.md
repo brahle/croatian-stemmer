@@ -354,8 +354,15 @@ conflicts with an existing valid answer fails the whole import with 409
 imported (their items are never reused) and a new seed.
 
 Gold-reserve items are served only as known-answer checks: never in the normal queue,
-the expert queues or the V1 order, not counted in progress, and never released. The
-import marks them in `label_item_state.reserve` (migration 005).
+the expert queues or the V1 order, not counted in progress or in the overview's open
+work (shown there as "provjere u pričuvi"), never released, and never disclosed by
+recording a release (`POST /api/admin/scoring/runs/{id}/release` refuses them with 409
+`reserve_item`). An annotator gets a reserve item's detail only once it was served to
+them; before that it is "not found" like an unknown id. No annotator response carries
+the item's import position (`ordinal`): items imported together, such as a supplement,
+would be recognisable by it; "my items" pages by an opaque cursor in the order the person
+was shown them. The import marks reserve items in `label_item_state.reserve`
+(migration 005).
 
 Every `stem` known answer, and known answers that differ from the suggestion beyond
 the gold-reserve decoys, come only from anchors. The owner is the only anchor today, and their answers on seed,
@@ -557,10 +564,18 @@ The application is one stateless container plus a PostgreSQL database:
   back to 0.3.0, whose init container does not know revision 004.
 - Migration 005 (0.3.4) adds `label_item_state.reserve` (boolean, default false,
   no table rewrite) and marks the gold-reserve items already imported. The import
-  sets it for new items; the queues skip such items. Its downgrade drops the
-  column: run `python -m alembic downgrade 004_two_vote_params` with the 0.3.4
-  image before rolling back to 0.3.3, which would then serve any imported reserve
-  item (a decoy shows a wrong suggestion) as ordinary work.
+  sets it for new items; the queues skip such items. Rolling back to 0.3.3: with the
+  0.3.4 image run `python -m alembic downgrade 004_two_vote_params`, then deploy
+  0.3.3. The downgrade refuses while any reserve item is active, because 0.3.3 would
+  serve the decoys (deliberately wrong suggestions) as ordinary work. Then either
+  restore the backup taken before the reserve was imported, or set
+  `LABELING_MIGRATION_RETIRE_RESERVE=true` for that one run: it retires every reserve
+  item (no version serves a retired item) and its active gold (`gold.retired`, reason
+  `rollback`), then drops the column. A later upgrade does not reactivate them;
+  prepare a new reserve.
+- From 0.3.4 the app refuses to start on a database whose schema revision it does not
+  know (one migrated by a newer version), so a rollback can never silently ignore a
+  newer safety column: downgrade with the newer image first.
 - One replica. Rate limits are in process and migrations run per pod. The
   scoring and retention tasks also run in the app process; a scoring run uses a
   worker thread and holds about 400 bytes per judgment in memory (see
