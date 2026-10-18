@@ -516,14 +516,18 @@ The application is one stateless container plus a PostgreSQL database:
   runs, so deploying it scores nobody. It waits at most 5 seconds for table locks;
   on a timeout the init container exits non-zero and the pod retries. Take a
   manual CNPG backup immediately before deploying it.
-- Migration 004 (0.3.1) changes no schema. It moves the stored scoring
-  parameters to the 0.3.1 defaults (the `new` tier's ceiling 0.75 to 0.78, so two
-  agreeing votes of an established and a new annotator can resolve an item) only
-  when they still equal the 0.3.0 defaults and no person has changed them, and
-  appends the same `params.changed` event the dashboard does. Parameters a curator
-  chose are left alone. Its downgrade puts the 0.3.0 defaults back under the same
-  conditions; run `python -m alembic downgrade 003_trust` with the 0.3.1 image
-  before rolling back to 0.3.0, whose init container does not know revision 004.
+- Migration 004 (0.3.1) changes no schema. 0.3.1 has two new defaults: the `new`
+  tier's ceiling 0.75 to 0.78 (two agreeing votes of an established and a new
+  annotator can resolve an item) and `resolve_vote_min_theta` 0.70 (only votes for
+  the answer from people with θ of at least 0.70 count as the two votes). Stored
+  parameters that still equal the 0.3.0 defaults, never changed by a person, become
+  the 0.3.1 defaults; any other stored parameters only gain
+  `resolve_vote_min_theta` = 0.70 (0.3.1 refuses a set without it) and keep every
+  chosen value. Each change appends the same `params.changed` event the dashboard
+  does. Its downgrade puts the 0.3.0 defaults back when the stored value is still
+  this migration's, and otherwise removes only the new key, which 0.3.0 refuses;
+  run `python -m alembic downgrade 003_trust` with the 0.3.1 image before rolling
+  back to 0.3.0, whose init container does not know revision 004.
 - One replica. Rate limits are in process and migrations run per pod. The
   scoring and retention tasks also run in the app process; a scoring run uses a
   worker thread and holds about 400 bytes per judgment in memory (see

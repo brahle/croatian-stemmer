@@ -12,11 +12,16 @@ from scoring_world import World, synthetic, train, worked_example
 
 UNIFORM = [("same", math.log(0.5)), ("different", math.log(0.5))]
 # outputs_sha256 of synthetic(seed=1) at SCORING_VERSION 2.0 and the default parameters; it changes
-# only with a version bump or a deliberate change of the defaults. 0.3.1 (new ceiling 0.75 -> 0.78):
-# was d26574696eaa8f8a2c17306471c6ace88124a2d7d46debcf658a1ad4122f985d. One `new` lemma annotator
-# sat at the old ceiling; lemma thetas and posteriors moved and three lemma items went from open to
-# provisional; no pair or stem output changed.
-GOLDEN = "29d768942a1a363c921d7b06eaeadb72e635626d46d01a789f073b0ee1727ad5"
+# only with a version bump or a deliberate change of the defaults. History:
+# 0.3.0                                  d26574696eaa8f8a2c17306471c6ace88124a2d7d46debcf658a1ad4122f985d
+# new ceiling 0.78: one `new` lemma annotator sat at 0.75; lemma thetas and posteriors moved, three
+#   lemma items open -> provisional, no pair or stem output changed
+#                                        29d768942a1a363c921d7b06eaeadb72e635626d46d01a789f073b0ee1727ad5
+# resolve_vote_min_theta 0.70: ten items (9 lemma, 1 pair) whose second vote was for another class
+#   or from a theta below 0.70 go provisional -> open, and the calibration key changes (0.3.1)
+GOLDEN = "811438313fda062ae6633d89b0d2ee897094b04243a90b67927452ebbdaff545"
+# The same journal under the 0.3.1 ceiling and the 0.3.0 vote rule (resolve_vote_min_theta null).
+HEAD_0_3_1_RULE = "29d768942a1a363c921d7b06eaeadb72e635626d46d01a789f073b0ee1727ad5"
 NEW_CEILING = DEFAULT_PARAMS["theta_max"]["new"]
 
 
@@ -119,7 +124,7 @@ def test_two_votes_resolve_established_and_new():
 
 
 def test_two_vote_safety():
-    """What the change must not open: two new voters, a single vote, a worthless second vote."""
+    """What two votes must not open: two new voters, a single vote, a second vote without evidence."""
     p = params(class_prior="uniform")
     tiers = {"E": "established", "N": "new", "M": "new", "B": "new", "A": "anchor"}
     at_new = weight(NEW_CEILING, 2)
@@ -129,14 +134,71 @@ def test_two_vote_safety():
     # One vote never resolves, whoever casts it (an anchor neither, 4.4.7).
     for name, theta in (("E", 0.95), ("N", NEW_CEILING), ("A", 0.98)):
         assert not model_rule(UNIFORM, [(name, "same", weight(theta, 2))], 2, tiers, p)[0], name
-    # A known-bad voter (theta clipped to the 0.5 floor: weight 0) does not tip an established
-    # vote, even one at the established ceiling: alone that is 0.95 - 2e-16, just below the rule.
-    for theta in (31 / 36, 0.95):
-        met, _, probs = model_rule(UNIFORM, [("E", "same", weight(theta, 2)), ("B", "same", weight(0.5, 2))],
-                                   2, tiers, p)
-        assert not met and probs["same"] < 0.95, theta
-    # A low-reliability second vote (theta 0.6) next to the promotion floor does not either.
-    assert not model_rule(UNIFORM, [("E", "same", weight(31 / 36, 2)), ("B", "same", weight(0.6, 2))], 2, tiers, p)[0]
+
+
+SKEWED = [("same", math.log(0.9)), ("different", math.log(0.1))]  # an estimated prior of a 90/10 stratum
+
+
+@pytest.mark.parametrize("prior", [UNIFORM, SKEWED], ids=["uniform", "estimated-90/10"])
+def test_a_second_vote_must_carry_evidence_for_the_answer(prior):
+    """resolve_vote_min_theta (0.70): only votes for the winner whose author's theta is at least
+    0.70 count towards the two votes. Under a 90/10 class prior one established vote alone
+    is above 0.95, so without the floor any second vote would tip it."""
+    p = params()
+    tiers = {"E": "established", "N": "new", "F": "new", "B": "new", "L": "new", "A": "anchor", "Z": "anchor"}
+    floor_e, at_new = weight(31 / 36, 2), weight(NEW_CEILING, 2)
+    for e in (floor_e, weight(0.95, 2)):
+        # A known-bad vote (theta clipped to 0.5: weight 0), a low-reliability one (0.6) and a fresh
+        # account at its prior mean 4/6 do not count as the second vote, under either prior.
+        for theta in (0.5, 0.6, 4 / 6):
+            assert not model_rule(prior, [("E", "same", e), ("B", "same", weight(theta, 2))], 2, tiers, p)[0], theta
+        # A dissenting vote never counts for the answer it opposes, however strong the prior.
+        assert not model_rule(prior, [("E", "same", e), ("N", "different", at_new)], 2, tiers, p)[0]
+        # The builder's case: established + new at the ceiling resolves.
+        assert model_rule(prior, [("E", "same", e), ("N", "same", at_new)], 2, tiers, p)[0]
+        # One correct known-answer item lifts a new account to 5/7 = 0.714: its vote counts (with an
+        # established vote at the floor and no prior help, 0.939 is short on confidence instead).
+        met, _, probs = model_rule(prior, [("E", "same", e), ("L", "same", weight(5 / 7, 2))], 2, tiers, p)
+        assert met is (probs["same"] >= 0.95) and (met or (e == floor_e and prior is UNIFORM))
+    # Two anchors agreeing still resolve; one anchor with a worthless second vote does not.
+    assert model_rule(prior, [("A", "same", weight(0.9, 2)), ("Z", "same", weight(0.9, 2))], 2, tiers, p)[0]
+    assert not model_rule(prior, [("A", "same", weight(0.98, 2)), ("B", "same", 0.0)], 2, tiers, p)[0]
+    # The 0.3.0 rule (resolve_vote_min_theta null, as a past run's parameters read): the prior
+    # and a weight-0 vote resolve an item; this is the gap the floor closes.
+    legacy = {**p, "resolve_vote_min_theta": None}
+    tipped = model_rule(prior, [("E", "same", weight(0.95, 2)), ("B", "same", 0.0)], 2, tiers, legacy)
+    assert tipped[0] is (prior is SKEWED)
+
+
+def test_the_vote_floor_setting():
+    assert DEFAULT_PARAMS["resolve_vote_min_theta"] == 0.70
+    assert params(resolve_vote_min_theta=None)["resolve_vote_min_theta"] is None
+    for bad in (0.49, 0.96, "0.7", True):
+        with pytest.raises(ValueError):
+            params(resolve_vote_min_theta=bad)
+    old = {k: v for k, v in DEFAULT_PARAMS.items() if k != "resolve_vote_min_theta"}
+    with pytest.raises(ValueError):
+        validate_params(old)  # written through the API, every key is required
+    assert validate_params(old, legacy=True)["resolve_vote_min_theta"] is None
+    # A past run's parameters keep their calibration key: null is the policy without the setting.
+    from croatian_stemmer.labeling.scoring import calibration_key
+    assert calibration_key(validate_params(old, legacy=True)) == calibration_key(
+        {k: v for k, v in validate_params(old, legacy=True).items() if k != "resolve_vote_min_theta"})
+    assert calibration_key(params()) != calibration_key(params(resolve_vote_min_theta=None))
+
+
+def test_a_past_runs_bundle_replays_under_the_rule_it_ran_with():
+    """A 0.3.0-era run's parameters have no resolve_vote_min_theta: replay reads them with
+    the 0.3.0 rule and reproduces the outputs that run published."""
+    from croatian_stemmer.labeling.scoring import inputs_sha256, inputs_summary, replay
+    world = synthetic()
+    old = {k: v for k, v in world.params.items() if k != "resolve_vote_min_theta"}
+    inputs = world.inputs()
+    published = score(inputs, {**world.params, "resolve_vote_min_theta": None})
+    assert sha256(published) == HEAD_0_3_1_RULE
+    bundle = {"run": {"id": "r", "params": old, "inputs_sha256": inputs_sha256(inputs),
+                      "inputs_summary": inputs_summary(inputs), "outputs_sha256": sha256(published)}, "inputs": inputs}
+    assert replay(bundle)["report"]["outputs_match"]
 
 
 def test_lemma_example_and_other_class():
@@ -557,3 +619,41 @@ def test_a_run_resolves_two_votes_of_an_established_and_a_new_annotator():
     # The same journal under the 0.3.0 ceiling needs a third vote.
     old = params(class_prior="uniform", theta_max={**DEFAULT_PARAMS["theta_max"], "new": 0.75})
     assert posterior_of(score(w.inputs(), old), keys["en"])["state"] == "open"
+
+
+def test_a_run_needs_two_votes_with_evidence_under_the_estimated_prior():
+    """Through score() with the default estimated class prior: in a stratum where the crowd
+    mostly says `same`, one established vote alone is above 0.95. A known-bad voter's (2 of 8
+    known answers right: theta 0.5) or a fresh account's agreeing vote no longer resolves it;
+    a new voter with four correct known answers does. Under the 0.3.0 rule the first two did."""
+    w = World()
+    pools = w.ready_pools("pair")
+    train(w, pools, "E")
+    train(w, pools, "F", disc_hits=28)
+    w.person("B")
+    for n, key in enumerate(pools["audit"][70:78]):
+        w.vote("B", key, "same" if n < 2 else "different")
+    w.person("N")
+    for key in pools["audit"][80:84]:
+        w.vote("N", key, "same")
+    w.person("fresh")
+    for _ in range(40):
+        key = w.item("pair", stratum="mostly_same")
+        w.vote("E", key, "same")
+        w.vote("F", key, "same")
+    keys = {}
+    for second in ("B", "fresh", "N"):
+        keys[second] = w.item("pair", stratum="mostly_same")
+        w.vote("E", keys[second], "same")
+        w.vote(second, keys[second], "same")
+    out = score(w.inputs(), w.params)
+    rows = by_name(w, out)
+    # fresh: the prior mean 4/6 plus the soft credit of agreeing with E once (0.692), still below 0.70.
+    assert rows["B"]["theta_mean"] == 0.5 and 4 / 6 < rows["fresh"]["theta_mean"] < 0.70
+    assert rows["N"]["theta_mean"] == NEW_CEILING
+    states = {name: posterior_of(out, key) for name, key in keys.items()}
+    assert all(row["confidence"] > 0.99 for row in states.values())  # the prior does most of the work
+    assert (states["B"]["state"], states["fresh"]["state"], states["N"]["state"]) == ("open", "open", "provisional")
+    legacy = score(w.inputs(), {**w.params, "resolve_vote_min_theta": None})
+    assert {name: posterior_of(legacy, key)["state"] for name, key in keys.items()} == {
+        "B": "provisional", "fresh": "provisional", "N": "provisional"}

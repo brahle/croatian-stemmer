@@ -250,7 +250,12 @@ passed cell and `provisional` otherwise; a cell that later fails sends them back
 
 `n_low` and `n_expert` are the counted first answers of the current epoch. The model
 rule is: confidence ≥ `resolve_confidence` (0.95), at least `resolve_min_votes` (2)
-distinct voters, and a vote for the winner from an `established` or `anchor` annotator.
+distinct voters for the winning class whose θ is at least `resolve_vote_min_theta`
+(0.70; votes that carry evidence for the answer, so neither the class prior nor a
+worthless or dissenting vote stands in for the second vote), and a vote for the winner
+from an `established` or `anchor` annotator. A past run's parameters without
+`resolve_vote_min_theta` are read as `null`, the 0.3.0 rule (any two distinct voters),
+so replays reproduce what those runs published.
 Per item, first match wins:
 
 1. `ambiguous`: the latest of `item.ambiguous` and `item.reopened` is `item.ambiguous`.
@@ -354,14 +359,22 @@ Variants with the same tiers:
   ceiling (w = 1.265666) agreeing give 0.956487, rule met. Two such votes resolve
   whenever the established θ is at least 0.842742. Up to 0.3.0 the `new` ceiling was
   0.75 (w = 1.098612): the same pair gave 0.948980 and needed a third vote, since only
-  an established θ of 0.863636 or more reached 0.95 with a new vote. A `new` account
-  with no evidence yet sits at its prior mean 4/6 (w = 0.693147) and needs an
-  established θ of 0.904762; four correct known-answer items take it to the ceiling.
-- A known-bad second vote (θ clipped to 0.5, weight 0) next to one established vote
-  does not meet the rule: one vote at the established ceiling alone is 0.95 − 2⁻⁵²,
-  just short, and anything below gives less. (With an estimated class prior the prior
-  itself can lift a single established vote above 0.95 in a stratum dominated by one
-  class; the calibration gate per cell is what checks those items.)
+  an established θ of 0.863636 or more reached 0.95 with a new vote.
+- The second vote must carry evidence for the answer (`resolve_vote_min_theta`, 0.70):
+  it counts only when it is for the winning class and its author's θ is at least 0.70.
+  With an estimated class prior the prior alone can lift one established vote above
+  0.95 (with π_same = 0.9 a single vote at θ ≥ 0.678 does), so up to 0.3.0 any second
+  vote then resolved the item: a known-bad one (θ clipped to 0.5, weight 0), a θ 0.6
+  one, or even a vote for the other class. None of these counts now, under either
+  prior. A `new` account with no evidence yet sits at its prior mean 4/6 (0.666667),
+  below the floor, so its vote never completes the two; one correct known-answer item
+  takes it to 5/7 = 0.714286 and four take it to the 0.78 ceiling. (Agreement counts
+  too: θ includes the capped peer evidence, so a few agreements with established
+  voters also lift it.) Up to 0.3.0 such a fresh vote resolved next to an established
+  θ of 0.904762 or more. With a uniform prior, one established vote at the ceiling
+  alone is 0.95 − 2⁻⁵², just short.
+- Anchors: one anchor vote never resolves (one vote); two anchors agreeing do, as
+  before (both are far above the floor).
 
 ## Formulas
 

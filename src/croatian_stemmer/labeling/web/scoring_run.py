@@ -388,6 +388,6 @@ async def run_outputs(ctx, watermark, as_of_day, params, inputs_hash):
     """(outputs, inputs_changed): a run recomputed from the journals at its watermark, for
     the per-vote rows no table keeps. inputs_changed when a later privacy action changed them."""
     _, inputs = await load_inputs(ctx.engine, watermark, as_of_day, ctx.settings.scoring_max_judgments)
-    outputs = await asyncio.wait_for(asyncio.to_thread(score, inputs, validate_params(params)),
+    outputs = await asyncio.wait_for(asyncio.to_thread(score, inputs, validate_params(params, legacy=True)),
                                      ctx.settings.scoring_run_timeout_s)
     return outputs, inputs_sha256(inputs) != inputs_hash

@@ -426,8 +426,10 @@ kept but not counted, so a flood of accounts cannot exhaust or contest an item. 
 ceilings (new 0.78, qualified 0.80, established 0.95, anchor 0.98; new was 0.75 up to
 0.3.0) bound one account's weight. Peer evidence counts half and is capped. Promotion
 reads known-answer checks only. Resolution needs an established or anchor vote for the
-winner and two people; one anchor answer never resolves an item alone. Daily cap of 3000
-answers and per-minute rate limits.
+winner and two people who chose the winner, each with θ of at least 0.70 (0.3.1), so a
+class prior, an unreliable or a dissenting second vote never completes the two; one
+anchor answer never resolves an item alone. Daily cap of 3000 answers and per-minute
+rate limits.
 
 ### 5.3 Quarantine safeguards
 

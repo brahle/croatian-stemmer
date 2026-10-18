@@ -65,10 +65,13 @@ async def test_after_revocation_the_next_run_drops_the_anchor_tier(fresh_api):
     rows = await api.imported(candidates(pairs=12))
     owner = await make_anchor(api, "owner")
     # Not a keyed sample: there the owner's answer would be a reference check, not a vote.
-    pair = (await unseeded(api, [r for r in rows if r["kind"] == "pair"]))[0]
+    pair, other = (await unseeded(api, [r for r in rows if r["kind"] == "pair"]))[:2]
     for name in ("owner", "a", "b"):
         await profiled(api, name)
-        assert (await api.request("POST", answer_path(pair), name, json=answer())).status_code == 200
+    # Two items agreed with the anchor lift a and b above 4/6 to the 0.70 a counted second vote needs.
+    for row in (pair, other):
+        for name in ("owner", "a", "b"):
+            assert (await api.request("POST", answer_path(row), name, json=answer())).status_code == 200
     [(run_id, _)] = await score_now(api)
     state = "SELECT state FROM label_item_state WHERE item_id = :i"
     assert (await api.sql(state, i=pair["item_id"])).scalar_one() in ("resolved", "provisional")
