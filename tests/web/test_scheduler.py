@@ -119,6 +119,10 @@ async def test_next_is_fast_at_50k_items(fresh_api):
                      SELECT :a, corpus_id, id, now(), now(), 1, 1, 'shown' FROM label_item
                      WHERE corpus_id = :c ORDER BY ordinal LIMIT 5000""", a=alice, c=corpus)
     await api.sql("ANALYZE")
+    try:  # flush what earlier tests left for the checkpointer, so it does not run during the measurement
+        await api.sql("CHECKPOINT")
+    except Exception:
+        pass
     headers = api.headers("alice")  # signed once: the client's own token signing is not server time
     for _ in range(5):  # warm the connection pool and the caches
         await api.client.get(f"/api/corpora/{corpus}/next", headers=headers)
