@@ -19,7 +19,7 @@ SCORING_VERSION = "2.0"
 
 DEFAULT_PARAMS = {
     "version": "2.0", "iterations": 10, "prior": [4, 2], "prior_anchor": [18, 2],
-    "theta_max": {"new": 0.75, "qualified": 0.80, "established": 0.95, "anchor": 0.98}, "theta_min": 0.5,
+    "theta_max": {"new": 0.78, "qualified": 0.80, "established": 0.95, "anchor": 0.98}, "theta_min": 0.5,
     "class_prior": "estimated", "lemma_k": 3,
     "soft_weight": 0.5, "soft_min_info": 1.0, "peer_cap_ratio": 1.0, "peer_cap_floor": 12,
     "gold_delay_days": 1,

@@ -1,8 +1,8 @@
 # Data protection impact assessment: trust-weighted labeling
 
 - Version 1.0, 18 October 2026.
-- Applies to the labeling web app of croatian-stemmer 0.3.0 (scoring version 2.0,
-  privacy notice 1.3, terms 1.1, participation statement 1.0).
+- Applies to the labeling web app of croatian-stemmer 0.3.0 and 0.3.1 (scoring version
+  2.0, privacy notice 1.3, terms 1.1, participation statement 1.0).
 - Prepared by the implementing agent, as the owner decided (Nexus decision 5ee0e7ef,
   question 18).
 - Read by: ____________________ (date: __________)
@@ -423,11 +423,11 @@ a first-name note. Other measures as in section 3.3.
 
 Per item and epoch at most 5 low and 3 expert first answers count; answers beyond are
 kept but not counted, so a flood of accounts cannot exhaust or contest an item. Tier
-ceilings (new 0.75, qualified 0.80, established 0.95, anchor 0.98) bound one account's
-weight. Peer evidence counts half and is capped. Promotion reads known-answer checks
-only. Resolution needs an established or anchor vote for the winner and two people; one
-anchor answer never resolves an item alone. Daily cap of 3000 answers and per-minute
-rate limits.
+ceilings (new 0.78, qualified 0.80, established 0.95, anchor 0.98; new was 0.75 up to
+0.3.0) bound one account's weight. Peer evidence counts half and is capped. Promotion
+reads known-answer checks only. Resolution needs an established or anchor vote for the
+winner and two people; one anchor answer never resolves an item alone. Daily cap of 3000
+answers and per-minute rate limits.
 
 ### 5.3 Quarantine safeguards
 

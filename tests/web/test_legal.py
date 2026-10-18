@@ -7,7 +7,7 @@ pytest.importorskip("fastapi")
 from labeling_support import make_settings
 
 DOCS = [f"{doc}.{lang}" for doc in ("privacy", "terms", "participation", "storage", "trust") for lang in ("hr", "en")]
-VERSIONS = {"privacy": "1.3", "terms": "1.1", "participation": "1.0", "storage": "1.1", "trust": "1.0"}
+VERSIONS = {"privacy": "1.3", "terms": "1.1", "participation": "1.0", "storage": "1.1", "trust": "1.1"}
 ROOT = Path(__file__).resolve().parents[2]
 FORMULAS = ROOT / "docs" / "trust.md"
 

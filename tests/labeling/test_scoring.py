@@ -11,8 +11,13 @@ from croatian_stemmer.labeling.scoring import (DEFAULT_PARAMS, OTHER, count_firs
 from scoring_world import World, synthetic, train, worked_example
 
 UNIFORM = [("same", math.log(0.5)), ("different", math.log(0.5))]
-# outputs_sha256 of synthetic(seed=1) at SCORING_VERSION 2.0; it changes only with a version bump.
-GOLDEN = "d26574696eaa8f8a2c17306471c6ace88124a2d7d46debcf658a1ad4122f985d"
+# outputs_sha256 of synthetic(seed=1) at SCORING_VERSION 2.0 and the default parameters; it changes
+# only with a version bump or a deliberate change of the defaults. 0.3.1 (new ceiling 0.75 -> 0.78):
+# was d26574696eaa8f8a2c17306471c6ace88124a2d7d46debcf658a1ad4122f985d. One `new` lemma annotator
+# sat at the old ceiling; lemma thetas and posteriors moved and three lemma items went from open to
+# provisional; no pair or stem output changed.
+GOLDEN = "29d768942a1a363c921d7b06eaeadb72e635626d46d01a789f073b0ee1727ad5"
+NEW_CEILING = DEFAULT_PARAMS["theta_max"]["new"]
 
 
 def params(**changes):
@@ -36,7 +41,8 @@ def state_of(out, key):
 
 def test_worked_example_em_values():
     p = params(class_prior="uniform")
-    people = {"A": (4, 2, 36, 4, 0.95, True), "B": (4, 2, 0, 0, 0.75, True), "C": (4, 2, 12, 3, 0.80, True)}
+    # B (new, 0.667 -> 0.619) is below the new ceiling of 0.3.0 (0.75) and of 0.3.1 (0.78).
+    people = {"A": (4, 2, 36, 4, 0.95, True), "B": (4, 2, 0, 0, NEW_CEILING, True), "C": (4, 2, 12, 3, 0.80, True)}
     work = [("x", "s", [("A", "same"), ("B", "different"), ("C", "same")], False)]
     first = fit("pair", work, people, {**p, "iterations": 1})
     assert first["theta"] == pytest.approx({"A": 0.866832, "B": 0.618829, "C": 0.762075}, abs=1e-6)
@@ -83,10 +89,54 @@ def test_worked_example_variants():
     # One anchor at its prior mean: one vote, below 0.95. Never resolves alone.
     met, _, probs = model_rule(UNIFORM, [("N", "same", weight(0.9, 2))], 2, tiers, p)
     assert not met and probs["same"] == pytest.approx(0.90, abs=1e-9)
-    # Three `new` accounts at their ceiling: 0.9643 but no established or anchor vote.
-    new = [(name, "same", weight(0.75, 2)) for name in "XYZ"]
+    # Three `new` accounts at their ceiling (0.78): 0.9781 but no established or anchor vote.
+    new = [(name, "same", weight(NEW_CEILING, 2)) for name in "XYZ"]
     met, _, probs = model_rule(UNIFORM, new, 2, {}, p)
-    assert not met and probs["same"] == pytest.approx(0.9643, abs=1e-4)
+    assert not met and probs["same"] == pytest.approx(0.978054, abs=1e-6)
+
+
+def test_two_votes_resolve_established_and_new():
+    """Decision 5ee0e7ef q4 (two votes). An established annotator at the promotion floor (27 of
+    30 discriminating, theta 31/36) and a new one at the new ceiling agreeing meet the rule:
+    0.956487 (0.948980 at the 0.3.0 ceiling 0.75, which needed a third vote)."""
+    p = params(class_prior="uniform")
+    tiers = {"E": "established", "N": "new", "M": "new", "Q": "qualified", "Z": "new"}
+    floor = weight(31 / 36, 2)
+    met, _, probs = model_rule(UNIFORM, [("E", "same", floor), ("N", "same", weight(NEW_CEILING, 2))], 2, tiers, p)
+    assert met and probs["same"] == pytest.approx(0.956487, abs=1e-6)
+    old = params(class_prior="uniform", theta_max={**DEFAULT_PARAMS["theta_max"], "new": 0.75})
+    met, _, probs = model_rule(UNIFORM, [("E", "same", floor), ("N", "same", weight(0.75, 2))], 2, tiers, old)
+    assert not met and probs["same"] == pytest.approx(0.948980, abs=1e-6)
+    # The weakest established theta two votes resolve with: 0.842742 (0.863636 before).
+    lowest = 19 / (19 + NEW_CEILING / (1 - NEW_CEILING))
+    assert lowest == pytest.approx(0.842742, abs=1e-6)
+    assert model_rule(UNIFORM, [("E", "same", weight(lowest + 1e-6, 2)), ("N", "same", weight(NEW_CEILING, 2))],
+                      2, tiers, p)[0]
+    assert not model_rule(UNIFORM, [("E", "same", weight(lowest - 1e-6, 2)), ("N", "same", weight(NEW_CEILING, 2))],
+                          2, tiers, p)[0]
+    # A new account with no evidence yet (prior mean 4/6) is not enough next to the floor.
+    assert not model_rule(UNIFORM, [("E", "same", floor), ("N", "same", weight(4 / 6, 2))], 2, tiers, p)[0]
+
+
+def test_two_vote_safety():
+    """What the change must not open: two new voters, a single vote, a worthless second vote."""
+    p = params(class_prior="uniform")
+    tiers = {"E": "established", "N": "new", "M": "new", "B": "new", "A": "anchor"}
+    at_new = weight(NEW_CEILING, 2)
+    # Two new accounts at the ceiling: 0.9263, below 0.95 even without the established-vote condition.
+    met, _, probs = model_rule(UNIFORM, [("N", "same", at_new), ("M", "same", at_new)], 2, tiers, p)
+    assert not met and probs["same"] == pytest.approx(0.926309, abs=1e-6)
+    # One vote never resolves, whoever casts it (an anchor neither, 4.4.7).
+    for name, theta in (("E", 0.95), ("N", NEW_CEILING), ("A", 0.98)):
+        assert not model_rule(UNIFORM, [(name, "same", weight(theta, 2))], 2, tiers, p)[0], name
+    # A known-bad voter (theta clipped to the 0.5 floor: weight 0) does not tip an established
+    # vote, even one at the established ceiling: alone that is 0.95 - 2e-16, just below the rule.
+    for theta in (31 / 36, 0.95):
+        met, _, probs = model_rule(UNIFORM, [("E", "same", weight(theta, 2)), ("B", "same", weight(0.5, 2))],
+                                   2, tiers, p)
+        assert not met and probs["same"] < 0.95, theta
+    # A low-reliability second vote (theta 0.6) next to the promotion floor does not either.
+    assert not model_rule(UNIFORM, [("E", "same", weight(31 / 36, 2)), ("B", "same", weight(0.6, 2))], 2, tiers, p)[0]
 
 
 def test_lemma_example_and_other_class():
@@ -469,3 +519,41 @@ def test_a_promoted_clique_is_caught_by_review_answers():
         assert {"review_loss", "straight"} <= flagged(out, w, name)
     # Their votes stop counting in the same run: the ordinary items are open again.
     assert state_of(out, ordinary[0])["state"] == "open"
+
+
+def test_a_run_resolves_two_votes_of_an_established_and_a_new_annotator():
+    """Through score(): E promoted at the floor (27 of 30 discriminating, no other evidence),
+    N new with four correct known-answer items (prior 4/6 -> 8/10, clipped to the new ceiling).
+    Their two agreeing votes meet the rule; the cell is not calibrated, so `provisional`.
+    Two new voters, a known-bad voter (2 of 8 known answers right: theta at the 0.5 floor) or a
+    quarantined one next to E do not."""
+    w = World(class_prior="uniform")
+    pools = w.ready_pools("pair")
+    train(w, pools, "E")
+    for name, hits, seen in (("N", 4, 4), ("M", 4, 4), ("B", 2, 8), ("Q", 4, 4)):
+        w.person(name)
+        for n, key in enumerate(pools["audit"][90 - 2 * seen:90 - seen]):
+            w.vote(name, key, "same" if n < hits else "different")
+    w.status("Q", "quarantined")
+    cases = {"en": ("E", "N"), "nm": ("N", "M"), "eb": ("E", "B"), "eq": ("E", "Q"), "e": ("E",)}
+    keys = {}
+    for case, voters in cases.items():
+        keys[case] = w.item("pair", stratum="s")
+        for name in voters:
+            w.vote(name, keys[case], "same")
+    out = score(w.inputs(), w.params)
+    rows = by_name(w, out)
+    assert (rows["E"]["tier"], rows["N"]["tier"], rows["B"]["tier"], rows["Q"]["tier"]) == (
+        "established", "new", "new", "quarantined")
+    # E: 31/36 from gold, plus the soft count of agreeing with N (0.39 / 0.11): 31.39 / 36.5 = 0.86.
+    assert rows["E"]["theta_mean"] == pytest.approx(0.86, abs=1e-6)
+    assert rows["N"]["theta_mean"] == NEW_CEILING and rows["B"]["theta_mean"] == 0.5
+    states = {case: posterior_of(out, key) for case, key in keys.items()}
+    assert (states["en"]["state"], states["en"]["confidence"]) == ("provisional", pytest.approx(0.956100, abs=1e-6))
+    assert states["nm"]["state"] == "open" and states["nm"]["confidence"] == pytest.approx(0.926309, abs=1e-6)
+    assert states["eb"]["state"] == "open" and states["eb"]["confidence"] == pytest.approx(0.86, abs=1e-6)
+    assert states["eq"]["state"] == "open" and states["eq"]["n_definite"] == 1
+    assert states["e"]["state"] == "open"
+    # The same journal under the 0.3.0 ceiling needs a third vote.
+    old = params(class_prior="uniform", theta_max={**DEFAULT_PARAMS["theta_max"], "new": 0.75})
+    assert posterior_of(score(w.inputs(), old), keys["en"])["state"] == "open"

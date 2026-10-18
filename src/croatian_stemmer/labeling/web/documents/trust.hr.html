@@ -9,7 +9,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.0">
+<meta name="document-version" content="1.1">
 <title>Kako radi pouzdanost — označavanje hrvatskih lema</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -17,7 +17,7 @@
 <main>
 <p class="crumbs"><a href="/?lang=hr">Natrag na označavanje</a> · <a href="/legal/trust.en" hreflang="en" lang="en">English</a></p>
 <h1>Kako radi pouzdanost</h1>
-<p class="meta">Verzija 1.0 (18. listopada 2026.). Voditelj obrade: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+<p class="meta">Verzija 1.1 (18. listopada 2026.). Voditelj obrade: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
 
 <p>Ova stranica objašnjava kako stranica {{app_host}} procjenjuje pouzdanost odgovora i kako iz njih nastaju oznake u skupu podataka. Služi kao informacija; ne tražimo da je prihvatite. Pravni opis te obrade, pravnu osnovu i Vaša prava navodi <a href="/legal/privacy.hr#pouzdanost">obavijest o privatnosti</a> (odjeljak 9).</p>
 
@@ -41,7 +41,7 @@
 <li><strong>etablirana</strong>: najmanje 30 provjera s poznatim odgovorom koje razlikuju znanje od potvrđivanja prijedloga (primjeri prikazani bez prijedloga ili s pogrešnim prijedlogom; za korijene sve provjere), dovoljno visoka donja granica procjene točnosti iz tih provjera (0,75), najmanje 100 odgovora kojima ste se odlučili te najmanje 5 provjera na kojima je prijedlog pogrešan, od kojih je barem 60 % točno (za korijene: najmanje 5 provjera za svaki od dvaju mogućih odgovora, s barem 60 % točnih za svaki). Razina ostaje dok donja granica ne padne ispod 0,70 i dok na tim teškim primjerima imate barem 50 % točnih. Etablirana razina moguća je tek kada za tu vrstu postoji dovoljno primjera s poznatim odgovorom i barem jedan stručnjak. Slaganje s drugim sudionicima nikada ne donosi višu razinu.</li>
 <li><strong>stručnjak</strong>: osobe s popisa pouzdanih stručnjaka koji vodi voditelj obrade.</li>
 </ul>
-<p>Svaka razina ima gornju granicu procjene: nova 0,75, kvalificirana 0,80, etablirana 0,95, stručnjak 0,98. Koliko god netko točno odgovarao, njegova procjena ne može prijeći granicu njegove razine. Time je ograničeno koliko jedan račun može utjecati na rezultat. Donja granica je 0,50: odgovori vrlo nepouzdanog sudionika tada se jednostavno ne uzimaju u obzir, a ne broje se kao suprotni.</p>
+<p>Svaka razina ima gornju granicu procjene: nova 0,78, kvalificirana 0,80, etablirana 0,95, stručnjak 0,98. Koliko god netko točno odgovarao, njegova procjena ne može prijeći granicu njegove razine. Time je ograničeno koliko jedan račun može utjecati na rezultat. Donja granica je 0,50: odgovori vrlo nepouzdanog sudionika tada se jednostavno ne uzimaju u obzir, a ne broje se kao suprotni.</p>
 
 <h2 id="rjesenje">6. Kada je primjer riješen</h2>
 <p>Primjer je riješen kada je vjerojatnost jednog odgovora najmanje 95 %, kada su na njega odgovorile najmanje dvije različite osobe i kada za taj odgovor glasa barem jedna etablirana osoba ili stručnjak. Jedan odgovor stručnjaka nikada sam ne rješava primjer. Rješenje je privremeno dok se na uzorku od 30 primjera ne potvrdi da se tako riješeni primjeri slažu s odgovorom voditelja obrade (najmanje 29 od 30). Na primjerima koje voditelj obrade sam provjeri njegov je odgovor konačan.</p>

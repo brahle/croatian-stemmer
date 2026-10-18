@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.3.1
+
+Labeling web app: two-vote resolution and Prometheus metrics. Scoring stays as
+the curator left it.
+
+- Two votes resolve. The `new` tier's weight ceiling is 0.78 (was 0.75), so two
+  agreeing votes, one from an `established` annotator and one from a `new` one
+  who has shown some accuracy, meet the 0.95 rule (decision: an item needs two
+  votes). At the promotion floor (θ = 31/36) the pair gives 0.9565 (0.9490
+  before); any established θ of at least 0.8427 now resolves with such a vote
+  (0.8636 before). Unchanged: two `new` votes never resolve (0.926, and no
+  established vote), one vote never resolves, a weight-0 vote does not tip an
+  established one, and items stay `provisional` until their calibration cell
+  passes. The `qualified` ceiling stays 0.80. The trust page (1.1), the
+  maintainers' model description and the DPIA say so.
+- Migration 004 moves the stored parameters to the new defaults only when they
+  still equal the 0.3.0 defaults and nobody changed them, with a
+  `params.changed` event like the dashboard's; chosen parameters stay. No schema
+  change; its downgrade restores the 0.3.0 defaults under the same conditions.
+  A parameter change draws new calibration sets at the next run.
+- Metrics. `LABELING_METRICS_PORT` opens a second listener that serves only
+  `GET /metrics` (Prometheus text format, standard library only): scoring on/off,
+  runs by outcome, runs in progress, last run and last success, seconds since
+  the last success while scoring is on, background job successes and failures
+  (retention, unconsented expiry), pending erasure requests and the age of the
+  oldest, quarantined people. The app's own port never serves it. Aggregates
+  only. See docs/labeling-web.md, "Metrics".
+
 ## 0.3.0
 
 Labeling web app: the trust system (version 2 of the labeling design). Deploy with

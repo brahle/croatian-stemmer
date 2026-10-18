@@ -143,7 +143,7 @@ Per (annotator, kind), first match wins:
 | `anchor` | anchor at the watermark | 0.98 (3.89) | 0 % |
 | `established` | promoted or kept (below) | 0.95 (2.94) | 5 % |
 | `qualified` | passed qualification for the kind | 0.80 (1.39) | 10 % |
-| `new` | otherwise | 0.75 (1.10) | 10 % |
+| `new` | otherwise | 0.78 (1.27) | 10 % |
 
 Promotion to `established` needs, for the kind: promotion readiness on (next
 sections); at least `established_disc_gold` (30) discriminating observations;
@@ -346,8 +346,22 @@ Variants with the same tiers:
   `provisional`.
 - Two `established` votes at θ = 0.85 agreeing: 0.9698, rule met.
 - One anchor at its prior mean 0.9: 0.90, not met (one vote, below 0.95).
-- Three `new` accounts at the 0.75 ceiling agreeing: 0.9643, not met (no `established`
-  or anchor vote).
+- Three `new` accounts at the 0.78 ceiling agreeing: 0.9781, not met (no `established`
+  or anchor vote). Two of them: 0.9263, not met on confidence either.
+- Two votes, an established one and a new one (decision 5ee0e7ef, question 4: an item
+  needs two votes): an `established` annotator at the promotion floor (27 of 30
+  discriminating, θ = 31/36 = 0.861111, w = 1.824549) and a `new` one at the 0.78
+  ceiling (w = 1.265666) agreeing give 0.956487, rule met. Two such votes resolve
+  whenever the established θ is at least 0.842742. Up to 0.3.0 the `new` ceiling was
+  0.75 (w = 1.098612): the same pair gave 0.948980 and needed a third vote, since only
+  an established θ of 0.863636 or more reached 0.95 with a new vote. A `new` account
+  with no evidence yet sits at its prior mean 4/6 (w = 0.693147) and needs an
+  established θ of 0.904762; four correct known-answer items take it to the ceiling.
+- A known-bad second vote (θ clipped to 0.5, weight 0) next to one established vote
+  does not meet the rule: one vote at the established ceiling alone is 0.95 − 2⁻⁵²,
+  just short, and anything below gives less. (With an estimated class prior the prior
+  itself can lift a single established vote above 0.95 in a stratum dominated by one
+  class; the calibration gate per cell is what checks those items.)
 
 ## Formulas
 

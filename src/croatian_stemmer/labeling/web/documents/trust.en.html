@@ -8,7 +8,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.0">
+<meta name="document-version" content="1.1">
 <title>How reliability works — Croatian lemma labeling</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -16,7 +16,7 @@
 <main>
 <p class="crumbs"><a href="/?lang=en">Back to labeling</a> · <a href="/legal/trust.hr" hreflang="hr" lang="hr">Hrvatski</a></p>
 <h1>How reliability works</h1>
-<p class="meta">Version 1.0 (18 October 2026). Controller: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+<p class="meta">Version 1.1 (18 October 2026). Controller: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
 
 <p>This page explains how the site {{app_host}} assesses how reliable answers are and how the labels in the dataset are made from them. It is information; we do not ask you to accept it. The legal description of this processing, its legal basis and your rights are in the <a href="/legal/privacy.en#reliability">privacy notice</a> (section 9).</p>
 
@@ -40,7 +40,7 @@
 <li><strong>established</strong>: at least 30 known-answer checks that tell knowledge apart from confirming the suggestion (items shown without the suggestion or with a wrong suggestion; for stems, all checks), a high enough lower bound of the accuracy estimate from those checks (0.75), at least 100 answers where you made a choice, and at least 5 checks where the suggestion is wrong, of which at least 60% are right (for stems: at least 5 checks for each of the two possible answers, with at least 60% right for each). The level stays while the lower bound does not fall below 0.70 and you have at least 50% right on those hard items. The established level is possible only once there are enough known-answer items and at least one expert for that kind. Agreeing with other participants never raises your level.</li>
 <li><strong>expert</strong>: people on the list of trusted experts that the controller keeps.</li>
 </ul>
-<p>Each level has an upper limit on the estimate: new 0.75, qualified 0.80, established 0.95, expert 0.98. However accurate someone is, their estimate cannot go above the limit of their level. This limits how much one account can influence the result. The lower limit is 0.50: the answers of a very unreliable participant are then simply disregarded, not counted as the opposite.</p>
+<p>Each level has an upper limit on the estimate: new 0.78, qualified 0.80, established 0.95, expert 0.98. However accurate someone is, their estimate cannot go above the limit of their level. This limits how much one account can influence the result. The lower limit is 0.50: the answers of a very unreliable participant are then simply disregarded, not counted as the opposite.</p>
 
 <h2 id="resolution">6. When an item is resolved</h2>
 <p>An item is resolved when one answer has a probability of at least 95%, at least two different people have answered it, and at least one established person or expert voted for that answer. One expert's answer never resolves an item alone. The resolution is provisional until a sample of 30 items confirms that items resolved this way agree with the controller's answer (at least 29 of 30). On items the controller checks personally, the controller's answer is final.</p>

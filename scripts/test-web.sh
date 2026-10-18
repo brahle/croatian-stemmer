@@ -16,13 +16,14 @@ export LABELING_EDGE_LOG_RETENTION='7 days (synthetic)' LABELING_BACKUP_RETENTIO
 .venv/bin/python -m pytest
 npm ci --ignore-scripts
 npm run build
-.venv/bin/python -m uvicorn croatian_stemmer.labeling.web.serve:app --host 127.0.0.1 --port 55484 --no-access-log > "${TMPDIR:-/tmp}/labeling-test-app.log" 2>&1 &
+LABELING_METRICS_PORT=55486 LABELING_METRICS_HOST=127.0.0.1 \
+  .venv/bin/python -m uvicorn croatian_stemmer.labeling.web.serve:app --host 127.0.0.1 --port 55484 --no-access-log > "${TMPDIR:-/tmp}/labeling-test-app.log" 2>&1 &
 app_pid=$!
 PYTHONPATH=tests/web .venv/bin/python -m uvicorn oidc_fixture:app --host 127.0.0.1 --port 55485 --no-access-log > "${TMPDIR:-/tmp}/labeling-test-oidc.log" 2>&1 &
 oidc_pid=$!
 trap 'kill "$app_pid" "$oidc_pid" 2>/dev/null || true; wait "$app_pid" "$oidc_pid" 2>/dev/null || true' EXIT
 .venv/bin/python - <<'PY'
-import time, urllib.request
+import time, urllib.error, urllib.request
 for url in ('http://127.0.0.1:55484/readyz','http://127.0.0.1:55485/realms/test/protocol/openid-connect/certs'):
     for attempt in range(50):
         try:
@@ -32,5 +33,14 @@ for url in ('http://127.0.0.1:55484/readyz','http://127.0.0.1:55485/realms/test/
             time.sleep(.1)
     else:
         raise SystemExit('Test server did not start')
+# Metrics: on the second listener only, never on the app's port.
+with urllib.request.urlopen('http://127.0.0.1:55486/metrics', timeout=5) as r:
+    body = r.read().decode()
+    assert 'labeling_metrics_database_up 1' in body and 'labeling_scoring_enabled ' in body, body
+try:
+    urllib.request.urlopen('http://127.0.0.1:55484/metrics', timeout=5)
+    raise SystemExit('the app port serves /metrics')
+except urllib.error.HTTPError as e:
+    assert e.code == 404, e.code
 PY
 npx playwright test
