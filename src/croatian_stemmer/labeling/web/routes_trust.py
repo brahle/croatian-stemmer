@@ -6,13 +6,15 @@ moderation lock first (moderation_tx) and writes one trust event plus its mirror
 update in one transaction, so a run that did not see it cannot publish over it.
 """
 
+import csv
+import io
 import json
 from collections import defaultdict
 from typing import Literal
 from uuid import UUID
 
 from fastapi import Depends, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 from sqlalchemy import func, select, text, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
@@ -20,14 +22,14 @@ from sqlalchemy.dialects.postgresql import insert
 from ..scoring import (CELLS, DEFAULT_PARAMS, answer_class, krippendorff_alpha, observed_agreement, params_sha256,
                        suggested_class, validate_params)
 from .common import Caller, failure, scoring_params, trust_event
-from .models import (Anchor, Annotator, Corpus, Gold, Item, ItemAudit, ItemPosterior, ItemState, ScoringRun, Setting,
-                     TrustedEmail, TrustEvent)
+from .models import (Anchor, Annotator, AnnotatorScore, Corpus, Gold, Item, ItemAudit, ItemPosterior, ItemState,
+                     ScoringRun, Setting, TrustedEmail, TrustEvent)
 from .requests import (AdjudicateRequest, Candidate, GoldActionRequest, GoldImportRequest, ReasonRequest,
                        RedrawRequest, ReopenRequest, ScoringParamsRequest, ScoringSettingsRequest, TrustedRemoveRequest,
                        TrustedRequest, gold_answer)
 from .trusted import email_digest, grant_anchor, normalized_email, revoke_anchors
 from .scheduler import live_readiness
-from .scoring_run import ScoringBusy, bundle, moderation_tx, run_now, stale
+from .scoring_run import ScoringBusy, bundle, moderation_tx, run_now, run_outputs, stale
 
 
 def run_json(run, is_stale=None, full=False):
@@ -591,3 +593,150 @@ def register(app, ctx):
             entry["kinds"].setdefault(kind, {})[state] = n
         return {"scoring_enabled": enabled is True, "readiness": ready, "corpora": list(corpora.values()),
                 "last_run": last}
+
+    # ---- restricted exports and the public release (4.11) -----------------------------
+
+    async def exported_run(db, run_id):
+        run = await get_run(db, run_id) if run_id else (await db.execute(
+            select(ScoringRun).where(ScoringRun.status == "done").order_by(ScoringRun.finished_at.desc())
+            .limit(1))).scalar_one_or_none()
+        if run is None:
+            raise failure(404, "not_found")
+        if run.status != "done":
+            raise failure(409, "run_not_done")
+        kept = (await db.execute(select(ItemPosterior.item_id).where(ItemPosterior.run_id == run.id).limit(1))).first()
+        scored = (await db.execute(select(AnnotatorScore.annotator_id).where(AnnotatorScore.run_id == run.id)
+                                   .limit(1))).first()
+        if not kept and not scored and run.n_judgments:
+            # Older than the 30-day output retention: replay its bundle offline instead.
+            raise failure(410, "run_outputs_expired")
+        return run, await stale(db, run.watermark)
+
+    def stale_headers(run, is_stale, name):
+        return {"Content-Disposition": f'attachment; filename="{name}"',
+                "X-Labeling-Run-Stale": "true" if is_stale else "false", "X-Labeling-Run": str(run.id)}
+
+    RESOLVED = ("schema_version", "corpus_id", "corpus_sha256", "source_uri", "license", "item_id", "revision", "kind",
+                "word", "other_word", "upos", "proposed_lemma", "other_proposed_lemma", "proposed_stem", "context",
+                "other_context", "word_ref", "other_word_ref", "sampling_stratum", "state", "resolution_source", "cell",
+                "resolved_answer", "resolved_lemma", "confidence", "classes_json", "n_definite", "n_low", "n_expert",
+                "n_unsure", "n_annotators", "n_anchor_votes", "n_established_votes", "irregular_votes", "gold_status",
+                "scoring_version", "params_sha256", "run_id", "watermark", "stale")
+
+    async def posterior_rows(db, run, corpus_id):
+        return (await db.execute(select(ItemPosterior, Item).join(
+            Item, (Item.corpus_id == ItemPosterior.corpus_id) & (Item.id == ItemPosterior.item_id))
+            .where(ItemPosterior.run_id == run.id, ItemPosterior.corpus_id == corpus_id)
+            .order_by(Item.ordinal))).all()
+
+    @app.get("/api/corpora/{corpus_id}/resolved.tsv")
+    async def resolved_tsv(corpus_id: UUID, run_id: UUID | None = None, caller: Caller = Depends(curator),
+                           db=Depends(session)):
+        """Schema v2: one row per item with a posterior in the run (a counted vote or a curator decision)."""
+        async with db.begin():
+            corpus = (await db.execute(select(Corpus).where(Corpus.id == corpus_id))).scalar_one_or_none()
+            if corpus is None:
+                raise failure(404, "not_found")
+            run, is_stale = await exported_run(db, run_id)
+            rows = await posterior_rows(db, run, corpus_id)
+        buffer = io.StringIO()
+        writer = csv.DictWriter(buffer, fieldnames=RESOLVED, delimiter="\t", lineterminator="\n")
+        writer.writeheader()
+        for post, item in rows:
+            c = item.payload
+            writer.writerow({
+                "schema_version": 2, "corpus_id": corpus_id, "corpus_sha256": corpus.sha256,
+                "source_uri": corpus.source_uri, "license": corpus.license, "item_id": item.id,
+                "revision": item.revision, "kind": item.kind,
+                **{key: c.get(key, "") for key in ("word", "other_word", "upos", "proposed_lemma", "other_proposed_lemma",
+                                                     "proposed_stem", "context", "other_context", "word_ref",
+                                                     "other_word_ref", "sampling_stratum")},
+                "state": post.state, "resolution_source": post.resolution_source or "", "cell": post.cell,
+                "resolved_answer": post.resolved_answer or "", "resolved_lemma": post.resolved_lemma or "",
+                "confidence": "" if post.confidence is None else post.confidence,
+                "classes_json": json.dumps(post.classes, ensure_ascii=False) if post.classes else "",
+                **{key: getattr(post, key) for key in ("n_definite", "n_low", "n_expert", "n_unsure", "n_annotators",
+                                                       "n_anchor_votes", "n_established_votes", "irregular_votes")},
+                "gold_status": post.gold_status or "", "scoring_version": run.scoring_version,
+                "params_sha256": run.params_sha256, "run_id": run.id, "watermark": run.watermark,
+                "stale": "true" if is_stale else "false"})
+        return Response(buffer.getvalue(), media_type="text/tab-separated-values; charset=utf-8",
+                        headers=stale_headers(run, is_stale, f"resolved-{corpus_id}.tsv"))
+
+    @app.get("/api/corpora/{corpus_id}/resolved.jsonl")
+    async def resolved_jsonl(corpus_id: UUID, run_id: UUID | None = None, caller: Caller = Depends(curator),
+                             db=Depends(session)):
+        """The run export a release is built from: the run, then one record per item with its
+        posterior and its counted votes (annotator ids, tiers, weights; no timestamps)."""
+        async with db.begin():
+            corpus = (await db.execute(select(Corpus).where(Corpus.id == corpus_id))).scalar_one_or_none()
+            if corpus is None:
+                raise failure(404, "not_found")
+            run, is_stale = await exported_run(db, run_id)
+            rows = await posterior_rows(db, run, corpus_id)
+            pools = dict((await db.execute(select(Gold.item_id, Gold.pool).where(Gold.corpus_id == corpus_id))).all())
+        outputs, changed = await run_outputs(ctx, run.watermark, run.as_of_day, run.params, run.inputs_sha256)
+        lines = [{"record": "run", "run": {
+            "id": str(run.id), "scoring_version": run.scoring_version, "params": run.params,
+            "params_sha256": run.params_sha256, "watermark": run.watermark, "as_of_day": run.as_of_day.isoformat(),
+            "finished_at": run.finished_at.isoformat(), "pinned": run.pinned, "stale": is_stale,
+            "calibration": run.calibration, "inputs_changed": changed},
+            "corpus": {"id": str(corpus.id), "name": corpus.name, "sha256": corpus.sha256,
+                       "source_uri": corpus.source_uri, "license": corpus.license,
+                       "labels_license": corpus.labels_license}}]
+        for post, item in rows:
+            votes = outputs["votes"].get(f"{corpus_id}/{item.id}", {"k": 2, "prior": [], "votes": []})
+            lines.append({"record": "item", "corpus_id": str(corpus_id), "item_id": str(item.id), "kind": item.kind,
+                          "candidate": item.payload, "state": post.state, "releasable": post.releasable,
+                          "resolution_source": post.resolution_source, "cell": post.cell,
+                          "resolved_answer": post.resolved_answer, "resolved_lemma": post.resolved_lemma,
+                          "confidence": post.confidence, "classes": post.classes, "epoch": post.epoch,
+                          "n_definite": post.n_definite, "n_annotators": post.n_annotators,
+                          "gold_status": post.gold_status, "gold_pool": pools.get(item.id),
+                          "k": votes["k"], "prior": votes["prior"],
+                          "votes": [{key: v[key] for key in ("annotator_id", "tier", "class", "weight", "answer",
+                                                             "lemma", "irregular", "presentation", "admitted")}
+                                    for v in votes["votes"]]})
+        body = "".join(json.dumps(line, ensure_ascii=False) + "\n" for line in lines)
+        return Response(body, media_type="application/x-ndjson; charset=utf-8",
+                        headers=stale_headers(run, is_stale, f"resolved-{corpus_id}.jsonl"))
+
+    @app.get("/api/admin/annotators/export.jsonl")
+    async def annotators_export(run_id: UUID | None = None, caller: Caller = Depends(curator), db=Depends(session)):
+        """Score rows and status per annotator (no email)."""
+        async with db.begin():
+            run, is_stale = await exported_run(db, run_id)
+            rows = (await db.execute(select(AnnotatorScore, Annotator.status).join(
+                Annotator, Annotator.id == AnnotatorScore.annotator_id).where(AnnotatorScore.run_id == run.id)
+                .order_by(AnnotatorScore.annotator_id, AnnotatorScore.kind))).all()
+        columns = [c.name for c in AnnotatorScore.__table__.columns if c.name != "run_id"]
+        body = "".join(json.dumps({**{name: (str(v) if name == "annotator_id" else v)
+                                      for name, v in ((n, getattr(row, n)) for n in columns)},
+                                   "status": status, "run_id": str(run.id)}, ensure_ascii=False) + "\n"
+                       for row, status in rows)
+        return Response(body, media_type="application/x-ndjson; charset=utf-8",
+                        headers=stale_headers(run, is_stale, f"annotators-{run.id}.jsonl"))
+
+    @app.post("/api/admin/scoring/runs/{run_id}/release")
+    async def release(run_id: UUID, caller: Caller = Depends(curator), db=Depends(session)):
+        """Record that a pinned run's labels are published: every gold item among the released
+        rows is disclosed, so no later answer on it counts as evidence of skill (4.3.5)."""
+        async with db.begin():
+            run = await get_run(db, run_id, lock=True)
+            if run.status != "done" or not run.pinned:
+                raise failure(409, "run_not_pinned")
+            if await stale(db, run.watermark):
+                raise failure(409, "run_stale")
+            disclosed = {(r[0], r[1]) for r in (await db.execute(text(
+                "SELECT corpus_id, item_id FROM label_trust_event WHERE kind = 'gold.disclosed'"))).all()}
+            released = (await db.execute(text("""
+                SELECT p.corpus_id, p.item_id FROM label_item_posterior p
+                JOIN label_gold g ON g.corpus_id = p.corpus_id AND g.item_id = p.item_id
+                WHERE p.run_id = :r AND p.state = 'resolved' AND p.releasable"""), {"r": run_id})).all()
+            count = 0
+            for corpus_id, item_id in released:
+                if (corpus_id, item_id) not in disclosed:
+                    await event(db, caller, "gold.disclosed", corpus_id=corpus_id, item_id=item_id,
+                                details={"reason": "release", "run_id": str(run_id)})
+                    count += 1
+        return {"run_id": str(run_id), "disclosed": count}

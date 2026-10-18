@@ -35,7 +35,7 @@ TRUST_EVENTS = ("trusted.added", "trusted.removed", "anchor.granted", "anchor.re
                 "params.changed", "run.pinned", "run.unpinned")
 MODERATION_TRUST = ("trusted.added", "trusted.removed", "anchor.granted", "anchor.revoked",
                     "annotator.cleared", "gold.set", "gold.retired", "gold.reactivated",
-                    "gold.contested", "gold.retracted", "gold.disclosed", "item.adjudicated",
+                    "gold.contested", "gold.retracted", "item.adjudicated",
                     "item.ambiguous", "item.reopened", "params.changed", "calibration.redraw_requested")
 STATES = "('open', 'provisional', 'resolved', 'needs_expert', 'contested', 'ambiguous')"
 

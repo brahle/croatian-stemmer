@@ -359,3 +359,12 @@ async def bundle(ctx, run_id: UUID) -> dict | None:
                     "as_of_day": run.as_of_day.isoformat(), "inputs_sha256": run.inputs_sha256,
                     "inputs_summary": run.inputs_summary, "outputs_sha256": run.outputs_sha256, "status": run.status},
             "inputs": inputs}
+
+
+async def run_outputs(ctx, watermark, as_of_day, params, inputs_hash):
+    """(outputs, inputs_changed): a run recomputed from the journals at its watermark, for
+    the per-vote rows no table keeps. inputs_changed when a later privacy action changed them."""
+    _, inputs = await load_inputs(ctx.engine, watermark, as_of_day, ctx.settings.scoring_max_judgments)
+    outputs = await asyncio.wait_for(asyncio.to_thread(score, inputs, validate_params(params)),
+                                     ctx.settings.scoring_run_timeout_s)
+    return outputs, inputs_sha256(inputs) != inputs_hash

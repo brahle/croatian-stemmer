@@ -100,6 +100,9 @@ const strings = {
     pin:'Prikvači', unpin:'Otkvači', bundle:'Paket za ponavljanje', stale:' · zastario', pinned:' · prikvačen',
     iaaTitle:'Slaganje (Krippendorffova alfa)', iaaLine:'{kind}: alfa {alpha}, opaženo slaganje {observed}', paramsTitle:'Parametri',
     paramsJson:'Parametri (JSON)', paramsSave:'Spremi parametre', paramsSaved:'Parametri su spremljeni.',
+    exportResolved:'Razriješeno (TSV)', exportRunExport:'Izračun za izdanje (JSONL)', recordRelease:'Zabilježi izdanje',
+    releaseRecorded:'Izdanje je zabilježeno; otkriveno zlatnih primjera: {n}.',
+    exportedRestricted:'Preuzeto. Datoteka sadrži pseudonimizirane podatke: čuvajte je samo lokalno, izbrišite je najkasnije za 30 dana i odmah kada se dovrši brisanje osobe čiji su odgovori u njoj.',
   },
   en: {
     skipLink:'Skip to content', brand:'Croatian stems', title:'Labeling language examples', menu:'Menu',
@@ -197,6 +200,9 @@ const strings = {
     pin:'Pin', unpin:'Unpin', bundle:'Replay bundle', stale:' · stale', pinned:' · pinned',
     iaaTitle:'Agreement (Krippendorff’s alpha)', iaaLine:'{kind}: alpha {alpha}, observed agreement {observed}', paramsTitle:'Parameters',
     paramsJson:'Parameters (JSON)', paramsSave:'Save parameters', paramsSaved:'The parameters are saved.',
+    exportResolved:'Resolved (TSV)', exportRunExport:'Run export for a release (JSONL)', recordRelease:'Record the release',
+    releaseRecorded:'The release is recorded; gold items disclosed: {n}.',
+    exportedRestricted:'Downloaded. The file holds pseudonymous data: keep it local only, delete it within 30 days and at once when the erasure of a person whose answers it holds is completed.',
   },
 };
 const errors = {
@@ -684,7 +690,10 @@ async function curatorScoring(){
     const actions = cell(t('colActions'));
     if (r.status === 'done') {
       actions.append(button(r.pinned ? t('unpin') : t('pin'), () => run(async () => { await post(`admin/scoring/runs/${r.id}/${r.pinned ? 'unpin' : 'pin'}`, {}); await curatorScoring(); })),
-                     button(t('bundle'), () => run(async () => { await download(`admin/scoring/runs/${r.id}/bundle`, `run-${r.id}.json`); message(t('exported')); })));
+                     button(t('bundle'), () => run(async () => { await download(`admin/scoring/runs/${r.id}/bundle`, `run-${r.id}.json`); message(t('exportedRestricted')); })));
+      if (r.pinned) actions.append(button(t('recordRelease'), () => run(async () => {
+        const data = await post(`admin/scoring/runs/${r.id}/release`, {}); message(t('releaseRecorded', {n: data.disclosed}));
+      })));
     }
     tr.append(cell(t('colRun'), `${date(r.finished_at || r.started_at)} · ${r.id.slice(0, 8)}`),
               cell(t('colStatus'), r.status + (r.stale ? t('stale') : '') + (r.pinned ? t('pinned') : '')),
@@ -726,7 +735,9 @@ async function curatorCorpora(){
     }
     if (row.status !== 'archived') actions.append(button(t('archive'), () => run(async () => { await post(`corpora/${row.id}/archive`, {}); await curatorCorpora(); })));
     actions.append(button(t('exportTsv'), () => run(async () => { await download(`corpora/${row.id}/export.tsv`, `oznake-${row.id}.tsv`); message(t('exported')); })),
-                   button(t('exportJsonl'), () => run(async () => { await download(`corpora/${row.id}/export.jsonl`, `odgovori-${row.id}.jsonl`); message(t('exported')); })));
+                   button(t('exportJsonl'), () => run(async () => { await download(`corpora/${row.id}/export.jsonl`, `odgovori-${row.id}.jsonl`); message(t('exported')); })),
+                   button(t('exportResolved'), () => run(async () => { await download(`corpora/${row.id}/resolved.tsv`, `razrijeseno-${row.id}.tsv`); message(t('exportedRestricted')); })),
+                   button(t('exportRunExport'), () => run(async () => { await download(`corpora/${row.id}/resolved.jsonl`, `izracun-${row.id}.jsonl`); message(t('exportedRestricted')); })));
     const tr = element('tr', null, {'data-corpus': row.id});
     tr.append(cell(t('colName'), row.name), cell(t('colStatus'), statusNames[row.status] || row.status),
               cell(t('colLicence'), `${row.license} / ${row.labels_license || '—'}`), cell(t('colItems'), t('itemsLine', row.items)), actions);

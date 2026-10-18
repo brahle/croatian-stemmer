@@ -36,11 +36,13 @@ JOURNAL_LOCK = 7266001  # shared by every journal insert; exclusive for a run's 
 MODERATION_LOCK = 7266002  # shared by moderation writers; exclusive while a run publishes
 SCORING_LOCK = 7266003  # one scoring run at a time (session-level, try-lock)
 # Admin and trust events that a run must not publish over (4.6.5); the journal trigger
-# takes the shared moderation lock for exactly these (label_is_moderation()).
+# takes the shared moderation lock for exactly these (label_is_moderation()). Not
+# gold.disclosed: it only stops later answers counting as skill, and every answer up to a
+# run's watermark predates it, so it never changes a run's outputs.
 MODERATION_ADMIN_EVENTS = ("annotator.status", "erasure.requested")
 MODERATION_TRUST_EVENTS = ("trusted.added", "trusted.removed", "anchor.granted", "anchor.revoked",
                            "annotator.cleared", "gold.set", "gold.retired", "gold.reactivated",
-                           "gold.contested", "gold.retracted", "gold.disclosed", "item.adjudicated",
+                           "gold.contested", "gold.retracted", "item.adjudicated",
                            "item.ambiguous", "item.reopened", "params.changed", "calibration.redraw_requested")
 
 

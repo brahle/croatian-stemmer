@@ -39,6 +39,13 @@ def main(argv=None):
     replay_ = commands.add_parser("score", help="replay a scoring run from its restricted bundle")
     replay_.add_argument("--bundle", required=True, type=Path, help="the run's bundle JSON (or a directory holding bundle.json)")
     replay_.add_argument("--output", required=True, type=Path, help="where to write the recomputed outputs (JSON)")
+    release_ = commands.add_parser("release", help="build a public release from a pinned run's resolved.jsonl")
+    release_.add_argument("run_export", type=Path)
+    release_.add_argument("--output", required=True, type=Path)
+    check_ = commands.add_parser("release-check", help="fail unless a release directory holds only aggregate labels")
+    check_.add_argument("directory", type=Path)
+    check_.add_argument("--run-export", required=True, type=Path)
+    check_.add_argument("--annotators", type=Path, help="the curator's annotators/export.jsonl, to check ids too")
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare":
@@ -61,6 +68,12 @@ def main(argv=None):
                 for row in rows:
                     handle.write(json.dumps(row, ensure_ascii=False) + "\n")
             json.dump(receipt, sys.stdout, ensure_ascii=False)
+        elif args.command == "release":
+            from .release import build as build_release
+            json.dump(build_release(args.run_export, args.output), sys.stdout, ensure_ascii=False)
+        elif args.command == "release-check":
+            from .release import check
+            json.dump(check(args.directory, args.run_export, args.annotators), sys.stdout, ensure_ascii=False)
         elif args.command == "score":
             from .scoring import canonical, replay
             path = args.bundle / "bundle.json" if args.bundle.is_dir() else args.bundle
