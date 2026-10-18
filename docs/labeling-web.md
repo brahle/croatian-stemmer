@@ -275,7 +275,7 @@ weight and abuse flags, and per item a posterior and a state; the model is in
 Migration 003 sets `scoring_enabled` to false, so deploying 0.3.0 runs no scoring
 and profiles nobody. Switch it on in the dashboard only when all of these hold:
 
-1. The DPIA ([labeling-dpia.md](labeling-dpia.md)) has been read by the owner.
+1. The owner has signed off the DPIA ([labeling-dpia.md](labeling-dpia.md)).
 2. The owner is on the trusted list ("Pouzdane adrese"), has signed in and passed
    the 1.3 gate, and the anchor badge shows in "Suradnici".
 3. The hr500k known-answer items are imported ("Zlatni primjeri", below).

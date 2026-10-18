@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.2
+
+Labeling web app: documentation only. No code, schema or scoring change.
+
+- The DPIA (`docs/labeling-dpia.md`, version 2.0) is rewritten at the level of
+  GDPR Art. 35(7): purposes, data, recipients, legal bases, the retention periods
+  the privacy notice promises, the logic of trust scoring in plain words, the two
+  balancing tests, risks and safeguards, and the conclusion (no prior consultation
+  needed), unchanged. It no longer quotes thresholds, parameter names or endpoint
+  behaviour, so tuning does not invalidate it. A new section lists the changes
+  that require revisiting it; code changes, parameter tuning and formula changes
+  within the described logic do not, and are recorded in `docs/trust.md` and here.
+  It is a draft for the controller's sign-off.
+- `docs/trust.md` gains "What a person sees" (card bands and rounding, the export's
+  trust section) and "Data-protection details" (where each category of personal
+  data is stored, retention mechanics, the release-inference example, security
+  facts), so nothing removed from the DPIA is lost. The peer-cap formula is
+  written with its parameters (ρ, f) instead of the default 12.
+- The public trust page "Kako radi pouzdanost" is version 2.0 (Croatian and
+  English): it keeps what a participant needs (what affects their weight, the
+  silent review pause of at most 14 days, that nothing is published per person,
+  what "My data" shows) and links `docs/trust.md` for the current values instead of
+  quoting them. The page is information outside the consent gate, so nobody is
+  asked to accept again and no deployment setting changes.
+
 ## 0.3.1
 
 Labeling web app: two-vote resolution and Prometheus metrics. Scoring stays as

@@ -1,15 +1,21 @@
 # Trust model
 
-This is the maintainers' description of how the labeling app (0.3.0) weighs votes,
-places annotators in tiers and decides item states. The code is
+This is the maintainers' description of how the labeling app (from 0.3.0) weighs votes,
+places annotators in tiers and decides item states: the current model and its parameters.
+The data-protection assessment ([labeling-dpia.md](labeling-dpia.md)) describes the same
+processing at the level of its logic, without numbers. A change to the code, the parameters
+or the formulas that stays within that logic is recorded here and in the changelog and does
+not reopen the assessment; the assessment's section "When this assessment must be
+revisited" lists the changes that do. The code is
 `src/croatian_stemmer/labeling/scoring.py`: one pure function, `score(inputs, params)`,
 with no I/O, no clock and no randomness. The database side (the watermark barrier,
 the loader, the publication fence and the scheduled job) is
 `src/croatian_stemmer/labeling/web/scoring_run.py`; operating it is described in
 [labeling-web.md](labeling-web.md), the offline commands in [labeling.md](labeling.md)
-and the data-protection assessment in [labeling-dpia.md](labeling-dpia.md). The public
-page "Kako radi pouzdanost" (`/legal/trust.{hr,en}`) explains the same rules in plain
-words and carries the formulas below in its appendix.
+and what the assessment relies on in "Data-protection details" below. The public page
+"Kako radi pouzdanost" (`/legal/trust.{hr,en}`) explains the same rules in plain words,
+without parameter values, links here for them, and carries the formulas below in its
+appendix.
 
 ## The model and its assumptions
 
@@ -353,8 +359,8 @@ Variants with the same tiers:
 - One anchor at its prior mean 0.9: 0.90, not met (one vote, below 0.95).
 - Three `new` accounts at the 0.78 ceiling agreeing: 0.9781, not met (no `established`
   or anchor vote). Two of them: 0.9263, not met on confidence either.
-- Two votes, an established one and a new one (decision 5ee0e7ef, question 4: an item
-  needs two votes): an `established` annotator at the promotion floor (27 of 30
+- Two votes, an established one and a new one (the owner decided that an item needs two
+  votes): an `established` annotator at the promotion floor (27 of 30
   discriminating, θ = 31/36 = 0.861111, w = 1.824549) and a `new` one at the 0.78
   ceiling (w = 1.265666) agreeing give 0.956487, rule met. Two such votes resolve
   whenever the established θ is at least 0.842742. Up to 0.3.0 the `new` ceiling was
@@ -382,16 +388,18 @@ Symbols: θ an annotator's accuracy, K the number of classes, π_c the prior of 
 w a vote's weight, h and m hard hits and misses on gold, α₀ and β₀ the prior, s and u the
 soft hits and misses (peer evidence) of annotator a, λ = `soft_weight`, q the
 leave-one-out posterior of the item from the other votes and c(v) the class of vote v,
-clip() the clipping to [0.5, ceiling of the tier], n and hits the discriminating
-observations and their hits, p₁ and p₂ the two highest class probabilities of an item.
-The fifth line is the peer cap at its default ratio 1.0 and floor 12.
+clip() the clipping to [0.5, ceiling of the tier], ρ and f the peer cap's ratio and floor
+(`peer_cap_ratio`, default 1.0, and `peer_cap_floor`, default 12), n and hits the
+discriminating observations and their hits, p₁ and p₂ the two highest class probabilities
+of an item. 1.645 is the standard normal quantile for the 5th percentile, not a
+parameter.
 
 ```
 w(θ, K) = ln(θ · (K − 1) / (1 − θ))
 P(z = c | votes) ∝ π_c · exp(Σ w(θ_a, K) over the votes for c)
 θ⁽⁰⁾ = clip((α₀ + h) / (α₀ + β₀ + h + m))
 s_a += λ · q(c(v)),  u_a += λ · (1 − q(c(v)))
-s_a + u_a ≤ max(h + m, 12)
+s_a + u_a ≤ ρ · max(h + m, f)
 θ⁽ᵗ⁾ = clip((α₀ + h + s) / (α₀ + β₀ + h + m + s + u))
 θ_lb = μ − 1.645 · √(μ(1 − μ) / (α₀ + β₀ + n + 1)),  μ = (α₀ + hits) / (α₀ + β₀ + n)
 priority = 1 − (p₁ − p₂)
@@ -423,6 +431,92 @@ change a past run's inputs: an erasure (re-keyed judgments and consents, redacte
 events), the 90-day timing retention or a redaction. The replay then reports
 `inputs_match: false` and the journals whose hash changed with their row counts then and
 now, and does not claim an output mismatch (`outputs_match: null`).
+
+## What a person sees
+
+The card on "Moji podaci" → "Pouzdanost" (`/api/me/trust`) is a simplified view. Its
+constants live in `web/trust_view.py`, not in the scoring parameters. Per kind it shows
+the tier and a band of the latest run's θ: `visoka` (high) at θ ≥ 0.85, `dobra` (good) at
+θ ≥ 0.75, `treba_paznje` (needs attention) below, and "not enough data" with fewer than 12
+(`MIN_CHECKS`) known-answer checks. Check counts are rounded down to tens; agreement with
+resolved items is rounded to 5 % and shown only with at least 20 resolved items. A
+quarantine is silent: `/api/me` and the card show status `active` and the base tier. A
+block is shown with its reason.
+
+The self-service export (`/api/me/export.json`) has a `trust` section: every retained run
+(per kind the tier including `quarantined`, qualified, θ, weight, lower bound, known-answer
+totals by type, peer agreement and disagreement, every flag with its signal values, the
+counts), every status and trust event about the person (quarantines with flags, clears,
+anchor grants and revocations, tier changes) and a plain-language meaning of each field
+in both languages. It does not say which answers were checks on items still in use, since
+that would map the active check pool; on request by email the curator retires those items
+and sends the per-answer results within one month. Answers on retired or retracted
+known-answer items carry `checked_against_known_answer` without a request.
+
+The curator dashboard ("Karantena") lists open quarantines with their age, flags and
+signal values and alerts at 7 days, so the 14-day review deadline is not missed.
+
+## Data-protection details
+
+These are the implementation facts behind the data-protection assessment, which describes
+them only by category. Operation is in [labeling-web.md](labeling-web.md) ("Consent, legal
+documents and data-subject rights", "Trust system"), the release procedure and
+`release-check` rules in [labeling.md](labeling.md).
+
+Where each category of personal data lives:
+
+| category | store |
+|---|---|
+| sign-in identity | `label_annotator` (subject, verified email); the Keycloak realm (name, Google id) |
+| consent records | `label_consent` (document, version, `age_threshold` = 18, time, locale, UI version) |
+| answers | `label_judgment` (item, answer, lemma, irregular flag, revision, time, `client_version`, `presentation`, admission) |
+| answer timing | `label_judgment.elapsed_ms`, curator-only |
+| showings | `label_assignment` |
+| derived per person | `label_annotator_score`, one row per run, annotator and kind |
+| derived per item | `label_item_posterior` per run; per-vote rows with pseudonymous ids in `resolved.jsonl` |
+| events | `label_admin_event`, `label_trust_event` |
+| trusted list | `label_trusted_email` (email, its hash, a note of at most a first name) |
+| erasure requests | `label_erasure_request` (Keycloak user id until the curator confirms its deletion) |
+| edge logs | the reverse proxy only; the app runs uvicorn with `--no-access-log` |
+
+Retention mechanics: the retention task runs at startup and daily. It deletes
+`label_annotator_score` and `label_item_posterior` rows 30 days after their run finished
+(pinned runs included; the latest done run is kept while it is the latest), sets
+`elapsed_ms` to NULL 90 days after the answer, and deletes unanswered `label_assignment`
+rows 30 days after they were last shown. `label_scoring_run` rows hold no personal data and
+are kept. The Keycloak user is deleted by hand by the curator within 30 days of an erasure
+(not yet automated). The erasure list kept outside the database for backup restores holds
+the Keycloak user id and request date for 60 days (backup retention of 14 days plus a
+margin).
+
+Scoring cadence: while `scoring_enabled` is on (off after migration 003), the background
+task checks every `LABELING_SCORING_INTERVAL` seconds (default 600). Only the profiling
+cohort (privacy 1.3 or later, terms 1.1 or later, participation 1.0 or later, each with
+`age_threshold = 18`) is scored, flagged or counted, identically in every run and at
+answer time.
+
+Bounded influence, in numbers: per item and epoch at most 5 `low` and 3 `expert` first
+answers count; tier ceilings 0.78 / 0.80 / 0.95 / 0.98; the daily cap of 3000 answers
+(`LABELING_DAILY_CAP`) and per-minute rate limits.
+
+Erasure keeps the journal sequence numbers of the moved rows, because the watermark needs
+them. An insider who also kept the old history could therefore guess which new id followed
+which old one; the assessment accepts this with the other re-linking risks.
+
+Inference from releases, the worked example behind the assessment's residual risk: three
+`established` voters at θ = 0.85 all answer A on a `pair` item with a uniform prior; the
+confidence is 0.9945, and 0.9698 without any one of them, so the row appears in the higher
+band. Had the third answered B, the posterior would be 0.85 and there would be no row.
+Someone who knows how two voters answered therefore learns how the third did. The release
+rule (at least `release_min_voters` crowd voters and no pivotal one) narrows this; it does
+not close it.
+
+Security facts the assessment summarises: the browser uses PKCE S256; the backend accepts
+only RS256 access tokens checked for issuer, audience, expiry and client; restricted routes
+need the curator role; the container runs as a non-root user; the app keeps no IP
+addresses; scoring is pure Python with no external calls, so no third-party service sees
+the data; the audit key that decides which showings are checks never leaves the database
+and is not in any bundle.
 
 ## Where the code differs from the design
 

@@ -1,14 +1,16 @@
 <!doctype html>
-<!-- The controller (owner) reviews and publishes this text; there is no external legal review
-     (owner decision 5ee0e7ef). The Croatian version (trust.hr.html) and this one must say the same
-     thing and carry the same version. This page is information, not part of the consent gate; the
-     legal description of the processing is section 9 of the privacy notice. The formulas in the
-     appendix must match the scoring code; a test checks each line verbatim. -->
+<!-- The controller (owner) reviews and publishes this text; there is no external legal review.
+     The Croatian version (trust.hr.html) and this one must say the same thing and carry the same
+     version. This page is information, not part of the consent gate; the legal description of the
+     processing is section 9 of the privacy notice. Parameter values (thresholds, rates, counts) are
+     deliberately not on this page: they live in docs/trust.md, which the page links, so tuning
+     them does not change this text. The formulas in the appendix must match docs/trust.md; a test
+     checks each line verbatim. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.1">
+<meta name="document-version" content="2.0">
 <title>How reliability works — Croatian lemma labeling</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -16,83 +18,79 @@
 <main>
 <p class="crumbs"><a href="/?lang=en">Back to labeling</a> · <a href="/legal/trust.hr" hreflang="hr" lang="hr">Hrvatski</a></p>
 <h1>How reliability works</h1>
-<p class="meta">Version 1.1 (18 October 2026). Controller: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
+<p class="meta">Version 2.0 (18 October 2026). Controller: {{controller_name}}, <a href="mailto:{{controller_email}}">{{controller_email}}</a>.</p>
 
 <p>This page explains how the site {{app_host}} assesses how reliable answers are and how the labels in the dataset are made from them. It is information; we do not ask you to accept it. The legal description of this processing, its legal basis and your rights are in the <a href="/legal/privacy.en#reliability">privacy notice</a> (section 9).</p>
+<p>The page describes the rules that stay the same. The exact thresholds and settings are tuned from time to time; their current values are in the <a href="https://github.com/brahle/croatian-stemmer/blob/main/docs/trust.md" rel="noopener noreferrer">technical description of the model</a> in the croatian-stemmer repository on GitHub.</p>
 
 <h2 id="summary">1. In short</h2>
-<p>Not all answers count the same. For each participant and each kind of task (word pairs, lemmas, stems) the application estimates how accurate their answers are and gives them weight accordingly. An item counts as resolved only when enough reliable answers agree on it. The estimates are recomputed about every 10 minutes from all answers so far, so new answers show up in them with a short delay.</p>
+<p>Not all answers count the same. For each participant and each kind of task (word pairs, lemmas, stems) the application estimates how accurate their answers are and gives them weight accordingly. An item counts as resolved only when enough reliable answers agree on it. The estimates are recomputed regularly from all answers so far, so new answers show up in them with a short delay.</p>
+<p>The estimate affects only three things: how much your answers count, which items you are shown, and whether your answers are set aside for review (section 7). It has no effect outside this site, and nothing about you as a participant is ever published.</p>
 
 <h2 id="checks">2. Known-answer items</h2>
-<p>Items whose correct answer is known in advance are mixed in with the others, unannounced. Most participants get one in about every ten items shown, established participants one in every twenty. About a quarter of these checks are items where the corpus suggestion is wrong. An answer on such an item is taken into account only from the following day. Which of your answers were checks on items still in use is shown neither on the site nor in the file with your data, because it would otherwise reveal those items; on request by email we retire those items and send you the details within one month.</p>
+<p>Items whose correct answer is known in advance are mixed in with the others, unannounced. Participants at the lower levels and those in a review pause get them more often, established participants less often. Some of these checks are items where the corpus suggestion is wrong. An answer on such an item is taken into account only from the following day. Which of your answers were checks on items still in use is shown neither on the site nor in the file with your data, because it would otherwise reveal those items; on request by email we retire those items and send you the details within one month.</p>
 
 <h2 id="no-suggestion">3. Items without a suggestion</h2>
-<p>About one in five word-pair and lemma items is shown without the corpus suggestion: the suggestion line is not shown and the lemma field is empty. This shows us whether you judge for yourself or only confirm the suggestion. The share is the same for known-answer items and for the others, so an item shown without a suggestion does not tell you whether it is a check.</p>
+<p>Some word-pair and lemma items are shown without the corpus suggestion: the suggestion line is not shown and the lemma field is empty. This shows us whether you judge for yourself or only confirm the suggestion. The share is the same for known-answer items and for the others, so an item shown without a suggestion does not tell you whether it is a check.</p>
 
 <h2 id="qualification">4. Knowledge check</h2>
-<p>The first 12 items of each kind of task are an announced knowledge check ("Knowledge check n/12"). They are always shown without the suggestion. Answers where you made a choice are counted; "Not sure" is not counted. If you answer at least 9 of the 12 correctly, you become qualified for that kind. The check cannot be retaken. If you do not pass it, you go on at the level "new", and you can still reach the established level through known-answer items.</p>
+<p>The first items of each kind of task are an announced knowledge check; the screen says so and shows how far you are. They are always shown without the suggestion. Answers where you made a choice are counted; "Not sure" is not counted. If you answer enough of them correctly, you become qualified for that kind. The check cannot be retaken. If you do not pass it, you go on at the level "new", and you can still reach the established level through known-answer items.</p>
 
 <h2 id="levels">5. Levels</h2>
 <p>The level is set separately for each kind of task:</p>
 <ul>
 <li><strong>new</strong>: everyone at the start.</li>
 <li><strong>qualified</strong>: passed the knowledge check for that kind.</li>
-<li><strong>established</strong>: at least 30 known-answer checks that tell knowledge apart from confirming the suggestion (items shown without the suggestion or with a wrong suggestion; for stems, all checks), a high enough lower bound of the accuracy estimate from those checks (0.75), at least 100 answers where you made a choice, and at least 5 checks where the suggestion is wrong, of which at least 60% are right (for stems: at least 5 checks for each of the two possible answers, with at least 60% right for each). The level stays while the lower bound does not fall below 0.70 and you have at least 50% right on those hard items. The established level is possible only once there are enough known-answer items and at least one expert for that kind. Agreeing with other participants never raises your level.</li>
+<li><strong>established</strong>: enough known-answer checks that tell knowledge apart from confirming the suggestion (items shown without the suggestion or with a wrong suggestion; for stems, all checks), high enough accuracy on them, enough answers where you made a choice, and enough right answers on items where the suggestion is wrong. You keep the level while your accuracy on those checks stays good enough. The established level is possible only once there are enough known-answer items and at least one expert for that kind. Agreeing with other participants never raises your level.</li>
 <li><strong>expert</strong>: people on the list of trusted experts that the controller keeps.</li>
 </ul>
-<p>Each level has an upper limit on the estimate: new 0.78, qualified 0.80, established 0.95, expert 0.98. However accurate someone is, their estimate cannot go above the limit of their level. This limits how much one account can influence the result. The lower limit is 0.50: the answers of a very unreliable participant are then simply disregarded, not counted as the opposite.</p>
+<p>Each level has an upper limit on the estimate, higher for higher levels. However accurate someone is, their estimate cannot go above the limit of their level, which limits how much one account can influence the result. The lower limit is 0.50, the level of guessing: the answers of a very unreliable participant are then simply disregarded, not counted as the opposite.</p>
 
 <h2 id="resolution">6. When an item is resolved</h2>
-<p>An item is resolved when one answer has a probability of at least 95%, at least two different people chose that answer, each with an accuracy estimate of at least 0.70, and at least one established person or expert is among them. One expert's answer never resolves an item alone. The resolution is provisional until a sample of 30 items confirms that items resolved this way agree with the controller's answer (at least 29 of 30). On items the controller checks personally, the controller's answer is final.</p>
+<p>An item is resolved when one answer is very probable, at least two different people with a good enough accuracy estimate chose it, and at least one established person or expert is among them. One expert's answer never resolves an item alone. The resolution is provisional until a sample of items confirms that items resolved this way agree with the controller's answer. On items the controller checks personally, the controller's answer is final.</p>
 
 <h2 id="pause">7. Signs of possible abuse and the review pause</h2>
 <p>Every calculation looks for these signs:</p>
 <ul>
-<li>answering very fast (the median time of the last 30 answers is shorter than one second or than a quarter of the experts' median);</li>
-<li>at least 12 identical answers in a row on word pairs or stems;</li>
-<li>less than 60% right on the last 20 known-answer items (after at least 12);</li>
-<li>answers that repeat a wrong suggestion: at most 40% right on at least 5 items with a wrong suggestion, while at least 90% of the other checks are right;</li>
-<li>on items an expert also answered, more than 30% of at least 10 answers differ from the expert's answer;</li>
-<li>at least 400 answers in one hour, together with answering very fast.</li>
+<li>answering very fast, faster than careful reading allows;</li>
+<li>a long run of identical answers on word pairs or stems;</li>
+<li>low accuracy on the latest known-answer items;</li>
+<li>answers that repeat a wrong suggestion, while the other checks are mostly right;</li>
+<li>on items an expert also answered, frequent disagreement with the expert's answer;</li>
+<li>a very large number of answers in a short time, together with answering very fast.</li>
 </ul>
-<p>When two different signs appear in one calculation, an automatic review pause starts (status "set aside"). Your answers are then disregarded and you get more known-answer items, but you can still label, download your data and erase your profile. The pause is not announced or shown on the site, because an honest mistake can also trigger it; it can be seen, with the reasons and values, in the file you download on the "My data" page. The controller reviews the pause within 14 days and decides: end it, keep it, or block the profile. If nobody decides, the pause ends automatically after 14 days. Blocking is never automatic: a person decides, with a reason that is shown to you. Experts are never paused automatically. If you erase your profile while it is paused or blocked, your answers are deleted.</p>
+<p>One sign on its own does nothing. When two different signs appear in one calculation, an automatic review pause starts (status "set aside"). Your answers are then disregarded and you get more known-answer items, but you can still label, download your data and erase your profile. The pause is not announced or shown on the site, because an honest mistake can also trigger it; it can be seen, with the reasons and values, in the file you download on the "My data" page. The controller reviews the pause within 14 days and decides: end it, keep it, or block the profile. If nobody decides, the pause ends automatically after 14 days. Blocking is never automatic: a person decides, with a reason that is shown to you. Experts are never paused automatically. If you erase your profile while it is paused or blocked, your answers are deleted.</p>
 
 <h2 id="objection">8. Objections and questions</h2>
 <p>If you disagree with an assessment or with a decision about your profile, write to <a href="mailto:{{controller_email}}">{{controller_email}}</a> and a person will review it. You can object to the assessment itself the same way. Without the assessment we cannot use your answers, so the consequence of an objection is that we no longer use them: we block your profile with the reason "objection" and show it to you as such. We will also offer you erasure of your profile.</p>
 
 <h2 id="my-data">9. What you see on the "My data" page</h2>
-<p>Under "Reliability" you see, for each kind of task, your level and an estimate:</p>
-<ul>
-<li><strong>high</strong>: accuracy estimate of at least 0.85;</li>
-<li><strong>good</strong>: at least 0.75;</li>
-<li><strong>needs attention</strong>: below 0.75;</li>
-<li><strong>not enough data</strong>: fewer than 12 known-answer checks.</li>
-</ul>
-<p>The number of checks is rounded down to tens, and agreement with resolved items to 5% (shown once you have at least 20 resolved items). A review pause is not shown there; a block is, with its reason. This section is a simplified view. The complete data are in the file (JSON) you download there: every retained calculation (30 days) with level, estimate, weight, number of checks and signs of possible abuse with their values, and every change of status and level, with an explanation of each field.</p>
+<p>Under "Reliability" you see, for each kind of task, your level and an estimate in words: <strong>high</strong>, <strong>good</strong>, <strong>needs attention</strong>, or <strong>not enough data</strong> (too few known-answer checks so far). The number of checks and your agreement with resolved items are shown rounded. A review pause is not shown there; a block is, with its reason. This section is a simplified view. The complete data are in the file (JSON) you download there: every retained calculation (30 days) with level, estimate, weight, number of checks and signs of possible abuse with their values, and every change of status and level, with an explanation of each field.</p>
 
 <h2 id="public">10. What is public</h2>
-<p>Public releases of the dataset, published as files attached to releases of the croatian-stemmer repository on GitHub, contain only aggregated item labels. They contain no participant identifiers, individual answers, levels, weights, estimates or answer counts.</p>
+<p>Public releases of the dataset, published as files attached to releases of the croatian-stemmer repository on GitHub, contain only aggregated item labels. They contain no participant identifiers, individual answers, levels, weights, estimates or answer counts. Nothing is published about any individual participant.</p>
 
 <h2 id="appendix">Appendix: formulas</h2>
 <pre>w(θ, K) = ln(θ · (K − 1) / (1 − θ))
 P(z = c | votes) ∝ π_c · exp(Σ w(θ_a, K) over the votes for c)
 θ⁽⁰⁾ = clip((α₀ + h) / (α₀ + β₀ + h + m))
 s_a += λ · q(c(v)),  u_a += λ · (1 − q(c(v)))
-s_a + u_a ≤ max(h + m, 12)
+s_a + u_a ≤ ρ · max(h + m, f)
 θ⁽ᵗ⁾ = clip((α₀ + h + s) / (α₀ + β₀ + h + m + s + u))
 θ_lb = μ − 1.645 · √(μ(1 − μ) / (α₀ + β₀ + n + 1)),  μ = (α₀ + hits) / (α₀ + β₀ + n)
 priority = 1 − (p₁ − p₂)</pre>
 <ul>
 <li><strong>θ</strong> (θ_a): the accuracy estimate of person a for one kind of task, the probability that their answer is right. <strong>clip</strong> keeps it between 0.50 and the upper limit of the level.</li>
-<li><strong>w(θ, K)</strong>: the weight of one answer; <strong>K</strong> is the number of possible answers (2 for word pairs and stems; for lemmas the number of different lemmas given plus one, and at least 3); <strong>ln</strong> is the natural logarithm.</li>
+<li><strong>w(θ, K)</strong>: the weight of one answer; <strong>K</strong> is the number of possible answers (2 for word pairs and stems; for lemmas the number of different lemmas given plus one, with a minimum); <strong>ln</strong> is the natural logarithm.</li>
 <li><strong>P(z = c | votes)</strong>: the probability that the item's correct answer is <strong>c</strong>, given the answers (votes); <strong>π_c</strong> is the starting probability of answer c; the sum (Σ) runs over the weights of all answers for c; ∝ means "proportional to", and the probabilities are then scaled to add up to 1.</li>
-<li><strong>θ⁽⁰⁾</strong>: the starting estimate; <strong>α₀</strong> and <strong>β₀</strong> are starting values (4 and 2; for experts 18 and 2); <strong>h</strong> and <strong>m</strong> are the numbers of right and wrong answers on known-answer items.</li>
-<li><strong>s_a</strong> and <strong>u_a</strong>: the expected numbers of right and wrong answers of person a derived from agreement with others; <strong>λ</strong> = 0.5 (such evidence counts half as much as a check); <strong>q(c(v))</strong> is the probability of the answer c(v) the person gave in answer v, computed only from other people's answers to the same item.</li>
-<li><strong>s_a + u_a ≤ max(h + m, 12)</strong>: evidence from agreement with others cannot outweigh evidence from checks, however many people agree with each other.</li>
-<li><strong>θ⁽ᵗ⁾</strong>: the estimate after pass t (s = s_a, u = u_a); the calculation has 10 passes.</li>
+<li><strong>θ⁽⁰⁾</strong>: the starting estimate; <strong>α₀</strong> and <strong>β₀</strong> are starting values (higher for experts); <strong>h</strong> and <strong>m</strong> are the numbers of right and wrong answers on known-answer items.</li>
+<li><strong>s_a</strong> and <strong>u_a</strong>: the expected numbers of right and wrong answers of person a derived from agreement with others; <strong>λ</strong> is less than 1, so such evidence counts less than a check; <strong>q(c(v))</strong> is the probability of the answer c(v) the person gave in answer v, computed only from other people's answers to the same item.</li>
+<li><strong>s_a + u_a ≤ ρ · max(h + m, f)</strong>: evidence from agreement with others is capped by the evidence from checks (<strong>ρ</strong> and <strong>f</strong> are fixed settings), however many people agree with each other.</li>
+<li><strong>θ⁽ᵗ⁾</strong>: the estimate after pass t (s = s_a, u = u_a); the calculation has a fixed number of passes.</li>
 <li><strong>θ_lb</strong>: the lower bound of the estimate (about the 5th percentile) from checks that tell knowledge apart from confirming the suggestion; <strong>n</strong> is the number of such checks, <strong>hits</strong> the number right; it is used for promotion to the established level.</li>
 <li><strong>priority</strong>: the priority of an unresolved item when items are handed out; <strong>p₁</strong> and <strong>p₂</strong> are the two highest answer probabilities, so items where the difference is smaller get higher priority.</li>
 </ul>
+<p>The current values of all settings are in the <a href="https://github.com/brahle/croatian-stemmer/blob/main/docs/trust.md" rel="noopener noreferrer">technical description of the model</a>.</p>
 
 <p class="meta">Related: <a href="/legal/privacy.en">Privacy notice</a> · <a href="/legal/terms.en">Terms of participation and licence</a> · <a href="/legal/participation.en">Participation statement</a> · <a href="/static/guidelines.en.html">Labeling guidelines</a></p>
 </main>
