@@ -7,7 +7,7 @@ pytest.importorskip("fastapi")
 from labeling_support import make_settings
 
 DOCS = [f"{doc}.{lang}" for doc in ("privacy", "terms", "participation", "storage", "trust") for lang in ("hr", "en")]
-VERSIONS = {"privacy": "1.3", "terms": "1.1", "participation": "1.0", "storage": "1.1", "trust": "2.0"}
+VERSIONS = {"privacy": "1.4", "terms": "1.1", "participation": "1.0", "storage": "1.1", "trust": "2.0"}
 ROOT = Path(__file__).resolve().parents[2]
 FORMULAS = ROOT / "docs" / "trust.md"
 
@@ -111,7 +111,7 @@ def test_guard_refuses_unknown_placeholders(tmp_path, monkeypatch):
 async def test_public_config_names_versions_and_controller():
     async with app_client(idp_hint="google", read_only=True) as client:
         config = (await client.get("/api/config")).json()
-    assert config["legal"] == {"privacy": "1.3", "terms": "1.1", "participation": "1.0"}
+    assert config["legal"] == {"privacy": "1.4", "terms": "1.1", "participation": "1.0"}
     assert config["minimumAge"] == 18 and config["controller"] == {"name": "Example Controller"}
     assert config["idpHint"] == "google" and config["locales"] == ["hr", "en"]
     assert config["acceptingJudgments"] is False and config["uiVersion"]
@@ -146,6 +146,22 @@ async def test_privacy_notice_describes_profiling_and_silent_review(lang):
              "en": ("profiling", "14 days", "90 days", "GitHub", "/legal/trust.en", "17(3)")}[lang]
     for word in words:
         assert word in body, word
+
+
+@pytest.mark.parametrize("lang", ["hr", "en"])
+@pytest.mark.asyncio
+async def test_privacy_notice_names_it_processors_transfers_and_the_erasure_list(lang):
+    """Privacy 1.4: IT service providers (including AI tools) as a recipient category, their
+    transfer safeguards (Art. 45 or 46(2)(c)), and the 60-day erasure list kept for restores."""
+    async with app_client() as client:
+        body = (await client.get(f"/legal/privacy.{lang}")).text
+    words = {"hr": ("Pružatelji IT usluga", "umjetne inteligencije", "treniranje", "46. stavak 2. točka (c)",
+                    "standardnim ugovornim klauzulama", "60 dana", "izvan baze podataka"),
+             "en": ("IT service providers", "AI-assisted", "train their models", "46(2)(c)",
+                    "standard contractual clauses", "60 days", "outside the database")}[lang]
+    for word in words:
+        assert word in body, word
+    assert ("nemamo drugih izvršitelja" if lang == "hr" else "no other processors") not in body
 
 
 @pytest.mark.parametrize("lang", ["hr", "en"])

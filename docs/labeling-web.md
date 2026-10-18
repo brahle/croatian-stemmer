@@ -89,7 +89,7 @@ Optional:
 | `LABELING_OIDC_IDP_HINT` | unset | Keycloak identity-provider alias, e.g. `google`; the sign-in button then goes straight to it |
 | `LABELING_OIDC_CLIENT_ID` | `croatian-stemmer-labeling-web` | public browser client |
 | `LABELING_OIDC_AUDIENCE` | `croatian-stemmer-labeling-api` | required token audience |
-| `LABELING_PRIVACY_VERSION`, `LABELING_TERMS_VERSION`, `LABELING_PARTICIPATION_VERSION` | `1.3`, `1.1`, `1.0` | document versions people must accept; must equal the versions the shipped documents declare. Privacy 1.3 (0.3.0) describes trust scoring; only people who accepted it are scored |
+| `LABELING_PRIVACY_VERSION`, `LABELING_TERMS_VERSION`, `LABELING_PARTICIPATION_VERSION` | `1.4`, `1.1`, `1.0` | document versions people must accept; must equal the versions the shipped documents declare. Privacy 1.3 (0.3.0) describes trust scoring; only people who accepted 1.3 or later are scored. Privacy 1.4 (0.3.3) adds IT service providers as processors, their transfers and the erasure list |
 | `LABELING_DAILY_CAP` | `3000` | judgments per annotator per 24 hours |
 | `LABELING_TARGET_VOTES` | `3` | before scoring is enabled and while a corpus has no known-answer items, `/next` stops serving an item once this many people gave a definite answer; afterwards the trust scheduler's vote budgets apply instead |
 | `LABELING_SCORING_INTERVAL` | `600` | seconds between scheduled scoring runs (60 to 86400); a tick does nothing while scoring is off |
@@ -173,7 +173,10 @@ trust scoring (profiling), so everyone is asked again before their next answer.
 Scoring uses only the profiling cohort: people with privacy 1.3 or later, terms
 1.1 and participation 1.0, all with age 18. Answers of anyone else are stored but
 not scored or counted until they pass the 1.3 gate; the next run then includes
-their earlier answers.
+their earlier answers. 0.3.3 ships privacy notice 1.4 (IT service providers,
+including AI-assisted development and operations tools, as processors; their
+transfers; the 60-day erasure list), so everyone accepts again; people who had
+accepted 1.3 stay in the cohort.
 
 A profile is created at the first sign-in, before the gate. A daily background
 task erases active profiles that have no consent row 30 days after they were
@@ -277,7 +280,7 @@ and profiles nobody. Switch it on in the dashboard only when all of these hold:
 
 1. The owner has signed off the DPIA ([labeling-dpia.md](labeling-dpia.md)).
 2. The owner is on the trusted list ("Pouzdane adrese"), has signed in and passed
-   the 1.3 gate, and the anchor badge shows in "Suradnici".
+   the current gate, and the anchor badge shows in "Suradnici".
 3. The hr500k known-answer items are imported ("Zlatni primjeri", below).
 
 Then switch scoring on ("Pregled") and verify: one `done` run in "Bodovanje";
@@ -388,6 +391,21 @@ machine only, delete them within 30 days, and delete them at once when an erasur
 completed for a pseudonym they contain. Share a bundle with a third party only under
 a written data-sharing agreement, for at most one year, and tell the recipient to
 delete an erased person's rows.
+
+### IT service providers
+
+Development, debugging, operations and support may use IT service providers,
+including AI-assisted development and operations tools, as processors under the
+conditions of the DPIA (section 2.4): before first use, check that the provider's
+data processing terms limit it to these purposes and the owner's instructions,
+exclude training its models on the data, and give a transfer mechanism (an adequacy
+decision, such as the EU-U.S. Data Privacy Framework where the provider is certified,
+or the standard contractual clauses); record the provider, its terms and the
+mechanism on the owner's list of providers. In use, give a tool only what the task
+needs: code, configuration, aggregates or synthetic data first, then pseudonymous
+rows from narrow queries; no database dumps or bundles, and no emails or names unless
+the task cannot be done without them. Such tools never decide on a participant's
+status, weight or block.
 
 ### Releases
 

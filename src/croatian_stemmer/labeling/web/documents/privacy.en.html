@@ -1,13 +1,15 @@
 <!doctype html>
-<!-- The controller (owner) reviews and publishes this text; there is no external legal review
-     (owner decision 5ee0e7ef). The Croatian version (privacy.hr.html) and this one must say the same
+<!-- The controller (owner) reviews and publishes this text; there is no external legal review.
+     The Croatian version (privacy.hr.html) and this one must say the same
      thing and carry the same version. The owner checks that Google LLC is listed as certified on the
-     EU-U.S. Data Privacy Framework list (section 5). -->
+     EU-U.S. Data Privacy Framework list (section 5), and before using an IT service provider (section 4)
+     that its data processing terms, the exclusion of model training and the transfer mechanism are in
+     place, as the DPIA (docs/labeling-dpia.md, 2.4) requires. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="document-version" content="1.3">
+<meta name="document-version" content="1.4">
 <title>Privacy notice — Croatian lemma labeling</title>
 <link rel="stylesheet" href="/static/legal.css">
 </head>
@@ -15,7 +17,7 @@
 <main>
 <p class="crumbs"><a href="/?lang=en">Back to labeling</a> · <a href="/legal/privacy.hr" hreflang="hr" lang="hr">Hrvatski</a></p>
 <h1>Privacy notice</h1>
-<p class="meta">Version 1.3 (18 October 2026). This notice applies to the site {{app_host}}, where volunteers label Croatian words (lemmas, word pairs and stems) for an open language dataset.</p>
+<p class="meta">Version 1.4 (18 October 2026). This notice applies to the site {{app_host}}, where volunteers label Croatian words (lemmas, word pairs and stems) for an open language dataset.</p>
 
 <p>This notice explains which personal data we process when you take part, why, on which legal basis, how long we keep it and what your rights are under the General Data Protection Regulation (Regulation (EU) 2016/679, "GDPR").</p>
 
@@ -31,12 +33,13 @@
 <p>The application creates this profile the first time you sign in, before you accept the terms and the participation statement, because it needs it to show you the acceptance step and to let you erase the account from there ("Erase account"). Until you accept, it records nothing else about you and you cannot label. If you never accept, the application erases the profile 30 days after your first sign-in (section 6).</p>
 <h3>Data you enter or that arises while you take part</h3>
 <ul>
-<li>Your answers (labels): the answer to the question, a lemma you type, the irregular-form flag, the revision number of the answer and when it was saved.</li>
-<li>The time you took to answer each item (in milliseconds), which items were shown to you, when and how many times, and whether an item was shown without the corpus suggestion.</li>
+<li>Your answers to the labeling tasks, of whatever kinds the site offers, including anything you type into a task (such as a lemma), with when each answer was saved and changed, the application version, and how the task was shown to you (for example with or without the corpus suggestion).</li>
+<li>How you work through the tasks: which items were shown to you, when and how many times, and how long you took to answer each.</li>
 <li>Your acceptance of the terms of participation and the participation statement, and the version of this notice you were shown: document version, time of acceptance, interface language, application version and your confirmation that you are at least 18 years old.</li>
 <li>A random participant identifier (pseudonym) assigned to your profile. All your answers are linked to that identifier, not to your name or email address.</li>
-<li>The status of your profile (active, set aside, blocked or erased) and, if we change it, the reason.</li>
-<li>Reliability assessments the application computes from the data above (section 9).</li>
+<li>Records of changes to your profile, such as its status (active, set aside, blocked or erased), your level or a role, with the reason.</li>
+<li>Assessments the application computes from the data above, such as how reliable your answers are and signs of possible misuse (section 9).</li>
+<li>If the controller gives you a role, for example trusted expert: your email address and a short note that identifies you on the list of people with that role.</li>
 </ul>
 <h3>Data that arises automatically at the network edge</h3>
 <p>The reverse proxy in front of the application records, for every request, the IP address, the time, the page address requested and browser details (user agent). An attack-protection system on the same infrastructure uses those records to detect and block malicious traffic. The labeling application itself keeps no access logs and does not see your IP address.</p>
@@ -48,34 +51,41 @@
 <li><strong>Running your profile and recording your answers to build the language dataset</strong>: your consent (Article 6(1)(a) GDPR), which you give separately when you start, by accepting the <a href="/legal/participation.en">participation statement</a>. You can withdraw it at any time by erasing your profile (section 7).</li>
 <li><strong>Keeping answers in the dataset after you erase your profile</strong>: legitimate interest (Article 6(1)(f)) in a scientific dataset, with the research exemption of Article 17(3)(d) and the safeguards of Article 89(1) (section 7).</li>
 <li><strong>Assessing how reliable answers are (profiling), detecting abuse, rate limiting and blocking accounts</strong>: legitimate interest (Article 6(1)(f)) in keeping a public research dataset accurate and protected from fake or automated entries. Section 9 explains what we assess, how we weighed this interest and how you can object.</li>
+<li><strong>Developing, operating, securing and supporting the service</strong>, including with the help of the IT service providers in section 4: legitimate interest (Article 6(1)(f)) in a service that works, is secure and answers your requests.</li>
 <li><strong>Security logs at the network edge</strong>: legitimate interest (Article 6(1)(f)) in protecting the service from attacks.</li>
 <li><strong>Keeping records of consent</strong>: the legal obligation to be able to demonstrate consent (Article 7(1) together with Article 6(1)(c)).</li>
+<li><strong>Keeping a short record of erasures</strong> so that they can be applied again after a restore from backup: the legal obligation to erase (Article 17 together with Article 6(1)(c)).</li>
 </ul>
 
 <h2 id="recipients">4. Recipients and processors</h2>
 <ul>
 <li><strong>Google</strong> (Google Ireland Limited and Google LLC) as the sign-in provider. Google is an independent controller for your Google account; its privacy policy is at <a href="https://policies.google.com/privacy?hl=en" rel="noopener noreferrer">policies.google.com/privacy</a>.</li>
 <li><strong>The hosting provider</strong> that runs the application, its database, the sign-in server and the reverse proxy: {{hosting_summary}}.</li>
+<li><strong>IT service providers</strong> that help us develop, operate and support the service, including AI-assisted software development and operations tools. They are our processors, bound by their data processing terms to use the data only for these purposes and on our instructions, and not to use it to train their models. They see only what a task needs: usually code, settings, figures or test data, and where real data is needed, preferably data without your name or email address. We do not give them copies of the whole database. No such tool decides anything about you.</li>
+<li><strong>People the controller authorises</strong> to curate the dataset or review pauses act on the controller's instructions and are bound to confidentiality.</li>
 <li><strong>The public</strong>, when we publish the dataset: we publish it only as files attached to releases of the croatian-stemmer repository on GitHub. Published files contain the item texts and only aggregated labels (for each item, the result combined from all answers to it), never a participant identifier, name or email address, nor answer counts, answer times or reliability assessments.</li>
 <li><strong>Researchers</strong>, only if we sign a written data-sharing agreement with them: a restricted data package for checking and repeating the reliability calculation. It contains answers, answer times and records of profile status under random participant identifiers, without names or email addresses. The agreement forbids attempts at re-identification and allows the package to be kept for at most one year. When you erase your profile, we ask the recipient to delete the rows with your previous identifier.</li>
 </ul>
-<p>We use no analytics or advertising services and have no other processors.</p>
+<p>We use no analytics or advertising services. If you ask, we will tell you which providers we currently use.</p>
 
 <h2 id="transfers">5. Transfers outside the EU and EEA</h2>
-<p>The sign-in request goes to Google, which may process it in the United States as well. Google LLC is certified under the EU-U.S. Data Privacy Framework, so such a transfer relies on the European Commission's adequacy decision of 10 July 2023 (Article 45 GDPR). The application's own data stays with the hosting provider named in section 4.</p>
+<p>The sign-in request goes to Google, which may process it in the United States as well. Google LLC is certified under the EU-U.S. Data Privacy Framework, so such a transfer relies on the European Commission's adequacy decision of 10 July 2023 (Article 45 GDPR).</p>
+<p>The application's own data is stored with the hosting provider named in section 4. An IT service provider from section 4 may process the data it sees outside the EU and EEA, for example in the United States. We use such a provider only if the transfer relies on an adequacy decision of the European Commission (Article 45 GDPR; for the United States, the EU-U.S. Data Privacy Framework, where the provider is certified under it) or on the standard contractual clauses adopted by the Commission, which are part of the provider's data processing terms (Article 46(2)(c) GDPR). To get a copy of these safeguards, write to the address in section 1.</p>
 
 <h2 id="retention">6. How long we keep data</h2>
 <ul>
 <li>Your profile in the application (sign-in account identifier, email address): until you erase your profile. If you sign in but never accept the terms and the participation statement, the application erases the profile automatically 30 days after your first sign-in; you can erase it earlier from the acceptance screen.</li>
 <li>Your user account on the sign-in server (first and last name, email address): until you erase your profile; after an erasure request, including the automatic erasure above, we delete it within 30 days. Until then the application keeps the identifier of that account with the erasure request, only so that we can find and delete it.</li>
+<li>Erasure record: after every erasure, including the automatic one, we keep the identifier of your sign-in account and the date of the request on a separate list outside the database for 60 days, only so that we can erase the profile again if the database is ever restored from a backup taken before the erasure.</li>
 <li>Answers: indefinitely, as part of the dataset. When you erase your profile, they are moved to a new random identifier that is linked neither to you nor to your previous identifier, and only the day of each answer is kept, not the time (section 7). If your profile is blocked or set aside when you erase it, your answers are deleted instead.</li>
 <li>Time taken per answer: 90 days from each answer, after which we delete it; at once when you erase your profile.</li>
 <li>The list of items shown: records of items you did not answer are deleted 30 days after they were last shown; records of items you answered are kept until you erase your profile.</li>
-<li>Reliability assessments (your assessments and the results computed for individual items): 30 days after the calculation that produced them. The results of the latest calculation are kept until a new calculation replaces them.</li>
-<li>Records of changes to your profile status and reliability level: for as long as we keep the answers, for accountability and so that calculations can be repeated. When you erase your profile, we remove the reasons, abuse signals and their values from them, so only the kind of change remains.</li>
+<li>Assessments computed from the answers (yours and the results computed for individual items): 30 days after the calculation that produced them. The results of the latest calculation are kept until a new calculation replaces them.</li>
+<li>Records of changes to your profile (status, level, role): for as long as we keep the answers, for accountability and so that calculations can be repeated. When you erase your profile, we remove the reasons, abuse signals and their values from them, so only the kind of change remains.</li>
 <li>Consent records: for as long as we keep the answers given under that consent; on erasure they move with the answers to the new identifier, with only the day kept (or are deleted with them).</li>
-<li>If you are on the list of trusted experts (section 9): your email address and the note with your name on that list, until we remove you from it or you erase your profile.</li>
-<li>Files the controller downloads from the application to curate the dataset: deleted at the latest 30 days after the download, and at once when the erasure of a profile whose identifier they contain is completed. Packages shared with researchers: as the agreement says, at most one year.</li>
+<li>If the controller gives you a role (section 9): your email address and the note on the list of people with that role, until the role is removed or you erase your profile.</li>
+<li>Files downloaded from the application to curate the dataset: deleted at the latest 30 days after the download, and at once when the erasure of a profile whose identifier they contain is completed. Packages shared with researchers: as the agreement says, at most one year.</li>
+<li>Data an IT service provider sees while helping us (section 4): only as long as its data processing terms provide; it may not keep the data for its own purposes.</li>
 <li>Database backups: {{backup_retention}}. Data erased from the application disappears from backups after that period.</li>
 <li>Reverse proxy records at the network edge: {{edge_log_retention}}.</li>
 <li>Published releases of the dataset (aggregated labels only): permanently; published releases are not changed.</li>
@@ -85,7 +95,7 @@
 <ul>
 <li><strong>Access and portability</strong>: on the "My data" page you can download everything linked to your profile yourself, in a machine-readable format (JSON), including reliability assessments and every change to your profile status (section 9).</li>
 <li><strong>Rectification</strong>: you can change your answers in the application; for anything else, write to us.</li>
-<li><strong>Erasure</strong>: on the "My data" page you can erase your profile yourself. The application immediately deletes your email address, answer times, the list of items shown to you and your reliability assessments, removes the reasons and values from the records about your profile, and removes the link between your profile and your sign-in account. We delete your user account on the sign-in server (with your first and last name) within 30 days of the request; until then the application keeps that account's identifier with the erasure request, and signing in again shows a notice instead of creating a new profile. Your answers and consent records stay in the dataset under a new random identifier, with only the day of each answer, that can be linked neither to you nor to your previous identifier; if your profile is blocked or set aside at that moment, they are deleted instead. We keep the answers under the research exemption (Article 17(3)(d) GDPR) with the safeguards of Article 89(1) (pseudonymisation, deletion of the identity, only the day of each answer, no answer times, publication of aggregated labels only), and further processing rests on our legitimate interest in a scientific dataset (Article 6(1)(f)). Remaining risk: someone holding a copy of your answers from before the erasure together with your identity (the controller's local file until it is deleted, a backup until it expires, or a researcher's package whose holder ignores the deletion request) could match them to the new identifier by items, answers and days.</li>
+<li><strong>Erasure</strong>: on the "My data" page you can erase your profile yourself. The application immediately deletes your email address, answer times, the list of items shown to you and your reliability assessments, removes the reasons and values from the records about your profile, and removes the link between your profile and your sign-in account. We delete your user account on the sign-in server (with your first and last name) within 30 days of the request; until then the application keeps that account's identifier with the erasure request, and signing in again shows a notice instead of creating a new profile. We also keep that identifier with the date of the request on a separate erasure list for 60 days (section 6), so that the erasure can be applied again after a restore from backup. Your answers and consent records stay in the dataset under a new random identifier, with only the day of each answer, that can be linked neither to you nor to your previous identifier; if your profile is blocked or set aside at that moment, they are deleted instead. We keep the answers under the research exemption (Article 17(3)(d) GDPR) with the safeguards of Article 89(1) (pseudonymisation, deletion of the identity, only the day of each answer, no answer times, publication of aggregated labels only), and further processing rests on our legitimate interest in a scientific dataset (Article 6(1)(f)). Remaining risk: someone holding a copy of your answers from before the erasure together with your identity (a file downloaded to curate the dataset until it is deleted, a backup until it expires, or a researcher's package whose holder ignores the deletion request) could match them to the new identifier by items, answers and days.</li>
 <li><strong>Restriction and objection</strong>: write to the address in section 1. Objecting to the reliability assessment and what follows from it are described in section 9.</li>
 <li><strong>Withdrawing consent</strong>: at any time, by erasing your profile (see the participation statement). Withdrawal does not affect the lawfulness of processing before it.</li>
 <li><strong>Complaint to a supervisory authority</strong>: the Croatian Personal Data Protection Agency (Agencija za zaštitu osobnih podataka, AZOP), Selska cesta 136, 10000 Zagreb, Croatia, <a href="mailto:azop@azop.hr">azop@azop.hr</a>, <a href="https://azop.hr" rel="noopener noreferrer">azop.hr</a>. You may also complain to the supervisory authority of the member state where you live or work.</li>
@@ -93,18 +103,18 @@
 <p>We answer requests without undue delay and at the latest within one month.</p>
 
 <h2 id="automated">8. Automated decision-making</h2>
-<p>The application computes reliability assessments automatically (section 9) and uses them to set the weight of your answers, how many known-answer items you get and, when two different signs of possible abuse appear in one calculation, a review pause during which your answers are temporarily disregarded. We consider that none of these decisions has legal or similarly significant effects on you within the meaning of Article 22 GDPR: participation is voluntary and unpaid, the assessments are not public and have no effect outside this site, and during a pause you can do everything as before (sign in, label, download your data and erase your profile); only the weight of your answers in the dataset changes. We do not announce or show a pause on the site because an honest mistake can also trigger it, so the site does not want to mark anyone that way; it can be seen in the file you download on the "My data" page. A pause lasts at most 14 days, unless the controller decides after review to keep it, which is then a decision by a person. Blocking is never automatic: a person decides, with a reason that is shown to you. Anyone may write to the address in section 1 to object or to ask for a person to review a decision about their profile.</p>
+<p>The application computes reliability assessments automatically (section 9) and uses them to set the weight of your answers, how many known-answer items you get and, when two different signs of possible abuse appear in one calculation, a review pause during which your answers are temporarily disregarded. We consider that none of these decisions has legal or similarly significant effects on you within the meaning of Article 22 GDPR: participation is voluntary and unpaid, the assessments are not public and have no effect outside this site, and during a pause you can do everything as before (sign in, label, download your data and erase your profile); only the weight of your answers in the dataset changes. We do not announce or show a pause on the site because an honest mistake can also trigger it, so the site does not want to mark anyone that way; it can be seen in the file you download on the "My data" page. A pause lasts at most 14 days, unless the controller decides after review to keep it, which is then a decision by a person. Blocking is never automatic: a person decides, with a reason that is shown to you. No language model or other AI tool takes part in these decisions; they are computed by the application's own code. Anyone may write to the address in section 1 to object or to ask for a person to review a decision about their profile.</p>
 
 <h2 id="reliability">9. Reliability assessment (profiling)</h2>
 <p>To keep the dataset accurate, the application assesses how reliable each participant's answers are. This is profiling within the meaning of Article 4(4) GDPR. We assess only people who have accepted this notice at version 1.3 (or later), the terms of participation and the participation statement. Answers given before that are stored but are not assessed or counted until you do; the next calculation then includes them.</p>
 <h3>What we compute</h3>
 <ul>
-<li>For each kind of task (word pairs, lemmas, stems): an estimate of how accurate your answers are, and a level (new, qualified, established, expert).</li>
+<li>For each kind of task (today word pairs, lemmas and stems): an estimate of how accurate your answers are, and a level (for example new or established).</li>
 <li>The weight your answers carry when the answers to an item are combined.</li>
 <li>Signs of possible abuse: for example answering very fast, a long run of identical answers, poor agreement with known-answer items, or answers that only repeat the corpus suggestion.</li>
 </ul>
 <h3>From what</h3>
-<p>From your answers and their revisions, the time taken per answer, your answers on items whose correct answer is known in advance (known-answer items, mixed in unannounced), whether an item was shown without the suggestion, how your answers agree with other participants' answers, and the status of your profile. The controller also keeps a list of trusted experts (email address and a note with the name); answers from people on that list start from a higher estimate.</p>
+<p>From your answers and their revisions, how the items were shown to you (for example without the suggestion), the time taken per answer, your answers on items whose correct answer is known in advance (known-answer items, mixed in unannounced), how your answers agree with other participants' answers, any role the controller has given you, and the status of your profile. The controller may give some people the role of trusted expert, recorded on a list with their email address and a short note; their answers start from a higher estimate.</p>
 <h3>Effects</h3>
 <ul>
 <li>Weight: answers with a higher estimate count for more when answers are combined.</li>
