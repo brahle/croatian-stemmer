@@ -258,7 +258,9 @@ counted as a vote.
 Limits per annotator: 15 answers burst and 30 per minute, 120 queue reads per
 minute, 10 consent/export/erasure calls per hour (in process; they reset on
 restart), and `LABELING_DAILY_CAP` judgments per 24 hours (counted in the
-database). Bodies are limited to 16 KiB, imports to 32 MiB. The curator's
+database). Bodies are limited to 16 KiB. The imports and recording a release take up
+to 32 MiB, but only with a bearer token, and they read the body only after the curator
+check, so an anonymous caller never gets past 16 KiB or has a body parsed. The curator's
 "pause" switch, or `LABELING_READ_ONLY=true`, makes `/answer` return 503
 `judgments_paused` without writing anything.
 

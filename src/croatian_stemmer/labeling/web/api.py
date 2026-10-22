@@ -56,11 +56,14 @@ class RequestBounds:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
-        importing = (scope["method"], scope["path"]) in LARGE_BODY_ROUTES or (
-            scope["method"] == "POST" and scope["path"].startswith("/api/admin/scoring/runs/")
-            and scope["path"].endswith("/release"))  # a release's item ids
-        limit = 32 * 1024 * 1024 if importing else 16384
         headers = dict(scope.get("headers", []))
+        # The large limit is for curators: a caller without a bearer token is refused by every
+        # large-body route anyway, so it never gets more than the small limit (or the import slot).
+        importing = headers.get(b"authorization", b"")[:7].lower() == b"bearer " and (
+            (scope["method"], scope["path"]) in LARGE_BODY_ROUTES or (
+                scope["method"] == "POST" and scope["path"].startswith("/api/admin/scoring/runs/")
+                and scope["path"].endswith("/release")))  # a release's item ids
+        limit = 32 * 1024 * 1024 if importing else 16384
         try:
             length = int(headers.get(b"content-length", b"0"))
         except ValueError:

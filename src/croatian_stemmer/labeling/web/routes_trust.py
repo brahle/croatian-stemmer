@@ -757,12 +757,17 @@ def register(app, ctx):
                         headers=stale_headers(run, is_stale, f"annotators-{run.id}.jsonl"))
 
     @app.post("/api/admin/scoring/runs/{run_id}/release")
-    async def release(run_id: UUID, data: ReleaseRequest | None = None, caller: Caller = Depends(curator),
-                      db=Depends(session)):
+    async def release(run_id: UUID, request: Request, caller: Caller = Depends(curator), db=Depends(session)):
         """Record that a pinned run's labels are published: every gold item among the released
         rows is disclosed, so no later answer on it counts as evidence of skill (4.3.5).
         `item_ids` (the release's labels.tsv) is checked: a qualification item or an active
-        check, as the gold stands now, is refused."""
+        check, as the gold stands now, is refused. The body (up to 32 MiB) is read only after
+        the curator check, like the imports; an empty body means no `item_ids`."""
+        body = await request.body()
+        try:
+            data = ReleaseRequest.model_validate_json(body) if body.strip() else None
+        except ValidationError as exc:
+            raise failure(422, "invalid_release") from exc
         async with db.begin():
             await moderation_tx(db)
             run = await get_run(db, run_id, lock=True)
