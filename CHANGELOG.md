@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+Security round 4 (F1). Web app only; no migration and no scoring change.
+
+- `POST /api/admin/scoring/runs/{id}/release` reads its body only after the curator check,
+  like the imports. An anonymous or annotator request gets 401/403 without its body being
+  parsed (before, a malformed body got 422 first). A malformed body from a curator is 422
+  `invalid_release`; an empty body still means "no `item_ids`".
+- The 32 MiB body limit of the imports and the release applies only to requests with an
+  `Authorization: Bearer` header; everything else is capped at 16 KiB.
+
 ## 0.4.1
 
 Known-answer checks for every corpus, and corpus choice from the qualified level up.

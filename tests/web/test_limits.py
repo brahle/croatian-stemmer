@@ -94,6 +94,44 @@ async def test_body_limits(api):
     assert r.status_code == 413
 
 
+async def test_release_authenticates_before_it_parses_the_body(api):
+    """F1: the release route used to parse its (32 MiB) JSON body before the curator check,
+    so an anonymous `{` got 422 json_invalid. It now refuses the caller first."""
+    junk = {"Content-Type": "application/json"}
+    for run in ("x", str(uuid4())):
+        url = f"/api/admin/scoring/runs/{run}/release"
+        r = await api.client.post(url, headers=junk, content=b"{")
+        assert r.status_code == 401, r.text
+        r = await api.request("POST", url, "alice", headers=junk, content=b"{")
+        assert r.status_code == 403 and r.json()["detail"]["code"] == "curator_required", r.text
+    # A curator still gets a validation error for a malformed body, in the app's own shape.
+    r = await api.request("POST", f"/api/admin/scoring/runs/{uuid4()}/release", "curator", True,
+                          headers=junk, content=b"{")
+    assert r.status_code == 422 and r.json()["detail"]["code"] == "invalid_release", r.text
+    r = await api.request("POST", f"/api/admin/scoring/runs/{uuid4()}/release", "curator", True,
+                          json={"item_ids": ["not-a-uuid"]})
+    assert r.status_code == 422 and r.json()["detail"]["code"] == "invalid_release", r.text
+    # JSON `null` still means "no payload", as it did when FastAPI parsed `ReleaseRequest | None`:
+    # it passes validation and reaches the run lookup.
+    r = await api.request("POST", f"/api/admin/scoring/runs/{uuid4()}/release", "curator", True,
+                          headers=junk, content=b"null")
+    assert r.status_code == 404, r.text
+
+
+async def test_large_bodies_need_a_bearer_token(api):
+    """Without an Authorization header the 32 MiB import/release limit does not apply."""
+    over = {"Content-Length": "16385"}
+    for url in ("/api/import", "/api/admin/gold/import", f"/api/admin/scoring/runs/{uuid4()}/release"):
+        r = await api.client.post(url, headers=over, content=b"")
+        assert r.status_code == 413, (url, r.text)
+        r = await api.client.post(url, headers={**over, "Authorization": "Basic eA=="}, content=b"")
+        assert r.status_code == 413, (url, r.text)
+        # With a bearer the size passes the bound and the token is checked next.
+        r = await api.client.post(url, headers={"Authorization": "Bearer junk", "Content-Type": "application/json"},
+                                  content=b"{" + b" " * 16385 + b"}")
+        assert r.status_code == 401, (url, r.text)
+
+
 async def test_token_bucket_refills():
     from croatian_stemmer.labeling.web.limits import Limiter, Rate
     from fastapi import HTTPException
