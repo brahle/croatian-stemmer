@@ -15,7 +15,7 @@ from uuid import UUID
 
 from fastapi import Depends, Query, Request
 from fastapi.responses import JSONResponse, Response
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import func, select, text, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
 
@@ -30,6 +30,10 @@ from .requests import (AdjudicateRequest, Candidate, GoldActionRequest, GoldImpo
 from .trusted import email_digest, grant_anchor, normalized_email, revoke_anchors
 from .scheduler import live_readiness
 from .scoring_run import ScoringBusy, bundle, moderation_tx, run_now, run_outputs, stale
+
+
+# JSON `null` means no payload, as with the `ReleaseRequest | None` body this route used to declare.
+_RELEASE_BODY = TypeAdapter(ReleaseRequest | None)
 
 
 def run_json(run, is_stale=None, full=False):
@@ -765,7 +769,7 @@ def register(app, ctx):
         the curator check, like the imports; an empty body means no `item_ids`."""
         body = await request.body()
         try:
-            data = ReleaseRequest.model_validate_json(body) if body.strip() else None
+            data = _RELEASE_BODY.validate_json(body) if body.strip() else None
         except ValidationError as exc:
             raise failure(422, "invalid_release") from exc
         async with db.begin():

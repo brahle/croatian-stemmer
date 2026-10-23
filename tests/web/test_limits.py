@@ -111,6 +111,11 @@ async def test_release_authenticates_before_it_parses_the_body(api):
     r = await api.request("POST", f"/api/admin/scoring/runs/{uuid4()}/release", "curator", True,
                           json={"item_ids": ["not-a-uuid"]})
     assert r.status_code == 422 and r.json()["detail"]["code"] == "invalid_release", r.text
+    # JSON `null` still means "no payload", as it did when FastAPI parsed `ReleaseRequest | None`:
+    # it passes validation and reaches the run lookup.
+    r = await api.request("POST", f"/api/admin/scoring/runs/{uuid4()}/release", "curator", True,
+                          headers=junk, content=b"null")
+    assert r.status_code == 404, r.text
 
 
 async def test_large_bodies_need_a_bearer_token(api):
