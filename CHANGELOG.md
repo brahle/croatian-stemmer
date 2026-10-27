@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.3
+
+Rebuild for CVE-2026-111497 (Node2Shell). No app change; deployments need the new image.
+
+- The web-assets build stage runs on `node:22.23.4-bookworm-slim` (pinned by digest), the first
+  22.x with the Brotli decoder fix. Before, it ran on 22.16.0. CI's Playwright job moves to 22.23.4 too.
+
 ## 0.4.2
 
 Security round 4 (F1). Web app only; no migration and no scoring change. Deployments need the new image.
