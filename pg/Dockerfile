@@ -1,5 +1,7 @@
 ARG PG_MAJOR=17
-FROM postgres:${PG_MAJOR}
+# Pinned to the 2026-10-21 build of postgres:17. The digest wins over the tag, so moving
+# PG_MAJOR also needs a new digest (postgresql-server-dev-<major> fails loudly otherwise).
+FROM postgres:${PG_MAJOR}@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
